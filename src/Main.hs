@@ -15,10 +15,6 @@ frame = stroke $ rect 400 760
 showTrace :: (Show a) => a -> a
 showTrace x = trace (show x) x
 
-block :: Int -> Int -> Form
-block x y = move (fromIntegral $ 40 * x, fromIntegral $ 40 * y) $
-    filled white $ rect 40 40
-
 render :: Player -> (Int, Int) -> Element
 render player (w, h) = centeredCollage w h $ [frame] ++ [drawPlayer player]
 
@@ -27,4 +23,4 @@ main = run config
      $ render <~ playerSignal
               ~~ Window.dimensions
   where
-    config = defaultConfig { windowTitle = "Ferocious Snakes" }
+    config = defaultConfig { windowTitle = "makin' a game" }

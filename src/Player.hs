@@ -7,19 +7,16 @@ module Player ( Controller
 
 import Control.Applicative ((<$>))
 import Math
+import Utils
 import Timing
 import FRP.Helm
 import FRP.Helm.Signal
 import qualified FRP.Helm.Keyboard as Keyboard
-import Debug.Trace
-
-showTrace :: (Show a) => a -> a
-showTrace x = trace (show x) x
 
 data Controller =
     Controller { ctrlDir   :: Vector2
-               , ctrlJump  :: Bool
-               , ctrlBoost :: Bool
+               , ctrlJump  :: Sample Bool
+               , ctrlBoost :: Sample Bool
                } deriving (Show)
 
 data Player =
@@ -29,21 +26,34 @@ data Player =
 
 data JumpState = Stand | Jump Double | Boost Vector2 Double deriving (Show)
 
+
+
 noCtrls :: Controller
 noCtrls =
     Controller { ctrlDir = Vector2 0 0
-               , ctrlJump = False
-               , ctrlBoost = False
+               , ctrlJump = Unchanged False
+               , ctrlBoost = Unchanged False
                }
 
 ctrlSignal :: Signal Controller
-ctrlSignal = signal
+ctrlSignal = foldp diffState noCtrls signal
   where
       makeState (x, y) jump boost =
           Controller { ctrlDir = Vector2 (fromIntegral x) (fromIntegral y)
-                     , ctrlJump = jump
-                     , ctrlBoost = boost
+                     , ctrlJump  = Unchanged jump
+                     , ctrlBoost = Unchanged boost
                      }
+
+      diffState state' state =
+          state' { ctrlJump  = diff ctrlJump
+                 , ctrlBoost = diff ctrlBoost
+                 }
+        where diff f = diff' (f state') $ f state
+              diff' a' a =
+                  let v = value a'
+                   in if v /= value a
+                         then showTrace $ Changed   v
+                         else Unchanged v
 
       signal   = makeState <~ Keyboard.arrows ~~ jumpKey ~~ boostKey
       jumpKey  = Keyboard.isDown Keyboard.LeftShiftKey
@@ -72,6 +82,14 @@ jumpHandler isJumping p = go $ jumpState p
                       then gravity * 0.8
                       else gravity
 
+wasKeyJustPressed :: Sample Bool -> Bool
+wasKeyJustPressed (Changed b) = b
+wasKeyJustPressed _ = False
+
+
+shouldJump :: Controller -> Player -> Bool
+shouldJump c p = wasKeyJustPressed $ ctrlJump c
+
 
 playerSignal :: Signal Player
 playerSignal = foldu go initialState noCtrls ctrlSignal
@@ -86,7 +104,7 @@ playerSignal = foldu go initialState noCtrls ctrlSignal
                   if canAct p
                      then ctrl
                      else noCtrls
-              isJumping = ctrlJump ctrls
+              isJumping = shouldJump ctrls p
               jumpState' =
                   if isJumping
                      then showTrace $ Jump (-200)

@@ -21,10 +21,8 @@ frameRate = Time.fps framesPerSecond
 sampleOn :: Signal Time.Time -> a -> Signal a -> Signal (Double, a)
 sampleOn t d s = asElapsed <$> foldp update' (Unchanged 0, d) combined
   where combined = (,) <~ (Time.inSeconds <$> t) ~~ s
-
         asElapsed ((Changed dt'),  b) = (dt', b)
         asElapsed ((Unchanged _), b)  = (0,  b)
-
         update' (a', b) (a, _) =
             if a' == value a
                then (Unchanged $ value a, b)
