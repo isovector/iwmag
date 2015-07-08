@@ -12,11 +12,12 @@ import Timing
 import FRP.Helm
 import FRP.Helm.Signal
 import qualified FRP.Helm.Keyboard as Keyboard
+import Data.Maybe (isJust, fromJust)
 
 data Controller =
     Controller { ctrlDir   :: Vector2
-               , ctrlJump  :: Sample Bool
-               , ctrlBoost :: Sample Bool
+               , ctrlJump  :: Bool
+               , ctrlBoost :: Bool
                } deriving (Show)
 
 data Player =
@@ -24,36 +25,45 @@ data Player =
            , jumpState :: JumpState
            } deriving (Show)
 
-data JumpState = Stand | Jump Double | Boost Vector2 Double deriving (Show)
+data JumpState = Stand
+               | Jump Double
+               | Prepare Double
+               | Boost Vector2 Double
+               deriving (Show, Eq)
+
+isStand :: JumpState -> Bool
+isStand Stand = True
+isStand _     = False
+
+isJump :: JumpState -> Bool
+isJump (Jump _) = True
+isJump _       = False
+
+isPrepare :: JumpState -> Bool
+isPrepare (Prepare _) = True
+isPrepare _           = False
+
+isBoost :: JumpState -> Bool
+isBoost (Boost _ _) = True
+isBoost _           = False
 
 
 
 noCtrls :: Controller
 noCtrls =
     Controller { ctrlDir = Vector2 0 0
-               , ctrlJump = Unchanged False
-               , ctrlBoost = Unchanged False
+               , ctrlJump = False
+               , ctrlBoost = False
                }
 
 ctrlSignal :: Signal Controller
-ctrlSignal = foldp diffState noCtrls signal
+ctrlSignal = signal
   where
       makeState (x, y) jump boost =
           Controller { ctrlDir = Vector2 (fromIntegral x) (fromIntegral y)
-                     , ctrlJump  = Unchanged jump
-                     , ctrlBoost = Unchanged boost
+                     , ctrlJump  = jump
+                     , ctrlBoost = boost
                      }
-
-      diffState state' state =
-          state' { ctrlJump  = diff ctrlJump
-                 , ctrlBoost = diff ctrlBoost
-                 }
-        where diff f = diff' (f state') $ f state
-              diff' a' a =
-                  let v = value a'
-                   in if v /= value a
-                         then showTrace $ Changed   v
-                         else Unchanged v
 
       signal   = makeState <~ Keyboard.arrows ~~ jumpKey ~~ boostKey
       jumpKey  = Keyboard.isDown Keyboard.LeftShiftKey
@@ -62,33 +72,71 @@ ctrlSignal = foldp diffState noCtrls signal
 canAct :: Player -> Bool
 canAct p = go $ jumpState p
   where go (Boost _ _) = False
+        go (Prepare _) = False
         go _           = True
 
 drawPlayer :: Player -> Form
 drawPlayer player = move (toPair . pPos $ player)
                   $ filled white
-                  $ rect 40 40
+                  $ rect 10 10
 
+
+jumpAttenuation :: Double
+jumpAttenuation = 0.5
+
+boostTime :: Double
+boostTime = 0.25
+
+boostStrength :: Double
+boostStrength = 400
+
+prepareTime :: Double
+prepareTime = 0.5
 
 jumpHandler :: Bool -> Player -> Player
 jumpHandler isJumping p = go $ jumpState p
   where go (Stand)  = p
-        go (Jump y) = p { jumpState = Jump $ y + gravity' * dt
-                        , pPos = (dt * y) |* vector2Y  + pPos p
-                        }
-        go _ = showTrace p
 
-        gravity' = if isJumping
-                      then gravity * 0.8
-                      else gravity
+        go (Jump y)
+            | isJust collided =
+                p { jumpState = Stand
+                  , pPos = fromJust collided
+                  }
+            | otherwise =
+                p { jumpState = Jump $ y + (gravity') * dt
+                  , pPos = (dt * y) |* vector2Y  + pPos p
+                  }
+          where
+              gravity' = if isJumping && y < 0
+                            then gravity * jumpAttenuation
+                            else gravity
+              collided = collision $ pPos p
 
-wasKeyJustPressed :: Sample Bool -> Bool
-wasKeyJustPressed (Changed b) = b
-wasKeyJustPressed _ = False
+        go (Prepare t)
+            | t > 0     = p { jumpState = Prepare (t - dt) }
+            | otherwise = p { jumpState = Boost (Vector2 0.7 (-0.7)) boostTime }
+
+        go (Boost dir t)
+            | t > 0     = p { jumpState = Boost dir (t - dt)
+                            , pPos = (dt * boostStrength) |* dir + pPos p
+                            }
+            | otherwise = p { jumpState = Jump 0 }
+
+
+collision :: Vector2 -> Maybe Vector2
+collision v = if v2y v > height
+                 then Just $ v { v2y = height }
+                 else Nothing
+  where height = 100
+
+wasKeyJustPressed :: Bool -> Bool
+wasKeyJustPressed b = b
 
 
 shouldJump :: Controller -> Player -> Bool
-shouldJump c p = wasKeyJustPressed $ ctrlJump c
+shouldJump c p =  ( jumpState p == Stand
+               || (isJump $ jumpState p))
+               && wasKeyJustPressed (ctrlJump c)
 
 
 playerSignal :: Signal Player
@@ -107,10 +155,12 @@ playerSignal = foldu go initialState noCtrls ctrlSignal
               isJumping = shouldJump ctrls p
               jumpState' =
                   if isJumping
-                     then showTrace $ Jump (-200)
+                     then Prepare prepareTime
                      else jumpState p
-           in jumpHandler isJumping
-                $ p { pPos = speed * dt |* ctrlDir ctrls + pPos p
+
+              flattened = (ctrlDir ctrls) { v2y = 0 }
+           in jumpHandler (ctrlJump ctrl)
+                $ p { pPos = speed * dt |* flattened + pPos p
                     , jumpState = jumpState'
                     }
 
