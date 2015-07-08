@@ -21,7 +21,8 @@ data Controller =
                } deriving (Show)
 
 data Player =
-    Player { pPos :: Vector2
+    Player { pPos      :: Vector2
+           , ctrls     :: Controller
            , jumpState :: JumpState
            } deriving (Show)
 
@@ -91,7 +92,7 @@ boostStrength :: Double
 boostStrength = 400
 
 prepareTime :: Double
-prepareTime = 0.5
+prepareTime = 0
 
 jumpHandler :: Bool -> Player -> Player
 jumpHandler isJumping p = go $ jumpState p
@@ -114,7 +115,7 @@ jumpHandler isJumping p = go $ jumpState p
 
         go (Prepare t)
             | t > 0     = p { jumpState = Prepare (t - dt) }
-            | otherwise = p { jumpState = Boost (Vector2 0.7 (-0.7)) boostTime }
+            | otherwise = p { jumpState = Boost (vnormalise . ctrlDir $ ctrls p) boostTime }
 
         go (Boost dir t)
             | t > 0     = p { jumpState = Boost dir (t - dt)
@@ -127,7 +128,7 @@ collision :: Vector2 -> Maybe Vector2
 collision v = if v2y v > height
                  then Just $ v { v2y = height }
                  else Nothing
-  where height = 100
+  where height = 300
 
 wasKeyJustPressed :: Bool -> Bool
 wasKeyJustPressed b = b
@@ -143,11 +144,12 @@ playerSignal :: Signal Player
 playerSignal = foldu go initialState noCtrls ctrlSignal
   where
       initialState = Player { pPos = Vector2 100 100
+                            , ctrls = noCtrls
                             , jumpState = Stand
                             }
 
       go ctrl p =
-          let speed = 300
+          let speed = 200
               ctrls =
                   if canAct p
                      then ctrl
@@ -161,6 +163,7 @@ playerSignal = foldu go initialState noCtrls ctrlSignal
               flattened = (ctrlDir ctrls) { v2y = 0 }
            in jumpHandler (ctrlJump ctrl)
                 $ p { pPos = speed * dt |* flattened + pPos p
+                    , ctrls = ctrl
                     , jumpState = jumpState'
                     }
 
