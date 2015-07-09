@@ -24,9 +24,24 @@ canAct p = go $ jumpState p
         go (Prepare _) = False
         go _           = True
 
+wantsJump :: Player -> Bool
+wantsJump = ctrlJump . ctrls
 
-jumpHandler :: Bool -> Player -> Player
-jumpHandler isJumping p = go $ jumpState p
+wantsBoost :: Player -> Bool
+wantsBoost = ctrlBoost . ctrls
+
+isStanding :: Player -> Bool
+isStanding = isStand . jumpState
+
+isJumping :: Player -> Bool
+isJumping = isJump . jumpState
+
+isBoosting :: Player -> Bool
+isBoosting p = let state = jumpState p
+                in isBoost state || isPrepare state
+
+jumpHandler :: Player -> Player
+jumpHandler p = go $ jumpState p
   where go (Stand)  = p
 
         go (Jump y)
@@ -38,7 +53,7 @@ jumpHandler isJumping p = go $ jumpState p
                   , pPos = (dt * y) |* vector2Y  + pPos p
                   }
           where
-              gravity' = if isJumping && y < 0
+              gravity' = if wantsJump p && y < 0
                             then gravity * jumpAttenuation
                             else gravity
               collided = collision $ pPos p
@@ -54,15 +69,28 @@ jumpHandler isJumping p = go $ jumpState p
             | otherwise = p { jumpState = Jump 0 }
 
 onLandHandler :: Player -> Player
-onLandHandler p = p { jumpState = Stand }
+onLandHandler p = p { jumpState = Stand
+                    , hasBoosted = False
+                    }
 
 actionHandler :: Player -> Player
 actionHandler p
-    | shouldBoost = p { jumpState = Prepare prepareTime }
+    | shouldBoost = p { jumpState = Prepare prepareTime
+                      , hasBoosted = True }
     | shouldJump  = p { jumpState = Jump (-jumpStrength) }
     | otherwise   = p
-      where shouldBoost = False
-            shouldJump  = False
+      where shouldBoost =  wantsBoost p
+                        && not (isBoosting p)
+                        && not (hasBoosted p)
+
+            shouldJump  =  wantsJump p
+                        && isStanding p
+
+walkHandler :: Player -> Player
+walkHandler p
+    | canAct p  = p { pPos = (walkSpeed * dt) |* flattened + pPos p }
+    | otherwise = p
+      where flattened = (ctrlDir $ ctrls p) { v2y = 0 }
 
 collision :: Vector2 -> Maybe Vector2
 collision v = if v2y v > height
@@ -83,22 +111,8 @@ shouldJump c p =  ( jumpState p == Stand
 playerSignal :: Signal Player
 playerSignal = foldu go defaultPlayer noCtrls ctrlSignal
   where
-      go ctrl p =
-          let speed = 200
-              ctrls =
-                  if canAct p
-                     then ctrl
-                     else noCtrls
-              isJumping = shouldJump ctrls p
-              jumpState' =
-                  if isJumping
-                     then Prepare prepareTime
-                     else jumpState p
-
-              flattened = (ctrlDir ctrls) { v2y = 0 }
-           in jumpHandler (ctrlJump ctrl)
-                $ p { pPos = speed * dt |* flattened + pPos p
-                    , ctrls = ctrl
-                    , jumpState = jumpState'
-                    }
+      go ctrl p = jumpHandler
+                . actionHandler
+                . walkHandler
+                $ p { ctrls = ctrl }
 

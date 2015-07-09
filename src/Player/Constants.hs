@@ -3,13 +3,14 @@ module Player.Constants ( jumpAttenuation
                         , boostTime
                         , boostStrength
                         , prepareTime
+                        , walkSpeed
                         ) where
 
 jumpAttenuation :: Double
-jumpAttenuation = 0.5
+jumpAttenuation = 0.45
 
 jumpStrength :: Double
-jumpStrength = -200
+jumpStrength = 300
 
 boostTime :: Double
 boostTime = 0.25
@@ -18,4 +19,7 @@ boostStrength :: Double
 boostStrength = 400
 
 prepareTime :: Double
-prepareTime = 0
+prepareTime = 0.25
+
+walkSpeed :: Double
+walkSpeed = 200

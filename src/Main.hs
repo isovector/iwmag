@@ -9,7 +9,7 @@ stroke = outlined $ solid red
 frame = stroke $ rect 400 620
 
 render :: Player -> (Int, Int) -> Element
-render player (w, h) = centeredCollage w h $ [frame, drawPlayer player]
+render p (w, h) = centeredCollage w h $ [frame, drawPlayer p]
 
 main :: IO ()
 main = run config
