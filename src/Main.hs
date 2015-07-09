@@ -1,15 +1,13 @@
 module Main where
 
 import Player
+import Level.Level
 import FRP.Helm
 import FRP.Helm.Signal
 import qualified FRP.Helm.Window as Window
 
-stroke = outlined $ solid red
-frame = stroke $ rect 400 620
-
 render :: Player -> (Int, Int) -> Element
-render p (w, h) = centeredCollage w h $ [frame, drawPlayer p]
+render p (w, h) = collage w h $ [drawPlayer p] ++ (forms defaultLevel)
 
 main :: IO ()
 main = run config

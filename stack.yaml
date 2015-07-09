@@ -9,4 +9,5 @@ extra-deps:
     - pango-0.12.5.3
     - sdl2-1.2.0
     - glib-0.12.5.4
+    - AC-Vector 1.2.2
 resolver: lts-2.14

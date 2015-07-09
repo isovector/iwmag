@@ -9,9 +9,11 @@ import Control.Applicative ((<$>))
 import Math
 import Utils
 import Timing
+import Level.Level
 import FRP.Helm
 import FRP.Helm.Signal
-import Data.Maybe (isJust, fromJust)
+import Data.Maybe (isJust, fromJust, mapMaybe)
+import Safe (headMay)
 
 import Player.Controller
 import Player.Constants
@@ -50,13 +52,14 @@ jumpHandler p = go $ jumpState p
                  in landed { pPos = fromJust collided }
             | otherwise =
                 p { jumpState = Jump $ y + (gravity') * dt
-                  , pPos = (dt * y) |* vector2Y  + pPos p
+                  , pPos = pPos p + dy
                   }
           where
               gravity' = if wantsJump p && y < 0
                             then gravity * jumpAttenuation
                             else gravity
-              collided = collision $ pPos p
+              collided = collision (geometry defaultLevel) $ lineRel (pPos p) dy
+              dy = (dt * y) |* vector2Y
 
         go (Prepare t)
             | t > 0     = p { jumpState = Prepare (t - dt) }
@@ -75,10 +78,11 @@ onLandHandler p = p { jumpState = Stand
 
 actionHandler :: Player -> Player
 actionHandler p
-    | shouldBoost = p { jumpState = Prepare prepareTime
-                      , hasBoosted = True }
-    | shouldJump  = p { jumpState = Jump (-jumpStrength) }
-    | otherwise   = p
+    | not (canAct p) = p
+    | shouldBoost    = p { jumpState = Prepare prepareTime
+                         , hasBoosted = True }
+    | shouldJump     = p { jumpState = Jump (-jumpStrength) }
+    | otherwise      = p
       where shouldBoost =  wantsBoost p
                         && not (isBoosting p)
                         && not (hasBoosted p)
@@ -92,11 +96,12 @@ walkHandler p
     | otherwise = p
       where flattened = (ctrlDir $ ctrls p) { v2y = 0 }
 
-collision :: Vector2 -> Maybe Vector2
-collision v = if v2y v > height
-                 then Just $ v { v2y = height }
-                 else Nothing
-  where height = 300
+
+collision :: [Line] -> Line -> Maybe Vector2
+collision ls dp = fmap ((+) $ Vector2 0 (-1))  -- HACK: find a better way of hitting it
+                . headMay
+                . mapMaybe (linesIntersection dp)
+                $ ls
 
 wasKeyJustPressed :: Bool -> Bool
 wasKeyJustPressed b = b
