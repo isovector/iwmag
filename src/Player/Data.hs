@@ -3,6 +3,7 @@ module Player.Data ( Player
                    , ctrls
                    , jumpState
                    , hasBoosted
+                   , standingOn
                    , defaultPlayer
                    ) where
 
@@ -15,6 +16,7 @@ data Player =
            , ctrls      :: Controller
            , jumpState  :: JumpState
            , hasBoosted :: Bool
+           , standingOn :: Maybe Line
            } deriving (Show)
 
 defaultPlayer :: Player
@@ -22,4 +24,5 @@ defaultPlayer = Player { pPos = Vector2 100 100
                        , ctrls = noCtrls
                        , jumpState = Stand
                        , hasBoosted = False
+                       , standingOn = Nothing
                        }

@@ -13,13 +13,13 @@ jumpStrength :: Double
 jumpStrength = 300
 
 boostTime :: Double
-boostTime = 0.25
+boostTime = 0.125
 
 boostStrength :: Double
-boostStrength = 400
+boostStrength = 800
 
 prepareTime :: Double
-prepareTime = 0.25
+prepareTime = 0.125
 
 walkSpeed :: Double
 walkSpeed = 200
