@@ -1,10 +1,4 @@
-module Player.Constants ( jumpAttenuation
-                        , jumpStrength
-                        , boostTime
-                        , boostStrength
-                        , prepareTime
-                        , walkSpeed
-                        ) where
+module Player.Constants where
 
 jumpAttenuation :: Double
 jumpAttenuation = 0.45
@@ -23,3 +17,10 @@ prepareTime = 0.125
 
 walkSpeed :: Double
 walkSpeed = 200
+
+playerWidth :: Double
+playerWidth = 10
+
+playerHeight :: Double
+playerHeight = 20
+

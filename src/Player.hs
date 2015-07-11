@@ -10,7 +10,7 @@ import FRP.Helm
 
 drawPlayer :: Player -> Form
 drawPlayer p = move (toPair . pPos $ p)
-             $ move (-10,-10)
+             $ move (0, -10)
              $ filled white
              $ rect 20 20
 

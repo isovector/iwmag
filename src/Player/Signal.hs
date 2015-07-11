@@ -49,20 +49,18 @@ jumpHandler p = go $ jumpState p
         go (Jump y)
             | isJust collided =
                 let landed = onLandHandler p
-                    (standing, newPos) = fromJust collided
-                 in landed { pPos =  newPos
-                           , standingOn = Just standing
+                 in landed { pPos =  pos'
+                           , standingOn = collided
                            }
             | otherwise =
                 p { jumpState = Jump $ y + (gravity') * dt
-                  , pPos = pPos p + dy
+                  , pPos = pos'
                   }
           where
               gravity' = if wantsJump p && y < 0
                             then gravity * jumpAttenuation
                             else gravity
-              collided = collision (geometry defaultLevel) $ lineRel (pPos p) dy
-              dy = (dt * y) |* vector2Y
+              (collided, pos') = collision AxisY p $ dt * y
 
         go (Prepare t)
             | t > 0     = p { jumpState = Prepare (t - dt) }
@@ -116,17 +114,44 @@ fallHandler p
 
 walkHandler :: Player -> Player
 walkHandler p
-    | canAct p  = p { pPos = (walkSpeed * dt) |* flattened + pPos p }
+    | canAct p  = p { pPos = pos' }
     | otherwise = p
-      where flattened = (ctrlDir $ ctrls p) { v2y = 0 }
+      where (_, pos') = collision AxisX p $ walkSpeed * dt * dir
+            dir = v2x . ctrlDir . ctrls $ p
 
 
-collision :: [Line] -> Line -> Maybe (Line, Vector2)
-collision ls dp = headMay
-                . map (\(l, v) -> (l, (+) v $ Vector2 0 (-1)))  -- HACK: find a better way of hitting it
-                . map (\a -> (a, fromJust $ linesIntersection dp a))
-                . filter (isJust . linesIntersection dp)
-                $ ls
+
+data Axis = AxisX | AxisY deriving Eq
+
+collision :: Axis -> Player -> Double -> (Maybe Line, Vector2)
+collision a p d
+    | a == AxisX =
+        collision'' walls (lineRel (pos + width *| sign) (vector2X *| d))
+                          $ (width + vector2X) *| negate sign
+    | a == AxisY && d < 0 =
+        collision'' floor (lineRel (pos - height) (vector2Y *| d))
+                          $ height + vector2Y
+    | a == AxisY && d > 0 =
+        collision'' floor (lineRel pos (vector2Y *| d))
+                          $ negate vector2Y
+    | otherwise = (Nothing, pPos p)
+      where walls  = geomWalls defaultLevel
+            floor  = geomFloor defaultLevel
+            pos    = pPos p
+            width  = vector2X *| playerWidth
+            height = vector2Y *| playerHeight
+            sign = signum d
+            collision'' ls dp@(Line (_, size)) diff =
+                case collision' ls dp of
+                  Just (l, v) -> (Just l, v + diff)
+                  Nothing     -> (Nothing, pPos p + size)
+
+
+collision' :: [Line] -> Line -> Maybe (Line, Vector2)
+collision' ls dp = headMay
+                 . map (\a -> (a, fromJust $ linesIntersection dp a))
+                 . filter (isJust . linesIntersection dp)
+                 $ ls
 
 wasKeyJustPressed :: Bool -> Bool
 wasKeyJustPressed b = b

@@ -1,6 +1,7 @@
-module Level.Level ( Piece (Rect, Wall)
+module Level.Level ( Piece (Rect, Floor)
                    , defaultLevel
-                   , geometry
+                   , geomWalls
+                   , geomFloor
                    , forms
                    ) where
 
@@ -10,28 +11,39 @@ import FRP.Helm
 import FRP.Helm.Color
 
 data Piece = Rect Vector2 Vector2 Color
+           | Floor Line Color
            | Wall Line Color
 
-data Level = Level { geometry :: [Line]
-                   , forms    :: [Form]
+data Level = Level { geomFloor :: [Line]
+                   , geomWalls :: [Line]
+                   , forms     :: [Form]
                    } deriving Show
 
 drawLine :: Color -> Line -> Form
-drawLine c (Line (pos, size@(Vector2 w _))) = move (toPair $ 0.5 |* size + pos)
-                                            . filled c
-                                            $ rect w 1
+drawLine c (Line (pos, size)) = move (toPair pos)
+                              $ traced (solid c)
+                              $ segment (0,0)
+                              $ toPair size
 
 buildLevel :: [Piece] -> Level
+buildLevel ((Floor l c):pxs) =
+    let built = buildLevel pxs
+        form = drawLine c l
+     in built { geomFloor = l : (geomFloor built)
+              , forms     = form : (forms built)
+              }
 buildLevel ((Wall l c):pxs) =
     let built = buildLevel pxs
         form = drawLine c l
-     in built { geometry = l : (geometry built)
-              , forms = form : (forms built)
+     in built { geomWalls = l : (geomWalls built)
+              , forms     = form : (forms built)
               }
 buildLevel (p:pxs)          = buildLevel pxs
-buildLevel []               = Level [] []
+buildLevel []               = Level [] [] []
 
-defaultLevel = buildLevel [ Wall (lineBetween (Vector2 100 200) (Vector2 500 200)) green
-                          , Wall (lineBetween (Vector2 100 500) (Vector2 500 500)) green
-                          , Wall (lineBetween (Vector2 200 350) (Vector2 400 350)) red
+defaultLevel = buildLevel [ Floor (lineBetween (Vector2 100 200) (Vector2 500 200)) green
+                          , Floor (lineBetween (Vector2 100 500) (Vector2 500 500)) green
+                          , Floor (lineBetween (Vector2 200 350) (Vector2 400 350)) red
+                          , Floor (lineBetween (Vector2 50 425)  (Vector2 250 425)) red
+                          , Wall  (lineBetween (Vector2 225 350) (Vector2 225 425)) red
                           ]
