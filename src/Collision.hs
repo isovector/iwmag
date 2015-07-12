@@ -7,17 +7,18 @@ import Utils
 
 data BoxGeom =
     BoxGeom { leftX   :: Double
-                , rightX  :: Double
-                , topY    :: Double
-                , bottomY :: Double
-                }
+            , rightX  :: Double
+            , topY    :: Double
+            , bottomY :: Double
+            }
 
 corners :: BoxGeom -> Vector2 -> (Vector2, Vector2, Vector2, Vector2)
-corners b p = ( Vector2 left  top
-              , Vector2 right top
-              , Vector2 left  bottom
-              , Vector2 right bottom
-              )
+corners b p =
+    ( Vector2 left  top
+    , Vector2 right top
+    , Vector2 left  bottom
+    , Vector2 right bottom
+    )
   where x = v2x p
         y = v2y p
         left   = x - leftX b
