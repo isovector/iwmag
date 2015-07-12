@@ -35,6 +35,8 @@ defaultLevel = parseLayers
           . mapLayers
           . unsafePerformIO
           $ loadMapFile "level/test1.tmx"
+{-# NOINLINE defaultLevel #-}
+
 
 parseLayers :: [Layer] -> Level
 parseLayers ls =

@@ -110,7 +110,7 @@ setFalling p = p { jumpState = Jump 0
 
 stillStanding :: Player -> Bool
 stillStanding p = go $ standingOn p
-  where go (Just l) = linesIntersect (lineRel (pPos p) vector2Y) l
+  where go (Just l) = isJust . fst $ sweep playerGeom (pPos p) [l] AxisY 1
         go _        = False
 
 fallHandler :: Player -> Player
