@@ -10,6 +10,10 @@ import Math
 import Utils
 import FRP.Helm
 import FRP.Helm.Color
+import FRP.Helm.Signal
+import Data.Tiled
+import Data.Maybe (fromJust)
+import System.IO.Unsafe (unsafePerformIO)
 
 data Piece = Rect Vector2 Vector2 Color
            | Floor Line Color
@@ -25,6 +29,36 @@ drawLine c (Line (pos, size)) = move (toPair pos)
                               $ traced (solid c)
                               $ segment (0,0)
                               $ toPair size
+
+defaultLevel :: Level
+defaultLevel = parseLayers
+          . mapLayers
+          . unsafePerformIO
+          $ loadMapFile "level/test1.tmx"
+
+parseLayers :: [Layer] -> Level
+parseLayers ls =
+    case headMay ls of
+      Just ObjectLayer
+        { layerObjects = objs
+        } -> buildLevel $ concatMap toPiece objs
+  where
+      toPiece (Object
+                { objectX = x'
+                , objectY = y'
+                , objectWidth = w'
+                , objectHeight = h'
+                }) = let x = fromIntegral x' * 2
+                         y = fromIntegral y' * 2
+                         w = fromIntegral $ fromJust w' * 2
+                         h = fromIntegral $ fromJust h' * 2
+                      in [ Floor (lineRel (Vector2 x y)       (Vector2 w 0)) green
+                         , Floor (lineRel (Vector2 x (y + h)) (Vector2 w 0)) green
+                         , Wall  (lineRel (Vector2 x y)       (Vector2 0 h)) green
+                         , Wall  (lineRel (Vector2 (x + w) y) (Vector2 0 h)) green
+                         ]
+
+
 
 buildLevel :: [Piece] -> Level
 buildLevel ((Floor l c):pxs) =
@@ -42,9 +76,3 @@ buildLevel ((Wall l c):pxs) =
 buildLevel (p:pxs)          = buildLevel pxs
 buildLevel []               = Level [] [] []
 
-defaultLevel = buildLevel [ Floor (lineBetween (Vector2 100 200) (Vector2 500 200)) green
-                          , Floor (lineBetween (Vector2 100 500) (Vector2 500 500)) green
-                          , Floor (lineBetween (Vector2 200 350) (Vector2 400 350)) red
-                          , Floor (lineBetween (Vector2 50 425)  (Vector2 250 425)) red
-                          , Wall  (lineBetween (Vector2 200 350) (Vector2 200 425)) red
-                          ]

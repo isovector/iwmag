@@ -12,4 +12,5 @@ extra-deps:
     - AC-Vector-1.2.2
     - basic-prelude-0.4.0
     - classy-prelude-0.12.1.1
+    - htiled-0.1.2.0
 resolver: lts-2.14
