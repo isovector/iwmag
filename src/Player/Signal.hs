@@ -41,11 +41,11 @@ canAct p = go $ jumpState p
         go (Prepare _) = False
         go _           = True
 
-collision :: Axis -> Player -> Double -> (Maybe Line, Vector2)
-collision ax p dx
+collision :: Axis -> Vector2 -> Double -> (Maybe Line, Vector2)
+collision ax pos dx
     | ax == AxisX = go $ geomWalls defaultLevel
     | ax == AxisY = go $ geomFloor defaultLevel
-      where go ls = sweep playerGeom (pPos p) ls ax dx
+      where go ls = sweep playerGeom pos ls ax dx
 
 jumpHandler :: Player -> Player
 jumpHandler p = go $ jumpState p
@@ -65,7 +65,7 @@ jumpHandler p = go $ jumpState p
               gravity' = if wantsJump p && y < 0
                             then gravity * jumpAttenuation
                             else gravity
-              (collided, pos') = collision AxisY p $ dt * y
+              (collided, pos') = collision AxisY (pPos p) $ dt * y
 
         go (Prepare t)
             | t > 0     = p { jumpState = Prepare (t - dt) }
@@ -73,9 +73,12 @@ jumpHandler p = go $ jumpState p
 
         go (Boost dir t)
             | t > 0     = p { jumpState = Boost dir (t - dt)
-                            , pPos = (dt * boostStrength) |* dir + pPos p
+                            , pPos = xy'
                             }
             | otherwise = setFalling p
+          where (_, x')  = collision AxisX (pPos p) $ v2x boostDt
+                (_, xy') = collision AxisY x' $ v2y boostDt
+                boostDt = (dt * boostStrength) |* dir
 
 onLandHandler :: Player -> Player
 onLandHandler p = p { jumpState = Stand
@@ -121,7 +124,7 @@ walkHandler :: Player -> Player
 walkHandler p
     | canAct p  = p { pPos = pos' }
     | otherwise = p
-      where (_, pos') = collision AxisX p $ walkSpeed * dt * dir
+      where (_, pos') = collision AxisX (pPos p) $ walkSpeed * dt * dir
             dir = v2x . ctrlDir . ctrls $ p
 
 
