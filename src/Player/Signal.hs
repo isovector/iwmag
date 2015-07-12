@@ -126,8 +126,8 @@ data Axis = AxisX | AxisY deriving Eq
 collision :: Axis -> Player -> Double -> (Maybe Line, Vector2)
 collision a p d
     | a == AxisX =
-        collision'' walls (lineRel (pos + width *| sign) (vector2X *| d))
-                          $ (width + vector2X) *| negate sign
+        collision'' walls (lineRel (pos - halfHeight + width *| sign) (vector2X *| d))
+                          $ (width + vector2X) *| negate sign + halfHeight
     | a == AxisY && d < 0 =
         collision'' floor (lineRel (pos - height) (vector2Y *| d))
                           $ height + vector2Y
@@ -140,6 +140,7 @@ collision a p d
             pos    = pPos p
             width  = vector2X *| playerWidth
             height = vector2Y *| playerHeight
+            halfHeight = height *| 0.5
             sign = signum d
             collision'' ls dp@(Line (_, size)) diff =
                 case collision' ls dp of

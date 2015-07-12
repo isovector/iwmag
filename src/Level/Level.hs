@@ -45,5 +45,5 @@ defaultLevel = buildLevel [ Floor (lineBetween (Vector2 100 200) (Vector2 500 20
                           , Floor (lineBetween (Vector2 100 500) (Vector2 500 500)) green
                           , Floor (lineBetween (Vector2 200 350) (Vector2 400 350)) red
                           , Floor (lineBetween (Vector2 50 425)  (Vector2 250 425)) red
-                          , Wall  (lineBetween (Vector2 225 350) (Vector2 225 425)) red
+                          , Wall  (lineBetween (Vector2 250 350) (Vector2 250 426)) red
                           ]
