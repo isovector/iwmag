@@ -8,6 +8,7 @@ module Player.Signal ( Player
 import ClassyPrelude
 import Math
 import Utils
+import Collision
 import Timing
 import Level.Level
 import FRP.Helm
@@ -39,6 +40,12 @@ canAct p = go $ jumpState p
   where go (Boost _ _) = False
         go (Prepare _) = False
         go _           = True
+
+collision :: Axis -> Player -> Double -> (Maybe Line, Vector2)
+collision ax p dx
+    | ax == AxisX = go $ geomWalls defaultLevel
+    | ax == AxisY = go $ geomFloor defaultLevel
+      where go ls = sweep playerGeom (pPos p) ls ax dx
 
 jumpHandler :: Player -> Player
 jumpHandler p = go $ jumpState p
@@ -118,39 +125,6 @@ walkHandler p
             dir = v2x . ctrlDir . ctrls $ p
 
 
-
-data Axis = AxisX | AxisY deriving Eq
-
-collision :: Axis -> Player -> Double -> (Maybe Line, Vector2)
-collision a p d
-    | a == AxisX =
-        collision'' walls (lineRel (pos - halfHeight + width *| sign) (vector2X *| d))
-                          $ (width + vector2X) *| negate sign + halfHeight
-    | a == AxisY && d < 0 =
-        collision'' floor (lineRel (pos - height) (vector2Y *| d))
-                          $ height + vector2Y
-    | a == AxisY && d > 0 =
-        collision'' floor (lineRel pos (vector2Y *| d))
-                          $ negate vector2Y
-    | otherwise = (Nothing, pPos p)
-      where walls  = geomWalls defaultLevel
-            floor  = geomFloor defaultLevel
-            pos    = pPos p
-            width  = vector2X *| playerWidth
-            height = vector2Y *| playerHeight
-            halfHeight = height *| 0.5
-            sign = signum d
-            collision'' ls dp@(Line (_, size)) diff =
-                case collision' ls dp of
-                  Just (l, v) -> (Just l, v + diff)
-                  Nothing     -> (Nothing, pPos p + size)
-
-
-collision' :: [Line] -> Line -> Maybe (Line, Vector2)
-collision' ls dp = headMay
-                 . map (\a -> (a, fromJust $ linesIntersection dp a))
-                 . filter (isJust . linesIntersection dp)
-                 $ ls
 
 wasKeyJustPressed :: Bool -> Bool
 wasKeyJustPressed b = b

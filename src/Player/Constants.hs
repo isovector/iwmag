@@ -1,6 +1,7 @@
 module Player.Constants where
 
 import ClassyPrelude
+import Collision
 
 jumpAttenuation :: Double
 jumpAttenuation = 0.45
@@ -20,9 +21,11 @@ prepareTime = 0.125
 walkSpeed :: Double
 walkSpeed = 200
 
-playerWidth :: Double
-playerWidth = 10
-
-playerHeight :: Double
-playerHeight = 20
+playerGeom :: BoxGeom
+playerGeom =
+    BoxGeom { topY    = 20
+            , bottomY = 0
+            , leftX   = 10
+            , rightX  = 10
+            }
 

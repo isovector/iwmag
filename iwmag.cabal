@@ -19,7 +19,7 @@ executable iwmag
   main-is:             Main.hs
   -- other-modules:
   default-extensions:  NoImplicitPrelude
-  build-depends:       base >=4.6 && <5, helm >= 0.7.1, data-default >= 0.5.3, AC-Vector >= 1.2.2 && < 2, safe > 0.3 && < 1, classy-prelude >= 0.12.1 && < 0.13
+  build-depends:       base >=4.7 && <5, helm >= 0.7.1, data-default >= 0.5.3, AC-Vector >= 1.2.2 && < 2, mutable-containers >= 0.3, classy-prelude >= 0.12.0
   hs-source-dirs:      src
   default-language:    Haskell2010
 
