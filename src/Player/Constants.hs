@@ -1,5 +1,7 @@
 module Player.Constants where
 
+import ClassyPrelude
+
 jumpAttenuation :: Double
 jumpAttenuation = 0.45
 

@@ -5,6 +5,7 @@ module Player.JumpState ( JumpState (Stand, Jump, Prepare, Boost)
                         , isBoost
                         ) where
 
+import ClassyPrelude
 import Math
 
 data JumpState = Stand

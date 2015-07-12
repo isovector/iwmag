@@ -4,7 +4,7 @@ module Timing ( sampleOn
               , dt
               ) where
 
-import Control.Applicative ((<$>))
+import ClassyPrelude
 import FRP.Helm.Signal
 import FRP.Helm.Sample
 import qualified FRP.Helm.Time as Time

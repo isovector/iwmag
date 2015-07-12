@@ -1,5 +1,6 @@
 module Main where
 
+import ClassyPrelude hiding (Element)
 import Player
 import Level.Level
 import FRP.Helm

@@ -5,6 +5,7 @@ module Level.Level ( Piece (Rect, Floor)
                    , forms
                    ) where
 
+import ClassyPrelude
 import Math
 import Utils
 import FRP.Helm

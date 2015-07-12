@@ -6,6 +6,7 @@ module Player.Controller ( Controller
                          , noCtrls
                          ) where
 
+import ClassyPrelude
 import Math
 import FRP.Helm
 import FRP.Helm.Signal

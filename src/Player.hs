@@ -3,6 +3,7 @@ module Player ( Player
               , playerSignal
               ) where
 
+import ClassyPrelude
 import Player.Data
 import Player.Signal
 import Math

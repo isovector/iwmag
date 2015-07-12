@@ -1,5 +1,5 @@
 all:
-	cabal run
+	stack build && ./run
 
 .PHONY: all
 

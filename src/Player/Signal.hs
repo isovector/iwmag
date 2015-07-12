@@ -5,15 +5,13 @@ module Player.Signal ( Player
                      , playerSignal
                      ) where
 
-import Control.Applicative ((<$>))
+import ClassyPrelude
 import Math
 import Utils
 import Timing
 import Level.Level
 import FRP.Helm
 import FRP.Helm.Signal
-import Data.Maybe (isJust, fromJust, mapMaybe)
-import Safe (headMay)
 
 import Player.Controller
 import Player.Constants

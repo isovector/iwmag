@@ -18,16 +18,8 @@ cabal-version:       >=1.10
 executable iwmag
   main-is:             Main.hs
   -- other-modules:
-  -- other-extensions:
-  build-depends:       base >=4.6 && <5, helm >= 0.7.1, data-default >= 0.5.3, AC-Vector >= 1.2.2 && < 2, safe > 0.3 && < 1
+  default-extensions:  NoImplicitPrelude
+  build-depends:       base >=4.6 && <5, helm >= 0.7.1, data-default >= 0.5.3, AC-Vector >= 1.2.2 && < 2, safe > 0.3 && < 1, classy-prelude >= 0.12.1 && < 0.13
   hs-source-dirs:      src
   default-language:    Haskell2010
-
-
- -- Dependencies:  base ==4.*, cairo >0.12 && <0.13, pango >0.12 && <0.13, */
- --                   containers >=0.5 && <1, elerea >=2.7 && <3, */
- --                   filepath >=1.3 && <2, sdl2 >=1.1 && <1.3, text >=1.1.1.3, */
- --                   time ==1.4.*, random >=1.0.1.1 && <1.2, mtl ==2.1.*, */
- --                   transformers >=0.3.0.0, cpu >=0.1.2 && <1, ghc-prim -any, */
- --                   sdl2 >=1.1 && <1.3, elerea >=2.7 && <3, time ==1.4.*, */
 

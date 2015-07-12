@@ -8,7 +8,7 @@ module Math ( toPair
             , module Data.Vector
             ) where
 
-import Data.Maybe (isJust)
+import ClassyPrelude
 import Data.Vector
 
 gravity :: Double

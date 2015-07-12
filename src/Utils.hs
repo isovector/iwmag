@@ -4,6 +4,7 @@ module Utils ( sample
              , module FRP.Helm.Sample
              ) where
 
+import ClassyPrelude
 import FRP.Helm.Signal
 import FRP.Helm.Sample
 import Debug.Trace

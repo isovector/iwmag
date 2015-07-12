@@ -7,6 +7,7 @@ module Player.Data ( Player
                    , defaultPlayer
                    ) where
 
+import ClassyPrelude
 import Math
 import Player.Controller
 import Player.JumpState
