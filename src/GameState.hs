@@ -30,6 +30,7 @@ data Update = Frame Double | Input Controller
 update :: Update -> GameState -> GameState
 update (Frame _) state@(GameState { player = p, ctrls = ctrl }) =
     state { player = playerHandler ctrl p
+          , camera = pPos p * vector2X
           , ctrls  = ctrl { wantsJump  = False
                           , wantsBoost = False
                           }
