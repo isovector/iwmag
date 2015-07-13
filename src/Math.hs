@@ -1,5 +1,7 @@
 module Math ( toPair
             , Line (Line)
+            , Rect (Rect)
+            , inRect
             , lineBetween
             , lineRel
             , linesIntersection
@@ -13,7 +15,7 @@ import Data.Vector
 toPair :: Vector2 -> (Double, Double)
 toPair v = (v2x v, v2y v)
 
-newtype Line = Line (Vector2, Vector2) deriving Show
+newtype Line = Line (Vector2, Vector2) deriving (Show, Eq)
 
 lineBetween :: Vector2 -> Vector2 -> Line
 lineBetween a b = Line (a, b - a)
@@ -42,3 +44,13 @@ linesIntersect :: Line -> Line -> Bool
 linesIntersect a b = onLine $ lineIntersect' a b
   where onLine Nothing       = False
         onLine (Just (x, y)) = x >= 0 && x <= 1 && y >= 0 && y <= 1
+
+data Rect = Rect Vector2 Vector2 deriving (Show, Eq)
+inRect :: Rect -> Vector2 -> Bool
+inRect (Rect (Vector2 x y)
+       (Vector2 w h))
+       (Vector2 px py) =  x  <= px
+                       && px <  x + w
+                       && y  <= py
+                       && py <  y + h
+

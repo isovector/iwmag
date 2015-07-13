@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.0" orientation="orthogonal" width="30" height="22" tilewidth="16" tileheight="16">
- <objectgroup name="Collision" width="30" height="22">
+<map version="1.0" orientation="orthogonal" width="30" height="23" tilewidth="16" tileheight="16">
+ <objectgroup name="collision" width="30" height="23">
   <object x="32" y="176" width="48" height="16"/>
   <object x="256" y="240" width="48" height="16"/>
   <object x="112" y="256" width="48" height="16"/>
@@ -17,8 +17,14 @@
   <object x="320" y="112">
    <polyline points="0,0 0,80 -48,80 -48,64 -32,64 -32,32 -16,32 -16,0 0,0"/>
   </object>
-  <object x="480" y="352">
-   <polyline points="0,0 -160,0"/>
+  <object x="0" y="0">
+   <polyline points="0,0 0,208"/>
   </object>
+ </objectgroup>
+ <objectgroup name="objects" width="30" height="23">
+  <object type="spawn" x="48" y="160" width="16" height="16">
+   <ellipse/>
+  </object>
+  <object type="death" x="0" y="352" width="480" height="16"/>
  </objectgroup>
 </map>

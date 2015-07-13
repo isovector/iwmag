@@ -1,7 +1,9 @@
-module Level.Level ( Piece (Rect, Wall)
+module Level.Level ( Piece (Wall)
                    , defaultLevel
                    , geometry
                    , forms
+                   , playerSpawn
+                   , deathZones
                    , Level
                    ) where
 
@@ -15,11 +17,12 @@ import Data.Tiled
 import Data.Maybe (fromJust)
 import System.IO.Unsafe (unsafePerformIO)
 
-data Piece = Rect Vector2 Vector2 Color
-           | Wall Line Color
+data Piece = Wall Line Color
 
-data Level = Level { geometry :: [Line]
-                   , forms    :: [Form]
+data Level = Level { geometry    :: [Line]
+                   , forms       :: [Form]
+                   , playerSpawn :: Vector2
+                   , deathZones  :: [Rect]
                    } deriving Show
 
 drawLine :: Color -> Line -> Form
@@ -35,15 +38,41 @@ defaultLevel = parseLayers
              $ loadMapFile "level/test1.tmx"
 {-# NOINLINE defaultLevel #-}
 
+importScale :: Double
+importScale = 2
 
 parseLayers :: [Layer] -> Level
-parseLayers layers =
+parseLayers ls = col { playerSpawn = spawn
+                     , deathZones = zones
+                     }
+  where (spawn, zones) = parseObjects   $ getLayer "objects"
+        col            = buildLevel . parseCollision $ getLayer "collision"
+        getLayer name  = headMay $ filter ((== name) . layerName) ls
+
+
+getPosOfObj :: Object -> Vector2
+getPosOfObj Object{objectX = x, objectY = y} =
+    Vector2 (fromIntegral x * importScale) (fromIntegral y * importScale)
+
+scaleInts :: Int -> Int -> Vector2
+scaleInts x y = Vector2 (importScale * fromIntegral x) (importScale * fromIntegral y)
+
+parseObjects :: Maybe Layer -> (Vector2, [Rect])
+parseObjects (Just ObjectLayer{layerObjects = objs}) = (spawn, zones)
+  where spawn = maybe (Vector2 0 0) getPosOfObj . headMay $ getObjs "spawn"
+        zones = map toRect $ getObjs "death"
+        getObjs t = filter (maybe False (== t) . objectType) objs
+        toRect obj@(Object{objectWidth = w, objectHeight = h}) =
+            Rect (getPosOfObj obj) $ scaleInts (fromJust w) (fromJust h)
+parseObjects _ = (Vector2 0 0, [])
+
+parseCollision :: Maybe Layer -> [Piece]
+parseCollision layers =
     case headMay layers of
       Just ObjectLayer
         { layerObjects = objs
-        } -> buildLevel $ concatMap toPiece objs
+        } -> concatMap toPiece objs
   where
-      scale = 2
       toPiece (Object
                 { objectX = x'
                 , objectY = y'
@@ -54,38 +83,34 @@ parseLayers layers =
           | isJust l =
               let (Polyline pl) = fromJust l
                   ls = zip pl $ tail pl
-                  x = scale * fromIntegral x'
-                  y = scale * fromIntegral y'
+                  x = importScale * fromIntegral x'
+                  y = importScale * fromIntegral y'
                   fromPair ((ax,ay),(bx,by))
                       | ax == bx || ay == by =
                           Wall (lineBetween
-                               (Vector2 (x + fromIntegral ax * scale) (y + fromIntegral ay * scale))
-                               (Vector2 (x + fromIntegral bx * scale) (y + fromIntegral by * scale)))
+                               (Vector2 (x + fromIntegral ax * importScale) (y + fromIntegral ay * importScale))
+                               (Vector2 (x + fromIntegral bx * importScale) (y + fromIntegral by * importScale)))
                                green
                       | otherwise = error "level contains slopes"
                in map fromPair ls
 
           | otherwise =
-              let x = scale * fromIntegral x'
-                  y = scale * fromIntegral y'
-                  w = scale * (fromIntegral $ fromJust w')
-                  h = scale * (fromIntegral $ fromJust h')
+              let x = importScale * fromIntegral x'
+                  y = importScale * fromIntegral y'
+                  w = importScale * (fromIntegral $ fromJust w')
+                  h = importScale * (fromIntegral $ fromJust h')
                in [ Wall (lineRel (Vector2 x y)       (Vector2 w 0)) green
                   , Wall (lineRel (Vector2 x (y + h)) (Vector2 w 0)) green
                   , Wall (lineRel (Vector2 x y)       (Vector2 0 h)) green
                   , Wall (lineRel (Vector2 (x + w) y) (Vector2 0 h)) green
                   ]
 
-
-
 buildLevel :: [Piece] -> Level
 buildLevel ((Wall l c):pxs) =
     let built = buildLevel pxs
         form = drawLine c l
-     in built { geometry = l : (geometry built)
+     in built { geometry = l    : (geometry built)
               , forms    = form : (forms built)
               }
-
-buildLevel (p:pxs)          = buildLevel pxs
-buildLevel []               = Level [] []
+buildLevel []               = Level [] [] vector2X []
 

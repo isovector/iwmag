@@ -46,7 +46,7 @@ update (Input ctrl') state@(GameState { ctrls = ctrl }) =
 initState :: GameState
 initState =
     GameState { currentLevel = defaultLevel
-              , player       = defaultPlayer
+              , player       = defaultPlayer { pPos = playerSpawn defaultLevel }
               , camera       = Vector2 0 0
               , ctrls        = noCtrls
               }
