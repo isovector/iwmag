@@ -35,10 +35,7 @@ canAct p = go $ jumpState p
         go _           = True
 
 collision :: Axis -> Vector2 -> Double -> (Maybe Line, Vector2)
-collision ax pos dx
-    | ax == AxisX = go $ geomWalls defaultLevel
-    | ax == AxisY = go $ geomFloor defaultLevel
-      where go ls = sweep playerGeom pos ls ax dx
+collision ax pos dx = sweep playerGeom pos (geometry defaultLevel) ax dx
 
 jumpHandler :: Controller -> Player -> Player
 jumpHandler ctrl p = go $ jumpState p
