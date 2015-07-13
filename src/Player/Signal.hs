@@ -1,6 +1,5 @@
 module Player.Signal ( Player
                      , pPos
-                     , ctrls
                      , jumpState
                      , playerSignal
                      ) where
@@ -18,12 +17,6 @@ import Player.Controller
 import Player.Constants
 import Player.Data
 import Player.JumpState
-
-wantsJump :: Player -> Bool
-wantsJump = ctrlJump . ctrls
-
-wantsBoost :: Player -> Bool
-wantsBoost = ctrlBoost . ctrls
 
 isStanding :: Player -> Bool
 isStanding = isStand . jumpState
@@ -47,8 +40,8 @@ collision ax pos dx
     | ax == AxisY = go $ geomFloor defaultLevel
       where go ls = sweep playerGeom pos ls ax dx
 
-jumpHandler :: Player -> Player
-jumpHandler p = go $ jumpState p
+jumpHandler :: Controller -> Player -> Player
+jumpHandler ctrl p = go $ jumpState p
   where go (Stand)  = p
 
         go (Jump y)
@@ -62,14 +55,14 @@ jumpHandler p = go $ jumpState p
                   , pPos = pos'
                   }
           where
-              gravity' = if wantsJump p && y < 0
+              gravity' = if ctrlJump ctrl && y < 0
                             then gravity * jumpAttenuation
                             else gravity
               (collided, pos') = collision AxisY (pPos p) $ dt * y
 
         go (Prepare t)
             | t > 0     = p { jumpState = Prepare (t - dt) }
-            | otherwise = p { jumpState = Boost (vnormalise . ctrlDir $ ctrls p) boostTime }
+            | otherwise = p { jumpState = Boost (vnormalise . ctrlDir $ ctrl) boostTime }
 
         go (Boost dir t)
             | t > 0     = p { jumpState = Boost dir (t - dt)
@@ -85,8 +78,8 @@ onLandHandler p = p { jumpState = Stand
                     , hasBoosted = False
                     }
 
-actionHandler :: Player -> Player
-actionHandler p
+actionHandler :: Controller -> Player -> Player
+actionHandler ctrl p
     | not (canAct p) = p
     | shouldBoost    = p { jumpState = Prepare prepareTime
                          , hasBoosted = True
@@ -96,11 +89,11 @@ actionHandler p
                          , standingOn = Nothing
                          }
     | otherwise      = p
-      where shouldBoost =  wantsBoost p
+      where shouldBoost =  ctrlBoost ctrl
                         && not (isBoosting p)
                         && not (hasBoosted p)
 
-            shouldJump  =  wantsJump p
+            shouldJump  =  ctrlJump ctrl
                         && isStanding p
 
 setFalling :: Player -> Player
@@ -120,12 +113,12 @@ fallHandler p
                         else setFalling p
     | otherwise    = p
 
-walkHandler :: Player -> Player
-walkHandler p
+walkHandler :: Controller -> Player -> Player
+walkHandler ctrl p
     | canAct p  = p { pPos = pos' }
     | otherwise = p
       where (_, pos') = collision AxisX (pPos p) $ walkSpeed * dt * dir
-            dir = v2x . ctrlDir . ctrls $ p
+            dir = v2x . ctrlDir $ ctrl
 
 
 
@@ -143,8 +136,8 @@ playerSignal :: Signal Player
 playerSignal = foldu go defaultPlayer noCtrls ctrlSignal
   where
       go ctrl p = fallHandler
-                . jumpHandler
-                . actionHandler
-                . walkHandler
-                $ p { ctrls = ctrl }
+                . jumpHandler ctrl
+                . actionHandler ctrl
+                . walkHandler ctrl
+                $ p
 

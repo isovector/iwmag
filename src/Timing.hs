@@ -7,6 +7,8 @@ module Timing ( sampleOn
 import ClassyPrelude
 import FRP.Helm.Signal
 import FRP.Helm.Sample
+import FRP.Elerea.Param hiding (Signal)
+import qualified FRP.Elerea.Param as Elerea
 import qualified FRP.Helm.Time as Time
 
 framesPerSecond :: Double

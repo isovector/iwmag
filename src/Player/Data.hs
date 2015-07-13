@@ -1,6 +1,5 @@
 module Player.Data ( Player
                    , pPos
-                   , ctrls
                    , jumpState
                    , hasBoosted
                    , standingOn
@@ -14,7 +13,6 @@ import Player.JumpState
 
 data Player =
     Player { pPos       :: Vector2
-           , ctrls      :: Controller
            , jumpState  :: JumpState
            , hasBoosted :: Bool
            , standingOn :: Maybe Line
@@ -22,7 +20,6 @@ data Player =
 
 defaultPlayer :: Player
 defaultPlayer = Player { pPos = Vector2 100 100
-                       , ctrls = noCtrls
                        , jumpState = Stand
                        , hasBoosted = False
                        , standingOn = Nothing

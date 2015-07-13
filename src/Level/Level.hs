@@ -3,6 +3,7 @@ module Level.Level ( Piece (Rect, Floor)
                    , geomWalls
                    , geomFloor
                    , forms
+                   , Level
                    ) where
 
 import ClassyPrelude
