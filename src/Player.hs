@@ -1,6 +1,6 @@
 module Player ( Player
               , drawPlayer
-              , playerSignal
+              , playerHandler
               ) where
 
 import ClassyPrelude

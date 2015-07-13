@@ -8,12 +8,12 @@ import FRP.Helm.Signal
 import qualified FRP.Helm.Window as Window
 import GameState
 
-render :: Player -> (Int, Int) -> Element
-render p (w, h) = collage w h $ drawPlayer p ++ forms defaultLevel
+render :: GameState -> (Int, Int) -> Element
+render state (w, h) = collage w h $ drawPlayer (player state) ++ forms defaultLevel
 
 main :: IO ()
 main = run config
-     $ render <~ playerSignal
+     $ render <~ gameSignal
               ~~ Window.dimensions
   where
     config = defaultConfig { windowTitle = "makin' a game" }

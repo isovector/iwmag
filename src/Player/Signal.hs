@@ -1,7 +1,7 @@
 module Player.Signal ( Player
                      , pPos
                      , jumpState
-                     , playerSignal
+                     , playerHandler
                      ) where
 
 import ClassyPrelude
@@ -89,11 +89,11 @@ actionHandler ctrl p
                          , standingOn = Nothing
                          }
     | otherwise      = p
-      where shouldBoost =  ctrlBoost ctrl
+      where shouldBoost =  wantsBoost ctrl
                         && not (isBoosting p)
                         && not (hasBoosted p)
 
-            shouldJump  =  ctrlJump ctrl
+            shouldJump  =  wantsJump ctrl
                         && isStanding p
 
 setFalling :: Player -> Player
@@ -122,22 +122,17 @@ walkHandler ctrl p
 
 
 
-wasKeyJustPressed :: Bool -> Bool
-wasKeyJustPressed b = b
-
 
 shouldJump :: Controller -> Player -> Bool
 shouldJump c p =  ( jumpState p == Stand
                || (isJump $ jumpState p))
-               && wasKeyJustPressed (ctrlJump c)
+               && wantsJump c
 
 
-playerSignal :: Signal Player
-playerSignal = foldu go defaultPlayer noCtrls ctrlSignal
-  where
-      go ctrl p = fallHandler
-                . jumpHandler ctrl
-                . actionHandler ctrl
-                . walkHandler ctrl
-                $ p
+playerHandler :: Controller -> Player -> Player
+playerHandler ctrl p = fallHandler
+                     . jumpHandler ctrl
+                     . actionHandler ctrl
+                     . walkHandler ctrl
+                     $ p
 

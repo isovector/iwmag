@@ -1,4 +1,9 @@
-module GameState () where
+module GameState ( GameState
+                 , currentLevel
+                 , player
+                 , camera
+                 , gameSignal
+                 ) where
 
 import ClassyPrelude
 import Math
@@ -23,8 +28,19 @@ data GameState =
 data Update = Frame Double | Input Controller
 
 update :: Update -> GameState -> GameState
-update (Frame _)    state = state
-update (Input ctrl) state = state
+update (Frame _) state@(GameState { player = p, ctrls = ctrl }) =
+    state { player = playerHandler ctrl p
+          , ctrls  = ctrl { wantsJump  = False
+                          , wantsBoost = False
+                          }
+          }
+
+update (Input ctrl') state@(GameState { ctrls = ctrl }) =
+    state { ctrls = ctrl'' }
+  where ctrl'' = ctrl' { wantsJump  = diff ctrlJump
+                       , wantsBoost = diff ctrlBoost
+                       }
+        diff f = f ctrl' && not (f ctrl)
 
 initState :: GameState
 initState =
@@ -36,8 +52,8 @@ initState =
 
 gameSignal :: Signal GameState
 gameSignal = foldp update initState inputSignal
-  where inputSignal = merge (Frame <$> inSeconds <$> frameRate)
-                            (Input <$> ctrlSignal)
+  where inputSignal = merge (Input <$> ctrlSignal)
+                            (Frame <$> inSeconds <$> frameRate)
 
 -- from HEAD of Helm
 merge :: Signal a -> Signal a -> Signal a

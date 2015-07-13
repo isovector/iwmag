@@ -3,6 +3,8 @@ module Player.Controller ( Controller
                          , ctrlJump
                          , ctrlBoost
                          , ctrlSignal
+                         , wantsJump
+                         , wantsBoost
                          , noCtrls
                          ) where
 
@@ -13,25 +15,31 @@ import FRP.Helm.Signal
 import qualified FRP.Helm.Keyboard as Keyboard
 
 data Controller =
-    Controller { ctrlDir   :: Vector2
-               , ctrlJump  :: Bool
-               , ctrlBoost :: Bool
+    Controller { ctrlDir    :: Vector2
+               , ctrlJump   :: Bool
+               , ctrlBoost  :: Bool
+               , wantsJump  :: Bool
+               , wantsBoost :: Bool
                } deriving (Show)
 
 noCtrls :: Controller
 noCtrls =
-    Controller { ctrlDir = Vector2 0 0
-               , ctrlJump = False
-               , ctrlBoost = False
+    Controller { ctrlDir    = Vector2 0 0
+               , ctrlJump   = False
+               , ctrlBoost  = False
+               , wantsJump  = False
+               , wantsBoost = False
                }
 
 ctrlSignal :: Signal Controller
 ctrlSignal = signal
   where
       makeState (x, y) jump boost =
-          Controller { ctrlDir = Vector2 (fromIntegral x) (fromIntegral y)
-                     , ctrlJump  = jump
-                     , ctrlBoost = boost
+          Controller { ctrlDir    = Vector2 (fromIntegral x) (fromIntegral y)
+                     , ctrlJump   = jump
+                     , ctrlBoost  = boost
+                     , wantsJump  = False
+                     , wantsBoost = False
                      }
 
       signal   = makeState <~ Keyboard.arrows ~~ jumpKey ~~ boostKey
