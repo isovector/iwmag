@@ -13,14 +13,15 @@ import FRP.Helm
 
 drawPlayer :: Player -> [Form]
 drawPlayer p = [ move (toPair pos)
-                 $ move (0, -10)
+                 $ move ((r - l) / 2, (b - t) / 2)
                  $ filled white
-                 $ rect 20 20
-               , move (toPair tl) $ filled red $ rect 4 4
-               , move (toPair tr) $ filled red $ rect 4 4
-               , move (toPair bl) $ filled red $ rect 4 4
-               , move (toPair br) $ filled red $ rect 4 4
+                 $ rect width height
                ]
-  where (tl, tr, bl, br) = corners playerGeom pos
-        pos = pPos $ p
+  where pos   = pPos $ p
+        l  = leftX   playerGeom
+        r  = rightX  playerGeom
+        t  = topY    playerGeom
+        b  = bottomY playerGeom
+        width  = l + r
+        height = t + b
 

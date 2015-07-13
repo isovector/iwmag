@@ -74,18 +74,21 @@ jumpHandler ctrl p = go $ jumpState p
                 boostDt = (dt * boostStrength) |* dir
 
 onLandHandler :: Player -> Player
-onLandHandler p = p { jumpState = Stand
+onLandHandler p = p { jumpState  = Stand
+                    , jumpsLeft  = jumpCount
                     , hasBoosted = False
                     }
 
 actionHandler :: Controller -> Player -> Player
 actionHandler ctrl p
     | not (canAct p) = p
-    | shouldBoost    = p { jumpState = Prepare prepareTime
+    | shouldBoost    = p { jumpState  = Prepare prepareTime
+                         , jumpsLeft  = 0
                          , hasBoosted = True
                          , standingOn = Nothing
                          }
-    | shouldJump     = p { jumpState = Jump (-jumpStrength)
+    | shouldJump     = p { jumpState  = Jump (-jumpStrength)
+                         , jumpsLeft  = jumpsLeft p - 1
                          , standingOn = Nothing
                          }
     | otherwise      = p
@@ -94,7 +97,7 @@ actionHandler ctrl p
                         && not (hasBoosted p)
 
             shouldJump  =  wantsJump ctrl
-                        && isStanding p
+                        && jumpsLeft p > 0
 
 setFalling :: Player -> Player
 setFalling p = p { jumpState = Jump 0
@@ -122,11 +125,6 @@ walkHandler ctrl p
 
 
 
-
-shouldJump :: Controller -> Player -> Bool
-shouldJump c p =  ( jumpState p == Stand
-               || (isJump $ jumpState p))
-               && wantsJump c
 
 
 playerHandler :: Controller -> Player -> Player
