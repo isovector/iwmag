@@ -120,14 +120,17 @@ walkHandler ctrl p
       where (_, pos') = collision AxisX (pPos p) $ walkSpeed * dt * dir
             dir = v2x . ctrlDir $ ctrl
 
+deathHandler :: Level -> Player -> Maybe Player
+deathHandler l p = if any (flip inRect (pPos p)) $ deathZones l
+                      then Nothing
+                      else Just p
 
 
-
-
-playerHandler :: Controller -> Player -> Player
-playerHandler ctrl p = fallHandler
-                     . jumpHandler ctrl
-                     . actionHandler ctrl
-                     . walkHandler ctrl
-                     $ p
+playerHandler :: Level -> Controller -> Player -> Maybe Player
+playerHandler l ctrl p = deathHandler l
+                       . fallHandler
+                       . jumpHandler ctrl
+                       . actionHandler ctrl
+                       . walkHandler ctrl
+                       $ p
 

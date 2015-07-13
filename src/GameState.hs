@@ -28,13 +28,14 @@ data GameState =
 data Update = Frame Double | Input Controller
 
 update :: Update -> GameState -> GameState
-update (Frame _) state@(GameState { player = p, ctrls = ctrl }) =
-    state { player = playerHandler ctrl p
-          , camera = pPos p * vector2X
-          , ctrls  = ctrl { wantsJump  = False
-                          , wantsBoost = False
-                          }
-          }
+update (Frame _) state@(GameState {player = p, ctrls = ctrl, currentLevel = l}) =
+    case playerHandler l ctrl p of
+      Just p' -> state { player = p'
+                       , camera = pPos p' * vector2X
+                       , ctrls  = ctrl { wantsJump  = False
+                                       , wantsBoost = False
+                                       }}
+      Nothing -> initState
 
 update (Input ctrl') state@(GameState { ctrls = ctrl }) =
     state { ctrls = ctrl'' }
