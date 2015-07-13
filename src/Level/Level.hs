@@ -40,26 +40,48 @@ defaultLevel = parseLayers
 
 
 parseLayers :: [Layer] -> Level
-parseLayers ls =
-    case headMay ls of
+parseLayers layers =
+    case headMay layers of
       Just ObjectLayer
         { layerObjects = objs
         } -> buildLevel $ concatMap toPiece objs
   where
+      scale = 2
       toPiece (Object
                 { objectX = x'
                 , objectY = y'
                 , objectWidth = w'
                 , objectHeight = h'
-                }) = let x = fromIntegral x' * 2
-                         y = fromIntegral y' * 2
-                         w = fromIntegral $ fromJust w' * 2
-                         h = fromIntegral $ fromJust h' * 2
-                      in [ Floor (lineRel (Vector2 x y)       (Vector2 w 0)) green
-                         , Floor (lineRel (Vector2 x (y + h)) (Vector2 w 0)) green
-                         , Wall  (lineRel (Vector2 x y)       (Vector2 0 h)) green
-                         , Wall  (lineRel (Vector2 (x + w) y) (Vector2 0 h)) green
-                         ]
+                , objectPolyline = l
+                })
+          | isJust l =
+              let (Polyline pl) = fromJust l
+                  ls = zip pl $ tail pl
+                  x = scale * fromIntegral x'
+                  y = scale * fromIntegral y'
+                  fromPair ((ax,ay),(bx,by))
+                      | ax == bx =
+                          Wall (lineBetween
+                               (Vector2 (x + fromIntegral ax * scale) (y + fromIntegral ay * scale))
+                               (Vector2 (x + fromIntegral bx * scale) (y + fromIntegral by * scale)))
+                               green
+                      | ay == by =
+                          Floor (lineBetween
+                               (Vector2 (x + fromIntegral ax * scale) (y + fromIntegral ay * scale))
+                               (Vector2 (x + fromIntegral bx * scale) (y + fromIntegral by * scale)))
+                               green
+               in map fromPair ls
+
+          | otherwise =
+              let x = scale * fromIntegral x'
+                  y = scale * fromIntegral y'
+                  w = scale * (fromIntegral $ fromJust w')
+                  h = scale * (fromIntegral $ fromJust h')
+               in [ Floor (lineRel (Vector2 x y)       (Vector2 w 0)) green
+                  , Floor (lineRel (Vector2 x (y + h)) (Vector2 w 0)) green
+                  , Wall  (lineRel (Vector2 x y)       (Vector2 0 h)) green
+                  , Wall  (lineRel (Vector2 (x + w) y) (Vector2 0 h)) green
+                  ]
 
 
 
