@@ -4,6 +4,7 @@ module Math ( toPair
             , lineRel
             , linesIntersection
             , linesIntersect
+            , slope
             , module Data.Vector
             ) where
 
@@ -20,6 +21,12 @@ lineBetween a b = Line (a, b - a)
 
 lineRel :: Vector2 -> Vector2 -> Line
 lineRel a rel = Line(a, rel)
+
+slope :: Line -> Maybe Double
+slope (Line (_,(Vector2 w h)))
+  | w == 0    = Nothing
+  | h == 0    = Nothing
+  | otherwise = Just $ h / w
 
 -- from https://hackage.haskell.org/package/SG-1.0/docs/src/Data-SG-Geometry-TwoDim.html#intersectLines2
 lineIntersect' :: Line -> Line -> Maybe (Double, Double)

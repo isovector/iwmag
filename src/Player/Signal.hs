@@ -35,10 +35,7 @@ canAct p = go $ jumpState p
         go _           = True
 
 collision :: Axis -> Vector2 -> Double -> (Maybe Line, Vector2)
-collision ax pos dx
-    | ax == AxisX = go $ geomWalls defaultLevel
-    | ax == AxisY = go $ geomFloor defaultLevel
-      where go ls = sweep playerGeom pos ls ax dx
+collision ax pos dx = sweep playerGeom pos (geometry defaultLevel) ax dx
 
 jumpHandler :: Controller -> Player -> Player
 jumpHandler ctrl p = go $ jumpState p
@@ -106,7 +103,9 @@ setFalling p = p { jumpState = Jump 0
 
 stillStanding :: Player -> Bool
 stillStanding p = go $ standingOn p
-  where go (Just l) = isJust . fst $ sweep playerGeom (pPos p) [l] AxisY 1
+  where go (Just l) = if isJust $ slope l
+                         then True
+                         else isJust . fst $ sweep playerGeom (pPos p) [l] AxisY 1
         go _        = False
 
 fallHandler :: Player -> Player
@@ -122,7 +121,6 @@ walkHandler ctrl p
     | otherwise = p
       where (_, pos') = collision AxisX (pPos p) $ walkSpeed * dt * dir
             dir = v2x . ctrlDir $ ctrl
-
 
 
 

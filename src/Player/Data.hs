@@ -23,7 +23,7 @@ data Player =
            } deriving (Show)
 
 defaultPlayer :: Player
-defaultPlayer = Player { pPos       = Vector2 100 100
+defaultPlayer = Player { pPos       = Vector2 650 100
                        , jumpState  = Stand
                        , jumpsLeft  = jumpCount
                        , hasBoosted = False

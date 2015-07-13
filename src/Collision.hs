@@ -29,7 +29,6 @@ corners b p =
 
 data Axis = AxisX | AxisY deriving Eq
 
-
 sweep :: BoxGeom -> Vector2 -> [Line] -> Axis -> Double -> (Maybe Line, Vector2)
 sweep bg pos ls ax dx
     | ax == AxisX && dx <  0 = sweep' tl bl vector2X
@@ -37,12 +36,25 @@ sweep bg pos ls ax dx
     | ax == AxisY && dx <  0 = sweep' tl tr vector2Y
     | ax == AxisY && dx >= 0 = sweep' bl br vector2Y
  where (tl, tr, bl, br) = corners bg pos
+       swap (Vector2 x y) = Vector2 y x
        sweep' c1 c2 u =
            let to = dx |* u
                diff res = (res - c1) * u + (negate $ vnormalise to)
-            in case headMay $ mapMaybe (collision' ls . flip lineRel to) [c1, c2] of
-                 Just (l, v) -> (Just l, pos + diff v)
-                 Nothing     -> (Nothing, pos + to)
+               tests    = mapMaybe (collision' ls . flip lineRel to) [c1, c2]
+               (Just (l, v)) = headMay tests
+               occluded  = (Just l, pos + diff v)
+               s = fromJust $ slope l
+               rise = swap u *| if ax == AxisX
+                                   then dx * s
+                                   else dx / s
+
+            in case length tests of
+                 2 -> occluded
+                 1 -> let (Just (l, v)) = headMay tests
+                       in if isNothing $ slope l
+                              then occluded
+                              else (Just l, pos + diff v + rise)
+                 0 -> (Nothing, pos + to)
 
 
 
