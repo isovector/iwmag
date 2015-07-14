@@ -37,8 +37,8 @@ canAct p = go $ jumpState p
 collision :: Axis -> Vector2 -> Double -> (Maybe Line, Vector2)
 collision ax pos dx = sweep playerGeom pos (geometry defaultLevel) ax dx
 
-jumpHandler :: Controller -> Player -> Player
-jumpHandler ctrl p = go $ jumpState p
+jumpHandler :: Level -> Controller -> Player -> Player
+jumpHandler l ctrl p = go $ jumpState p
   where go (Stand)  = p
 
         go (Jump y)
@@ -70,12 +70,12 @@ jumpHandler ctrl p = go $ jumpState p
                 (_, xy') = collision AxisY x' $ v2y boostDt
                 boostDt = (dt * boostStrength) |* dir
                 another =  ctrlBoost ctrl
-                        && boostsLeft p > 0
                         && okDirection ctrl dir
+                        && canBoost l p
 
 okDirection :: Controller -> Vector2 -> Bool
 okDirection ctrl v1 = okDirection' . vnormalise $ ctrlDir ctrl
-  where okDirection' v2 = let dot = showTrace $ vdot v1 v2
+  where okDirection' v2 = let dot = vdot v1 v2
                               epsilon = 0.02
                            in dot < 1 - epsilon && dot >= 0 && vmag v2 > 0
 
@@ -92,8 +92,12 @@ onLandHandler p = p { jumpState  = Stand
                     , boostsLeft = boostCount
                     }
 
-actionHandler :: Controller -> Player -> Player
-actionHandler ctrl p
+canBoost :: Level -> Player -> Bool
+canBoost (Level{noBoostZones = zs}) p = boostsLeft p > 0
+                                     && not (flip any zs $ flip inRect (pPos p))
+
+actionHandler :: Level -> Controller -> Player -> Player
+actionHandler l ctrl p
     | not (canAct p) = p
     | shouldBoost    = p { jumpState  = Prepare prepareTime
                          , jumpsLeft  = 0
@@ -108,7 +112,7 @@ actionHandler ctrl p
       where shouldBoost =  wantsBoost ctrl
                         && not (isBoosting p)
                         && not (hasBoosted p)
-                        && boostsLeft p > 0
+                        && canBoost l p
             shouldJump  =  wantsJump ctrl
                         && jumpsLeft p > 0
 
@@ -145,8 +149,8 @@ deathHandler l p = if any (flip inRect (pPos p)) $ deathZones l
 playerHandler :: Level -> Controller -> Player -> Maybe Player
 playerHandler l ctrl p = deathHandler l
                        . fallHandler
-                       . jumpHandler ctrl
-                       . actionHandler ctrl
+                       . jumpHandler l ctrl
+                       . actionHandler l ctrl
                        . walkHandler ctrl
                        $ p
 

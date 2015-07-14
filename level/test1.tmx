@@ -32,5 +32,6 @@
    <ellipse/>
   </object>
   <object type="death" x="0" y="352" width="480" height="16"/>
+  <object type="noboost" x="0" y="0" width="80" height="272"/>
  </objectgroup>
 </map>

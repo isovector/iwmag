@@ -4,7 +4,8 @@ module Level.Level ( Piece (Wall)
                    , forms
                    , playerSpawn
                    , deathZones
-                   , Level
+                   , noBoostZones
+                   , Level (Level)
                    ) where
 
 import ClassyPrelude
@@ -19,11 +20,28 @@ import System.IO.Unsafe (unsafePerformIO)
 
 data Piece = Wall Line Color
 
-data Level = Level { geometry    :: [Line]
-                   , forms       :: [Form]
-                   , playerSpawn :: Vector2
-                   , deathZones  :: [Rect]
+data Level = Level { geometry     :: ![Line]
+                   , forms        :: ![Form]
+                   , playerSpawn  :: !Vector2
+                   , deathZones   :: ![Rect]
+                   , noBoostZones :: ![Rect]
                    } deriving Show
+
+data Zone = Death   Rect
+          | NoBoost Rect
+
+isDeath :: Zone -> Bool
+isDeath (Death _) = True
+isDeath _         = False
+
+isNoBoost :: Zone -> Bool
+isNoBoost (NoBoost _) = True
+isNoBoost _           = False
+
+
+getRect :: Zone -> Rect
+getRect (Death   r) = r
+getRect (NoBoost r) = r
 
 drawLine :: Color -> Line -> Form
 drawLine c (Line (pos, size)) = move (toPair pos)
@@ -42,12 +60,24 @@ importScale :: Double
 importScale = 2
 
 parseLayers :: [Layer] -> Level
-parseLayers ls = col { playerSpawn = spawn
-                     , deathZones = zones
-                     }
+parseLayers ls = let dz =  getZones isDeath
+                     nbz = getZones isNoBoost
+                  in col { playerSpawn  = spawn
+                         , deathZones   = dz
+                         , noBoostZones = nbz
+                         , forms  = forms col
+                                  ++ zonesToForm dz  red
+                                  ++ zonesToForm nbz cyan
+                         }
   where (spawn, zones) = parseObjects   $ getLayer "objects"
         col            = buildLevel . parseCollision $ getLayer "collision"
         getLayer name  = headMay $ filter ((== name) . layerName) ls
+        getZones f = map (getRect) $ filter f zones
+        zonesToForm zs c = map (mkForm c) zs
+        mkForm c (Rect pos size) = move (toPair $ pos + size *| 0.5)
+                                 . outlined (solid c)
+                                 . uncurry rect
+                                 $ toPair size
 
 
 getPosOfObj :: Object -> Vector2
@@ -57,13 +87,16 @@ getPosOfObj Object{objectX = x, objectY = y} =
 scaleInts :: Int -> Int -> Vector2
 scaleInts x y = Vector2 (importScale * fromIntegral x) (importScale * fromIntegral y)
 
-parseObjects :: Maybe Layer -> (Vector2, [Rect])
-parseObjects (Just ObjectLayer{layerObjects = objs}) = (spawn, zones)
+parseObjects :: Maybe Layer -> (Vector2, [Zone])
+parseObjects (Just ObjectLayer{layerObjects = objs}) = (spawn, deaths ++ noboosts)
   where spawn = maybe (Vector2 0 0) getPosOfObj . headMay $ getObjs "spawn"
-        zones = map toRect $ getObjs "death"
+        deaths = getZone Death "death"
+        noboosts = getZone NoBoost "noboost"
+
         getObjs t = filter (maybe False (== t) . objectType) objs
         toRect obj@(Object{objectWidth = w, objectHeight = h}) =
             Rect (getPosOfObj obj) $ scaleInts (fromJust w) (fromJust h)
+        getZone cons name = map (cons . toRect) $ getObjs name
 parseObjects _ = (Vector2 0 0, [])
 
 parseCollision :: Maybe Layer -> [Piece]
@@ -112,5 +145,5 @@ buildLevel ((Wall l c):pxs) =
      in built { geometry = l    : (geometry built)
               , forms    = form : (forms built)
               }
-buildLevel []               = Level [] [] vector2X []
+buildLevel []               = Level [] [] vector2X [] []
 
