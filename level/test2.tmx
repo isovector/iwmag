@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.0" orientation="orthogonal" width="30" height="15" tilewidth="16" tileheight="16">
+ <objectgroup name="collision" width="30" height="15">
+  <object x="0" y="224">
+   <polyline points="0,0 32,0 32,-32 48,-32 48,-96 80,-96 80,16 0,16 0,0"/>
+  </object>
+  <object x="0" y="0">
+   <polyline points="0,0 0,240"/>
+  </object>
+  <object x="0" y="144" width="32" height="16"/>
+  <object x="112" y="192" width="16" height="48"/>
+  <object x="112" y="96" width="48" height="16"/>
+  <object x="192" y="112" width="48" height="16"/>
+  <object x="240" y="192" width="64" height="48"/>
+  <object x="320" y="160" width="32" height="16"/>
+  <object x="352" y="128" width="16" height="16"/>
+  <object x="320" y="96" width="16" height="16"/>
+  <object x="288" y="64" width="16" height="16"/>
+  <object x="272" y="0">
+   <polyline points="0,0 0,96"/>
+  </object>
+  <object x="320" y="32">
+   <polyline points="0,0 96,0 96,176 80,176 80,48 64,48 64,16 0,16 0,0"/>
+  </object>
+  <object x="480" y="0">
+   <polyline points="0,0 0,240"/>
+  </object>
+ </objectgroup>
+ <objectgroup name="objects" width="30" height="15">
+  <object type="death" x="0" y="224" width="480" height="16"/>
+  <object type="spawn" x="16" y="208" width="16" height="16">
+   <ellipse/>
+  </object>
+ </objectgroup>
+</map>

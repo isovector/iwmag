@@ -38,3 +38,5 @@ playerGeom =
             , rightX  = 4
             }
 
+firstLevel :: String
+firstLevel = "test1"

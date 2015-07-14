@@ -34,8 +34,8 @@ canAct p = go $ jumpState p
         go (Prepare _) = False
         go _           = True
 
-collision :: Axis -> Vector2 -> Double -> (Maybe Line, Vector2)
-collision ax pos dx = sweep playerGeom pos (geometry defaultLevel) ax dx
+collision :: Level -> Axis -> Vector2 -> Double -> (Maybe Line, Vector2)
+collision l ax pos dx = sweep playerGeom pos (geometry l) ax dx
 
 jumpHandler :: Level -> Controller -> Player -> Player
 jumpHandler l ctrl p = go $ jumpState p
@@ -55,7 +55,7 @@ jumpHandler l ctrl p = go $ jumpState p
               gravity' = if ctrlJump ctrl && y < 0
                             then gravity * jumpAttenuation
                             else gravity
-              (collided, pos') = collision AxisY (pPos p) $ dt * y
+              (collided, pos') = collision l AxisY (pPos p) $ dt * y
 
         go (Prepare t)
             | t > 0     = p { jumpState = Prepare (t - dt) }
@@ -66,8 +66,8 @@ jumpHandler l ctrl p = go $ jumpState p
                                   , pPos = xy' }
             | another         = setBoosting ctrl p
             | otherwise       = setFalling p
-          where (_, x')  = collision AxisX (pPos p) $ v2x boostDt
-                (_, xy') = collision AxisY x' $ v2y boostDt
+          where (_, x')  = collision l AxisX (pPos p) $ v2x boostDt
+                (_, xy') = collision l AxisY x' $ v2y boostDt
                 boostDt = (dt * boostStrength) |* dir
                 another =  ctrlBoost ctrl
                         && okDirection ctrl dir
@@ -133,11 +133,11 @@ fallHandler p
                         else setFalling p
     | otherwise    = p
 
-walkHandler :: Controller -> Player -> Player
-walkHandler ctrl p
+walkHandler :: Level -> Controller -> Player -> Player
+walkHandler l ctrl p
     | canAct p  = p { pPos = pos' }
     | otherwise = p
-      where (_, pos') = collision AxisX (pPos p) $ walkSpeed * dt * dir
+      where (_, pos') = collision l AxisX (pPos p) $ walkSpeed * dt * dir
             dir = v2x . ctrlDir $ ctrl
 
 deathHandler :: Level -> Player -> Maybe Player
@@ -151,6 +151,6 @@ playerHandler l ctrl p = deathHandler l
                        . fallHandler
                        . jumpHandler l ctrl
                        . actionHandler l ctrl
-                       . walkHandler ctrl
+                       . walkHandler l ctrl
                        $ p
 

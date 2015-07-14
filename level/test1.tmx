@@ -9,7 +9,7 @@
   <object x="256" y="80" width="32" height="16"/>
   <object x="64" y="80" width="32" height="16"/>
   <object x="384" y="128">
-   <polyline points="0,0 16,0 16,32 48,32 48,64 32,64 32,112 16,112 16,64 -32,64 -32,48 -16,48 -16,16 -32,16 -32,0 0,0"/>
+   <polyline points="0,0 16,0 16,32 48,32 48,64 32,64 32,112 16,112 16,64 -32,64 -32,48 0,48 0,16 -32,16 -32,0 0,0"/>
   </object>
   <object x="320" y="352">
    <polyline points="0,0 0,-48 -96,-48 -96,-112 -128,-112 -128,-48 -224,-48 -224,-64 -240,-64 -240,-80 -256,-80 -256,-96 -272,-96 -272,-112 -288,-112 -288,-128 -304,-128 -304,-144 -320,-144 -320,0 0,0"/>
@@ -33,5 +33,10 @@
   </object>
   <object type="death" x="0" y="352" width="480" height="16"/>
   <object type="noboost" x="0" y="0" width="80" height="272"/>
+  <object type="door" x="368" y="144" width="16" height="32">
+   <properties>
+    <property name="to" value="test2"/>
+   </properties>
+  </object>
  </objectgroup>
 </map>

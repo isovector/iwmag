@@ -15,7 +15,7 @@ render state (w, h) = collage w h
                     . return
                     . move (toPair $ cam + center)
                     . group
-                    $ drawPlayer (player state) ++ forms defaultLevel
+                    $ drawPlayer (player state) ++ (forms $ currentLevel state)
     where cam    = negate $ camera state
           center = Vector2 (fromIntegral w) 0 *| 0.5
 

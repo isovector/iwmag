@@ -12,7 +12,9 @@ import FRP.Helm
 import FRP.Helm.Sample hiding (update)
 import FRP.Helm.Signal
 import FRP.Helm.Time (inSeconds)
+import Data.Maybe (fromJust)
 
+import Player.Constants
 import Player.Controller
 import Player.Data
 import Player.Signal
@@ -27,15 +29,23 @@ data GameState =
 
 data Update = Frame Double | Input Controller
 
+doorHandler :: GameState -> GameState
+doorHandler s@(GameState {player = p, currentLevel = l}) =
+    case headMay $ filter (\(Door r _) -> inRect r $ pPos p) $ doors l of
+      Just (Door _ to) -> setLevel to s
+      Nothing          -> s
+
 update :: Update -> GameState -> GameState
 update (Frame _) state@(GameState {player = p, ctrls = ctrl, currentLevel = l}) =
-    case playerHandler l ctrl p of
+    doorHandler $ case playerHandler l ctrl p of
       Just p' -> state { player = p'
                        , camera = pPos p' * vector2X
                        , ctrls  = ctrl { wantsJump  = False
                                        , wantsBoost = False
                                        }}
-      Nothing -> initState
+      Nothing -> resetState l
+
+
 
 update (Input ctrl') state@(GameState { ctrls = ctrl }) =
     state { ctrls = ctrl'' }
@@ -44,13 +54,25 @@ update (Input ctrl') state@(GameState { ctrls = ctrl }) =
                        }
         diff f = f ctrl' && not (f ctrl)
 
+setLevel :: String -> GameState -> GameState
+setLevel ln s
+    | Just l <- lookup ln levels =
+        s { currentLevel = l
+          , player = (player s) { pPos = playerSpawn l }
+          }
+    | otherwise = error $ "invalid level requested: " ++ ln
+
+-- TODO: this should probably use setLevel ^^
+resetState :: Level -> GameState
+resetState level =
+     GameState { currentLevel = level
+               , player       = defaultPlayer { pPos = playerSpawn level }
+               , camera       = Vector2 0 0
+               , ctrls        = noCtrls
+               }
+
 initState :: GameState
-initState =
-    GameState { currentLevel = defaultLevel
-              , player       = defaultPlayer { pPos = playerSpawn defaultLevel }
-              , camera       = Vector2 0 0
-              , ctrls        = noCtrls
-              }
+initState = resetState . fromJust $ lookup firstLevel levels
 
 gameSignal :: Signal GameState
 gameSignal = foldp update initState inputSignal
