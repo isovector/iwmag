@@ -19,10 +19,10 @@ import Player.Signal
 import Timing
 
 data GameState =
-    GameState { currentLevel :: Level
-              , player       :: Player
-              , camera       :: Vector2
-              , ctrls        :: Controller
+    GameState { currentLevel :: !Level
+              , player       :: !Player
+              , camera       :: !Vector2
+              , ctrls        :: !Controller
               }
 
 data Update = Frame Double | Input Controller

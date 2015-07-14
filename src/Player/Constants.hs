@@ -12,11 +12,14 @@ jumpStrength = 250
 jumpCount :: Int
 jumpCount = 2
 
+boostCount :: Int
+boostCount = 3
+
 boostTime :: Double
-boostTime = 0.125
+boostTime = 0.2
 
 boostStrength :: Double
-boostStrength = 800
+boostStrength = 100 / boostTime
 
 prepareTime :: Double
 prepareTime = 0.35

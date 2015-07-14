@@ -59,21 +59,37 @@ jumpHandler ctrl p = go $ jumpState p
 
         go (Prepare t)
             | t > 0     = p { jumpState = Prepare (t - dt) }
-            | otherwise = p { jumpState = Boost (vnormalise . ctrlDir $ ctrl) boostTime }
+            | otherwise = setBoosting ctrl p
 
         go (Boost dir t)
-            | t > 0     = p { jumpState = Boost dir (t - dt)
-                            , pPos = xy'
-                            }
-            | otherwise = setFalling p
+            | t > 0           = p { jumpState = Boost dir (t - dt)
+                                  , pPos = xy' }
+            | another         = setBoosting ctrl p
+            | otherwise       = setFalling p
           where (_, x')  = collision AxisX (pPos p) $ v2x boostDt
                 (_, xy') = collision AxisY x' $ v2y boostDt
                 boostDt = (dt * boostStrength) |* dir
+                another =  ctrlBoost ctrl
+                        && boostsLeft p > 0
+                        && okDirection ctrl dir
+
+okDirection :: Controller -> Vector2 -> Bool
+okDirection ctrl v1 = okDirection' . vnormalise $ ctrlDir ctrl
+  where okDirection' v2 = let dot = showTrace $ vdot v1 v2
+                              epsilon = 0.02
+                           in dot < 1 - epsilon && dot >= 0 && vmag v2 > 0
+
+setBoosting :: Controller -> Player -> Player
+setBoosting ctrl p = p { jumpState  = Boost (vnormalise . ctrlDir $ ctrl) boostTime
+                       , boostsLeft = boostsLeft p - 1
+                       }
+
 
 onLandHandler :: Player -> Player
 onLandHandler p = p { jumpState  = Stand
                     , jumpsLeft  = jumpCount
                     , hasBoosted = False
+                    , boostsLeft = boostCount
                     }
 
 actionHandler :: Controller -> Player -> Player
@@ -92,7 +108,7 @@ actionHandler ctrl p
       where shouldBoost =  wantsBoost ctrl
                         && not (isBoosting p)
                         && not (hasBoosted p)
-
+                        && boostsLeft p > 0
             shouldJump  =  wantsJump ctrl
                         && jumpsLeft p > 0
 

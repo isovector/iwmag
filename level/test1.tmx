@@ -20,6 +20,12 @@
   <object x="0" y="0">
    <polyline points="0,0 0,208"/>
   </object>
+  <object x="480" y="0">
+   <polyline points="0,0 0,368"/>
+  </object>
+  <object x="0" y="0">
+   <polyline points="0,0 480,0"/>
+  </object>
  </objectgroup>
  <objectgroup name="objects" width="30" height="23">
   <object type="spawn" x="48" y="160" width="16" height="16">

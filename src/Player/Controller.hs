@@ -15,11 +15,11 @@ import FRP.Helm.Signal
 import qualified FRP.Helm.Keyboard as Keyboard
 
 data Controller =
-    Controller { ctrlDir    :: Vector2
-               , ctrlJump   :: Bool
-               , ctrlBoost  :: Bool
-               , wantsJump  :: Bool
-               , wantsBoost :: Bool
+    Controller { ctrlDir    :: !Vector2
+               , ctrlJump   :: !Bool
+               , ctrlBoost  :: !Bool
+               , wantsJump  :: !Bool
+               , wantsBoost :: !Bool
                } deriving (Show)
 
 noCtrls :: Controller
