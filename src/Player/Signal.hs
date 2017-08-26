@@ -1,28 +1,27 @@
+{-# LANGUAGE NoImplicitPrelude #-}
+
 module Player.Signal ( Player
                      , pPos
                      , jumpState
                      , playerHandler
                      ) where
 
-import ClassyPrelude
-import Math
-import Utils
+import BasePrelude
 import Collision
-import Timing
+import Control.Lens hiding (Level)
+import Game.Sequoia
 import Level.Level
-import FRP.Helm
-import FRP.Helm.Signal
-
-import Player.Controller
+import Linear.Metric
+import Linear.Vector
+import Math
 import Player.Constants
+import Player.Controller
 import Player.Data
 import Player.JumpState
 
+
 isStanding :: Player -> Bool
 isStanding = isStand . jumpState
-
-isJumping :: Player -> Bool
-isJumping = isJump . jumpState
 
 isBoosting :: Player -> Bool
 isBoosting p = let state = jumpState p
@@ -34,11 +33,11 @@ canAct p = go $ jumpState p
         go (Prepare _) = False
         go _           = True
 
-collision :: Level -> Axis -> Vector2 -> Double -> (Maybe Line, Vector2)
+collision :: Level -> Axis -> V2 -> Double -> (Maybe Line, V2)
 collision l ax pos dx = sweep playerGeom pos (geometry l) ax dx
 
-jumpHandler :: Level -> Controller -> Player -> Player
-jumpHandler l ctrl p = go $ jumpState p
+jumpHandler :: Time -> Level -> Controller -> Player -> Player
+jumpHandler dt l ctrl p = go $ jumpState p
   where go (Stand)  = p
 
         go (Jump y)
@@ -66,21 +65,21 @@ jumpHandler l ctrl p = go $ jumpState p
                                   , pPos = xy' }
             | another         = setBoosting ctrl p
             | otherwise       = setFalling p
-          where (_, x')  = collision l AxisX (pPos p) $ v2x boostDt
-                (_, xy') = collision l AxisY x' $ v2y boostDt
-                boostDt = (dt * boostStrength) |* dir
+          where (_, x')  = collision l AxisX (pPos p) $ view _x boostDt
+                (_, xy') = collision l AxisY x' $ view _y boostDt
+                boostDt = (dt * boostStrength) *^ dir
                 another =  ctrlBoost ctrl
                         && okDirection ctrl dir
                         && canBoost l p
 
-okDirection :: Controller -> Vector2 -> Bool
-okDirection ctrl v1 = okDirection' . vnormalise $ ctrlDir ctrl
-  where okDirection' v2 = let dot = vdot v1 v2
+okDirection :: Controller -> V2 -> Bool
+okDirection ctrl v1 = okDirection' . normalize $ ctrlDir ctrl
+  where okDirection' v2 = let dot' = dot v1 v2
                               epsilon = 0.02
-                           in dot < 1 - epsilon && dot >= 0 && vmag v2 > 0
+                           in dot' < 1 - epsilon && dot' >= 0 && norm v2 > 0
 
 setBoosting :: Controller -> Player -> Player
-setBoosting ctrl p = p { jumpState  = Boost (vnormalise . ctrlDir $ ctrl) boostTime
+setBoosting ctrl p = p { jumpState  = Boost (normalize . ctrlDir $ ctrl) boostTime
                        , boostsLeft = boostsLeft p - 1
                        }
 
@@ -133,12 +132,12 @@ fallHandler p
                         else setFalling p
     | otherwise    = p
 
-walkHandler :: Level -> Controller -> Player -> Player
-walkHandler l ctrl p
+walkHandler :: Time -> Level -> Controller -> Player -> Player
+walkHandler dt l ctrl p
     | canAct p  = p { pPos = pos' }
     | otherwise = p
       where (_, pos') = collision l AxisX (pPos p) $ walkSpeed * dt * dir
-            dir = v2x . ctrlDir $ ctrl
+            dir = view _x . ctrlDir $ ctrl
 
 deathHandler :: Level -> Player -> Maybe Player
 deathHandler l p = if any (flip inRect (pPos p)) $ deathZones l
@@ -146,11 +145,11 @@ deathHandler l p = if any (flip inRect (pPos p)) $ deathZones l
                       else Just p
 
 
-playerHandler :: Level -> Controller -> Player -> Maybe Player
-playerHandler l ctrl p = deathHandler l
-                       . fallHandler
-                       . jumpHandler l ctrl
-                       . actionHandler l ctrl
-                       . walkHandler l ctrl
-                       $ p
+playerHandler :: Time -> Level -> Controller -> Player -> Maybe Player
+playerHandler dt l ctrl p = deathHandler l
+                          . fallHandler
+                          . jumpHandler dt l ctrl
+                          . actionHandler l ctrl
+                          . walkHandler dt l ctrl
+                          $ p
 

@@ -1,6 +1,8 @@
+{-# LANGUAGE NoImplicitPrelude #-}
+
 module Player.Constants where
 
-import ClassyPrelude
+import BasePrelude
 import Collision
 
 jumpAttenuation :: Double

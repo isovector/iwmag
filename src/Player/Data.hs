@@ -1,3 +1,5 @@
+{-# LANGUAGE NoImplicitPrelude #-}
+
 module Player.Data ( Player
                    , pPos
                    , jumpState
@@ -8,27 +10,30 @@ module Player.Data ( Player
                    , defaultPlayer
                    ) where
 
-import ClassyPrelude
+import BasePrelude
+import Game.Sequoia
 import Math
-
 import Player.Constants
-import Player.Controller
 import Player.JumpState
 
-data Player =
-    Player { pPos       :: !Vector2
-           , jumpState  :: !JumpState
-           , jumpsLeft  :: !Int
-           , hasBoosted :: !Bool
-           , boostsLeft :: !Int
-           , standingOn :: Maybe Line
-           } deriving (Show)
+
+data Player = Player
+  { pPos       :: !V2
+  , jumpState  :: !JumpState
+  , jumpsLeft  :: !Int
+  , hasBoosted :: !Bool
+  , boostsLeft :: !Int
+  , standingOn :: Maybe Line
+  } deriving (Show)
+
 
 defaultPlayer :: Player
-defaultPlayer = Player { pPos       = Vector2 100 100
-                       , jumpState  = Stand
-                       , jumpsLeft  = jumpCount
-                       , hasBoosted = False
-                       , boostsLeft = boostCount
-                       , standingOn = Nothing
-                       }
+defaultPlayer = Player
+  { pPos       = V2 100 100
+  , jumpState  = Stand
+  , jumpsLeft  = jumpCount
+  , hasBoosted = False
+  , boostsLeft = boostCount
+  , standingOn = Nothing
+  }
+

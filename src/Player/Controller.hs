@@ -1,3 +1,5 @@
+{-# LANGUAGE NoImplicitPrelude #-}
+
 module Player.Controller ( Controller
                          , ctrlDir
                          , ctrlJump
@@ -8,41 +10,40 @@ module Player.Controller ( Controller
                          , noCtrls
                          ) where
 
-import ClassyPrelude
-import Math
-import FRP.Helm
-import FRP.Helm.Signal
-import qualified FRP.Helm.Keyboard as Keyboard
+import BasePrelude
+import Game.Sequoia
+import Game.Sequoia.Keyboard
 
 data Controller =
-    Controller { ctrlDir    :: !Vector2
+    Controller { ctrlDir    :: !V2
                , ctrlJump   :: !Bool
                , ctrlBoost  :: !Bool
                , wantsJump  :: !Bool
                , wantsBoost :: !Bool
                } deriving (Show)
 
+-- TODO(sandy): can we delete this?
 noCtrls :: Controller
 noCtrls =
-    Controller { ctrlDir    = Vector2 0 0
+    Controller { ctrlDir    = V2 0 0
                , ctrlJump   = False
                , ctrlBoost  = False
                , wantsJump  = False
                , wantsBoost = False
                }
 
-ctrlSignal :: Signal Controller
-ctrlSignal = signal
+ctrlSignal :: B [Key] -> B Controller
+ctrlSignal keys = signal
   where
-      makeState (x, y) jump boost =
-          Controller { ctrlDir    = Vector2 (fromIntegral x) (fromIntegral y)
+      makeState dir jump boost =
+          Controller { ctrlDir    = dir
                      , ctrlJump   = jump
                      , ctrlBoost  = boost
                      , wantsJump  = False
                      , wantsBoost = False
                      }
 
-      signal   = makeState <~ Keyboard.arrows ~~ jumpKey ~~ boostKey
-      jumpKey  = Keyboard.isDown Keyboard.LeftShiftKey
-      boostKey = Keyboard.isDown Keyboard.ZKey
+      signal   = makeState <$> arrows keys <*> jumpKey keys <*> boostKey keys
+      jumpKey  = flip isDown LeftShiftKey
+      boostKey = flip isDown ZKey
 

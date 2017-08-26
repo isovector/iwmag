@@ -1,3 +1,5 @@
+{-# LANGUAGE NoImplicitPrelude #-}
+
 module Player.JumpState ( JumpState (Stand, Jump, Prepare, Boost)
                         , isStand
                         , isJump
@@ -5,13 +7,13 @@ module Player.JumpState ( JumpState (Stand, Jump, Prepare, Boost)
                         , isBoost
                         ) where
 
-import ClassyPrelude
-import Math
+import BasePrelude
+import Game.Sequoia
 
 data JumpState = Stand
                | Jump Double
                | Prepare Double
-               | Boost Vector2 Double
+               | Boost V2 Double
                deriving (Show, Eq)
 
 isStand :: JumpState -> Bool

@@ -1,19 +1,16 @@
+{-# LANGUAGE NoImplicitPrelude #-}
+
 module Utils ( showTrace
              , listDiff
-             , tail
-             , module FRP.Helm.Sample
              ) where
 
-import ClassyPrelude
-import FRP.Helm.Signal
-import FRP.Helm.Sample
-import Debug.Trace
+import BasePrelude
 
 showTrace :: (Show a) => a -> a
-showTrace x = trace (show x) x
+showTrace = trace =<< show
 
 -- assume these are sorted
-listDiff :: (Eq a, Ord a) => [a] -> [a] -> ([a], [a])
+listDiff :: (Ord a) => [a] -> [a] -> ([a], [a])
 listDiff = listDiff' ([], [])
   where
       listDiff' a [] [] = a
@@ -23,7 +20,4 @@ listDiff = listDiff' ([], [])
         | xc == yc  = listDiff' a xs ys
         | xc <  yc  = listDiff' (xc:ax,ay) xs y
         | otherwise = listDiff' (ax,yc:ay) x ys
-
-tail :: [a] -> [a]
-tail (a:as) = as
 
