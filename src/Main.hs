@@ -11,7 +11,6 @@ import Level.Level
 import Control.FRPNow.Time (delayTime)
 import Player
 import Linear.Vector
-import Utils
 
 
 gameWidth :: Int
@@ -24,11 +23,11 @@ gameHeight = 400
 render :: GameState -> Element
 render state = collage gameWidth gameHeight
              . pure
-             . move (cam + center)
+             . move (center - cam)
              . group
              $ drawPlayer (player state) ++ (forms $ currentLevel state)
-    where cam    = negate $ camera state
-          center = V2 (fromIntegral gameWidth) 0 ^* 0.5
+    where cam    = camera state
+          center = V2 (fromIntegral gameWidth) (fromIntegral gameHeight) ^* 0.5
 
 
 runGame :: Engine -> N (B Element)

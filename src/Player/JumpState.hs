@@ -1,10 +1,11 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Player.JumpState ( JumpState (..)
-                        , isStand
-                        , isJump
-                        , isBoost
-                        ) where
+module Player.JumpState
+  ( JumpState (..)
+  , isStand
+  , isJump
+  , isBoost
+  ) where
 
 import BasePrelude
 import Game.Sequoia

@@ -34,7 +34,7 @@ update :: Time -> Controller -> GameState -> GameState
 update dt ctrl state@(GameState {player = p, currentLevel = l}) =
     doorHandler $ case playerHandler dt l ctrl p of
       Just p' -> state { player = p'
-                       , camera = pPos p' * V2 1 0
+                       , camera = pPos p'
                        }
       Nothing -> resetState l
 
@@ -48,11 +48,12 @@ setLevel ln s
 
 -- TODO: this should probably use setLevel ^^
 resetState :: Level -> GameState
-resetState level =
-     GameState { currentLevel = level
-               , player       = defaultPlayer { pPos = playerSpawn level }
-               , camera       = V2 0 0
-               }
+resetState level = GameState
+  { currentLevel = level
+  , player       = defaultPlayer { pPos = pos' }
+  , camera       = pos'
+  }
+  where pos' = playerSpawn level
 
 initState :: GameState
 initState = resetState . fromJust $ lookup firstLevel levels

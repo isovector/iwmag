@@ -1,10 +1,12 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Player.Signal ( Player
-                     , pPos
-                     , jumpState
-                     , playerHandler
-                     ) where
+module Player.Signal
+  ( Player
+  , pPos
+  , jumpState
+  , playerHandler
+  , isBoosting
+  ) where
 
 import BasePrelude
 import Collision

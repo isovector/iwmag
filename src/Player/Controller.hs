@@ -76,7 +76,7 @@ ctrlSignal keys keys' =
     makeState dir jump' jump grasp' grasp = RawController
       { rctrlDir        = normalize dir
       , rctrlJump       = jump'
-      , rctrlWantsJump  = jump' && not jump
+      , rctrlWantsJump  = jump'  && not jump
       , rctrlWantsGrasp = grasp' && not grasp
       }
 
