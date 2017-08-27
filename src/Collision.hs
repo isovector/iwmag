@@ -1,4 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE TupleSections     #-}
 
 module Collision where
 
@@ -53,6 +54,5 @@ sweep bg pos ls ax dx
 
 collision' :: [Line] -> Line -> Maybe (Line, V2)
 collision' ls dp = listToMaybe
-                 . map (\a -> (a, fromJust $ linesIntersection dp a))
-                 . filter (isJust . linesIntersection dp)
+                 . mapMaybe (\a -> (a,) <$> linesIntersection dp a)
                  $ ls

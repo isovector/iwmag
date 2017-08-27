@@ -17,7 +17,7 @@ gameWidth :: Int
 gameWidth = 800
 
 gameHeight :: Int
-gameHeight = 600
+gameHeight = 800
 
 
 render :: GameState -> Element
