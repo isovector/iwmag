@@ -5,6 +5,9 @@ module Player.Constants where
 import BasePrelude
 import Collision
 
+targetRadius :: Double
+targetRadius = 8
+
 doubleTapTime :: Double
 doubleTapTime = 0.1
 

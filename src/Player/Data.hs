@@ -2,6 +2,7 @@
 
 module Player.Data
   ( Player (..)
+  , PlayerAttachment (..)
   , defaultPlayer
   ) where
 
@@ -10,6 +11,14 @@ import Game.Sequoia
 import Math
 import Player.Constants
 import Player.JumpState
+import Level.Level
+
+-- TODO(sandy): UMM WHAT NAME
+data PlayerAttachment
+  = Unattached
+  | StandingOn Line
+  | Grasping Target V2
+  deriving (Eq, Show)
 
 
 data Player = Player
@@ -18,7 +27,7 @@ data Player = Player
   , jumpsLeft    :: !Int
   , boostsLeft   :: !Int
   , recoveryTime :: !Time
-  , standingOn   :: Maybe Line
+  , attachment   :: PlayerAttachment
   } deriving (Show)
 
 
@@ -29,6 +38,6 @@ defaultPlayer = Player
   , jumpsLeft    = jumpCount
   , boostsLeft   = boostCount
   , recoveryTime = 0
-  , standingOn   = Nothing
+  , attachment   = Unattached
   }
 

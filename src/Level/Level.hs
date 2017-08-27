@@ -1,17 +1,14 @@
-{-# LANGUAGE NoImplicitPrelude #-}
-{-# OPTIONS_GHC -fno-warn-name-shadowing  #-}
+{-# LANGUAGE NoImplicitPrelude           #-}
+{-# LANGUAGE RecordWildCards             #-}
+{-# OPTIONS_GHC -fno-warn-name-shadowing #-}
 
-module Level.Level ( Piece (Wall)
-                   , levels
-                   , geometry
-                   , forms
-                   , playerSpawn
-                   , deathZones
-                   , noBoostZones
-                   , doors
-                   , Level (Level)
-                   , Door (Door)
-                   ) where
+module Level.Level
+  ( Piece (..)
+  , Target (..)
+  , levels
+  , Level (..)
+  , Door (..)
+  ) where
 
 import BasePrelude
 import Data.Tiled
@@ -19,8 +16,13 @@ import Game.Sequoia
 import Game.Sequoia.Color
 import Linear.Vector
 import Math
+import Player.Constants
+
 
 data Piece = Wall Line Color
+
+data Target = Target { targetPos :: V2 }
+  deriving (Eq, Show)
 
 data Level = Level { geometry     :: [Line]
                    , forms        :: [Form]
@@ -28,6 +30,7 @@ data Level = Level { geometry     :: [Line]
                    , deathZones   :: [Rect]
                    , noBoostZones :: [Rect]
                    , doors        :: [Door]
+                   , targets      :: [Target]
                    } deriving Show
 
 data Zone = Death   Rect
@@ -86,17 +89,23 @@ parseLayers ls = let dz =  map (getRect) $ getZones isDeath
                   in col { playerSpawn  = spawn
                          , deathZones   = dz
                          , noBoostZones = nbz
+                         , targets      = levelTargets
                          , doors = mapMaybe getDoor doors
                          , forms  = forms col
-                                  ++ zonesToForm dz  red
-                                  ++ zonesToForm nbz cyan
-                                  ++ zonesToForm (map getRect doors) purple
+                                 ++ fmap targetForm levelTargets
+                                 ++ zonesToForm dz  red
+                                 ++ zonesToForm nbz cyan
+                                 ++ zonesToForm (map getRect doors) purple
                          }
-  where (spawn, zones) = parseObjects   $ getLayer "objects"
+  where (spawn, zones) = parseObjects $ getLayer "objects"
         col            = buildLevel . parseCollision $ getLayer "collision"
+        levelTargets   = parseTargets . fromJust $ getLayer "targets"
         getLayer name  = listToMaybe $ filter ((== name) . layerName) ls
         getZones f = filter f zones
         zonesToForm zs c = map (mkForm c) zs
+        targetForm (Target pos) = move pos
+                                . outlined (dashed red)
+                                $ circle targetRadius
         mkForm c (Rect pos size) = move (pos + size ^* 0.5)
                                  . outlined (solid c)
                                  . uncurry rect
@@ -127,6 +136,13 @@ parseObjects (Just ObjectLayer{layerObjects = objs}) =
             Rect (getPosOfObj obj) $ scaleInts (fromJust w) (fromJust h)
         getZone cons name = map (cons . toRect) $ getObjs name
 parseObjects _ = (V2 0 0, [])
+
+parseTargets :: Layer -> [Target]
+parseTargets = fmap (Target . getPos . getPosOfObj)
+             . layerObjects
+  where
+    getPos pos = pos + V2 1 1 ^* (targetRadius * importScale)
+
 
 parseCollision :: Maybe Layer -> [Piece]
 parseCollision layers =
@@ -173,5 +189,5 @@ buildLevel ((Wall l c):pxs) =
      in built { geometry = l    : (geometry built)
               , forms    = form : (forms built)
               }
-buildLevel []               = Level [] [] (V2 1 0) [] [] []
+buildLevel []               = Level [] [] (V2 1 0) [] [] [] []
 

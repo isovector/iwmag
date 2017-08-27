@@ -15,10 +15,10 @@ import Utils
 
 
 gameWidth :: Int
-gameWidth = 800
+gameWidth = 600
 
 gameHeight :: Int
-gameHeight = 800
+gameHeight = 400
 
 
 render :: GameState -> Element

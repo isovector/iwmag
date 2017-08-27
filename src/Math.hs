@@ -47,6 +47,7 @@ linesIntersect a b = onLine $ lineIntersect' a b
         onLine (Just (x, y)) = x >= 0 && x <= 1 && y >= 0 && y <= 1
 
 data Rect = Rect V2 V2 deriving (Show, Eq)
+
 inRect :: Rect -> V2 -> Bool
 inRect (Rect (V2 x y) (V2 w h))
        (V2 px py) =  x  <= px

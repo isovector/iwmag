@@ -14,9 +14,10 @@ import Game.Sequoia
 import Game.Sequoia.Keyboard
 
 data RawController = RawController
-  { rctrlDir       :: !V2
-  , rctrlJump      :: !Bool
-  , rctrlWantsJump :: !Bool
+  { rctrlDir        :: !V2
+  , rctrlJump       :: !Bool
+  , rctrlWantsJump  :: !Bool
+  , rctrlWantsGrasp :: !Bool
   }
 
 data Controller = Controller
@@ -26,6 +27,7 @@ data Controller = Controller
   , ctrlJump    :: !Bool
   , wantsJump   :: !Bool
   , wantsBoost  :: !(Maybe V2)
+  , wantsGrasp  :: !Bool
   } deriving (Show)
 
 initController :: Controller
@@ -36,14 +38,16 @@ initController = Controller
   , ctrlJump    = False
   , wantsJump   = False
   , wantsBoost  = Nothing
+  , wantsGrasp  = False
   }
 
 foldController :: Time -> RawController -> Controller -> Controller
 foldController dt RawController {..} Controller {..} = Controller
   { ctrlDir     = rctrlDir
-  , ctrlLastDir = if isIdle && not wasIdle
-                     then ctrlDir
-                     else ctrlLastDir
+  , ctrlLastDir = case (isIdle && not wasIdle, shouldBoost) of
+                    (_, True)  -> V2 0 0
+                    (True, _)  -> ctrlDir
+                    (False, _) -> ctrlLastDir
   , timeIdle    = if isIdle
                      then timeIdle + dt
                      else 0
@@ -52,6 +56,7 @@ foldController dt RawController {..} Controller {..} = Controller
   , wantsBoost  = if shouldBoost
                      then Just rctrlDir
                      else Nothing
+  , wantsGrasp  = rctrlWantsGrasp
   }
   where
     isIdle = rctrlDir == V2 0 0
@@ -64,12 +69,16 @@ ctrlSignal keys keys' =
   makeState <$> wasd keys'
             <*> jumpKey keys'
             <*> jumpKey keys
+            <*> graspKey keys'
+            <*> graspKey keys
   where
-    makeState dir jump' jump = RawController
-      { rctrlDir       = dir
-      , rctrlJump      = jump'
-      , rctrlWantsJump = jump' && not jump
+    makeState dir jump' jump grasp' grasp = RawController
+      { rctrlDir        = dir
+      , rctrlJump       = jump'
+      , rctrlWantsJump  = jump' && not jump
+      , rctrlWantsGrasp = grasp' && not grasp
       }
 
     jumpKey  = flip isDown LeftShiftKey
+    graspKey = flip isDown EKey
 

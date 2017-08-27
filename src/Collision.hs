@@ -10,12 +10,18 @@ import Linear.Metric
 import Linear.Vector
 import Math
 
-data BoxGeom =
-    BoxGeom { leftX   :: Double
-            , rightX  :: Double
-            , topY    :: Double
-            , bottomY :: Double
-            }
+
+data BoxGeom = BoxGeom
+  { leftX   :: Double
+  , rightX  :: Double
+  , topY    :: Double
+  , bottomY :: Double
+  }
+
+boxGeomToRect :: BoxGeom -> V2 -> Rect
+boxGeomToRect b p =
+  let (tl, _, _, br) = corners b p
+   in Rect tl br
 
 corners :: BoxGeom -> V2 -> (V2, V2, V2, V2)
 corners b p =
@@ -35,6 +41,21 @@ corners b p =
 data Axis = AxisX | AxisY deriving Eq
 
 
+withinRadius
+    :: BoxGeom
+    -> V2  -- ^ Position of box
+    -> Double
+    -> V2  -- ^ Target
+    -> Bool
+withinRadius b p r t =
+  any (\c -> r >= norm (t - c)) (corners b p ^.. each)
+    || withinBox b p t
+
+
+withinBox :: BoxGeom -> V2 -> V2 -> Bool
+withinBox b p t = inRect (boxGeomToRect b p) t
+
+
 sweep :: BoxGeom -> V2 -> [Line] -> Axis -> Double -> (Maybe Line, V2)
 sweep bg pos ls ax dx
     | ax == AxisX && dx <  0 = sweep' tl bl $ V2 1 0
@@ -42,13 +63,14 @@ sweep bg pos ls ax dx
     | ax == AxisY && dx <  0 = sweep' tl tr $ V2 0 1
     | ax == AxisY && dx >= 0 = sweep' bl br $ V2 0 1
     | otherwise              = error "bad sweep is this possible"
- where (tl, tr, bl, br) = corners bg pos
-       sweep' c1 c2 u =
-           let to = dx *^ u
-               diff res = (res - c1) * u + (negate $ normalize to)
-            in case listToMaybe $ mapMaybe (collision' ls . flip lineRel to) [c1, c2] of
-                 Just (l, v) -> (Just l, pos + diff v)
-                 Nothing     -> (Nothing, pos + to)
+ where
+   (tl, tr, bl, br) = corners bg pos
+   sweep' c1 c2 u =
+     let to = dx *^ u
+         diff res = (res - c1) * u + (negate $ normalize to)
+      in case listToMaybe $ mapMaybe (collision' ls . flip lineRel to) [c1, c2] of
+           Just (l, v) -> (Just l, pos + diff v)
+           Nothing     -> (Nothing, pos + to)
 
 
 

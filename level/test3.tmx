@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.0" orientation="orthogonal" renderorder="right-down" width="30" height="15" tilewidth="16" tileheight="16" nextobjectid="26">
+<map version="1.0" orientation="orthogonal" renderorder="right-down" width="30" height="15" tilewidth="16" tileheight="16" nextobjectid="32">
  <objectgroup name="collision">
   <object id="2" x="0" y="0">
    <polyline points="0,0 0,240"/>
@@ -23,6 +23,20 @@
  <objectgroup name="objects">
   <object id="15" type="death" x="0" y="224" width="480" height="16"/>
   <object id="16" type="spawn" x="32" y="32" width="16" height="16">
+   <ellipse/>
+  </object>
+ </objectgroup>
+ <objectgroup name="targets">
+  <object id="27" x="96" y="32" width="16" height="16">
+   <ellipse/>
+  </object>
+  <object id="29" x="80" y="48" width="16" height="16">
+   <ellipse/>
+  </object>
+  <object id="30" x="112" y="48" width="16" height="16">
+   <ellipse/>
+  </object>
+  <object id="31" x="96" y="64" width="16" height="16">
    <ellipse/>
   </object>
  </objectgroup>
