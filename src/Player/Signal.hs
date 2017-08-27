@@ -24,9 +24,9 @@ import Player.JumpState
 
 getGraspHook :: Level -> Player -> Maybe Hook
 getGraspHook l p = getFirst
-                   . mconcat
-                   . fmap intersectsWithPlayer
-                   $ targets l
+                 . mconcat
+                 . fmap intersectsWithPlayer
+                 $ targets l
   where
     intersectsWithPlayer t = First
                            . bool Nothing (Just t)
@@ -69,7 +69,7 @@ jumpHandler dt l ctrl p = bool (go $ jumpState p) p $ isGrasping p
                      , attachment = StandingOn line
                      }
         Nothing ->
-          p { jumpState = Jump $ y + (gravity') * dt
+          p { jumpState = Jump $ y + (min gravity' terminalVelocity) * dt
             , pPos = pos'
             }
       where

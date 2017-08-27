@@ -32,5 +32,5 @@ instance IsObject "tree" where
                    . filled treeCol
                    $ circle 8
   update dt _ _ t@Tree {..} =
-    t { treeDur = treeDur + dt }
+    t { treeDur = treeDur + dt * 2 }
 

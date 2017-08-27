@@ -16,7 +16,7 @@ jumpAttenuation :: Double
 jumpAttenuation = 0.45
 
 jumpStrength :: Double
-jumpStrength = 225
+jumpStrength = 170
 
 jumpCount :: Int
 jumpCount = 2
@@ -31,13 +31,16 @@ boostStrength :: Double
 boostStrength = 72 / boostTime
 
 recoverTime :: Double
-recoverTime = 0.4
+recoverTime = 0.45
 
 walkSpeed :: Double
 walkSpeed = 120
 
 gravity :: Double
-gravity = 1000
+gravity = 700
+
+terminalVelocity :: Double
+terminalVelocity = 1400
 
 playerGeom :: BoxGeom
 playerGeom = BoxGeom
