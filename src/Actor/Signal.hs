@@ -8,10 +8,12 @@ import Actor.JumpState
 import BasePrelude
 import Collision
 import Control.Lens hiding (Level)
+import Control.Monad.State (State, modify)
 import Game.Sequoia
 import Linear.Metric
 import Linear.Vector
 import Math
+import Object
 import Types
 
 
@@ -27,6 +29,15 @@ getGraspHook l p = getFirst
                                           (aPos p)
                                           targetRadius
                            $ hookPos t
+
+graspLevel :: Level -> Actor -> Maybe (Level -> Level, Actor -> Actor)
+graspLevel l p = getFirst . mconcat . fmap f . zip [0..] $ _objects l
+  where
+    f :: (Int, Object) -> First (Level -> Level, Actor -> Actor)
+    f (idx, obj) = First
+                 . fmap (first $ \obj' -> objects . ix idx .~ obj')
+                 $ graspObject p obj
+
 
 
 isStanding :: Actor -> Bool
@@ -106,21 +117,25 @@ doJump p = p
   , attachment = Unattached
   }
 
-actionHandler :: Level -> Controller -> Actor -> Actor
+actionHandler :: Level -> Controller -> Actor -> State Level Actor
 actionHandler l ctrl p
-    | not (canAct p) = p
-    | shouldBoost    = setBoosting (fromJust $ wantsBoost ctrl) p
-    | shouldJump     = doJump p
+    | not (canAct p) = pure p
+    | shouldBoost    = pure $ setBoosting (fromJust $ wantsBoost ctrl) p
+    | shouldJump     = pure $ doJump p
     | wantsGrasp ctrl =
-      case getGraspHook l p of
-        Just t  -> onLandHandler p
-                   { attachment = Grasping t
-                                . normalize
-                                . set _y 0
-                                $ aPos p - hookPos t
-                   }
-        Nothing -> p
-    | otherwise       = p
+      case (getGraspHook l p, graspLevel l p) of
+        (Just t, _) ->
+          pure $ onLandHandler p
+            { attachment = Grasping t
+                         . normalize
+                         . set _y 0
+                         $ aPos p - hookPos t
+            }
+        (_, Just (lf, af)) -> do
+          modify lf
+          pure $ af p
+        (Nothing, Nothing) -> pure p
+    | otherwise       = pure p
   where
     shouldBoost = isJust (wantsBoost ctrl)
                && not (isBoosting p)
@@ -178,13 +193,13 @@ graspHandler ctrl p =
                       then ctrlDir ctrl
                       else dir
         in p { attachment = Grasping t dir'
-             , aPos = hookPos t
-                    + dir' ^* targetRadius
-                    + onSideways
-                        (V2 0 0)
-                        ((V2 0 0.5) ^* topY (aGeom p))
-                        dir'
-             }
+              , aPos = hookPos t
+                     + dir' ^* targetRadius
+                     + onSideways
+                         (V2 0 0)
+                         ((V2 0 0.5) ^* topY (aGeom p))
+                         dir'
+              }
       (False, True) -> setBoosting (boostDir dir) p
       (True, False) -> doJump p { jumpsLeft = 0 }
       _ -> p
@@ -194,14 +209,18 @@ graspHandler ctrl p =
     boostDir dir = normalize $ dir + onSideways (V2 0 0) (V2 0 $ -1) dir
 
 
-playerHandler :: Time -> Level -> Controller -> Actor -> Maybe Actor
+-- TODO(sandy): remove the kleisli so each of these gets the level from the monad
+playerHandler :: Time -> Level -> Controller -> Actor -> State Level (Maybe Actor)
 playerHandler dt l ctrl p
-  = deathHandler l
-  . fallHandler
-  . jumpHandler dt l ctrl
-  . actionHandler l ctrl
-  . graspHandler ctrl
-  . recoveryHandler dt
-  . walkHandler dt l ctrl
-  $ p
+    = k (deathHandler l)
+  =<< k (fallHandler)
+  =<< k (jumpHandler dt l ctrl)
+  =<< actionHandler l ctrl
+  =<< k (graspHandler ctrl)
+  =<< k (recoveryHandler dt)
+  =<< k (walkHandler dt l ctrl)
+  =<< pure p
+  where
+    k :: Monad m => (a -> b) -> a -> m b
+    k = (pure .)
 

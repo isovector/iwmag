@@ -11,7 +11,6 @@ import Actor.JumpState
 import Actor.Signal
 import BasePrelude
 import Game.Sequoia
-import Game.Sequoia.Color
 import Linear.Vector
 import Types
 

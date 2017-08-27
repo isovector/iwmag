@@ -1,13 +1,16 @@
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE TemplateHaskell   #-}
 
 module Types
   ( module Types
   , module Game.Sequoia
   , module Linear.Vector
   , module BasePrelude
+  , module Control.Lens
   ) where
 
-import BasePrelude hiding (rotate, group)
+import Control.Lens hiding (Level, levels)
+import BasePrelude hiding (rotate, group, (&), uncons, index, lazy)
 import Game.Sequoia
 import Linear.Vector hiding (E (..))
 import GHC.TypeLits
@@ -26,8 +29,9 @@ data Level = Level
   , noBoostZones :: [Rect]
   , doors        :: [Door]
   , targets      :: [Hook]
-  , objects      :: [Object]
+  , _objects     :: [Object]
   } deriving Show
+
 
 data Zone = Death   Rect
           | NoBoost Rect
@@ -76,6 +80,7 @@ data Object where
     { obj       :: a
     , renderObj :: a -> Form
     , updateObj :: Time -> Level -> Actor -> a -> a
+    , graspObj  :: Actor -> a -> Maybe (a, Actor -> Actor)
     } -> Object
 
 instance Show Object where
@@ -86,6 +91,7 @@ class KnownSymbol name => IsObject name where
   spawn :: V2 -> [(String, String)] -> InternalObj name
   render :: InternalObj name -> Form
   update :: Time -> Level -> Actor -> InternalObj name -> InternalObj name
+  grasp  :: Actor -> InternalObj name -> Maybe (InternalObj name, Actor -> Actor)
 
 data GameState = GameState
   { currentLevel :: !Level
@@ -109,4 +115,6 @@ data Controller = Controller
   , wantsBoost  :: !(Maybe V2)
   , wantsGrasp  :: !Bool
   } deriving (Show)
+
+makeLenses ''Level
 

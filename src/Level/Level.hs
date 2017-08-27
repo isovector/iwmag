@@ -72,7 +72,7 @@ parseLayers ls = let dz =  map (getRect) $ getZones isDeath
                          , deathZones   = dz
                          , noBoostZones = nbz
                          , targets      = levelHooks
-                         , objects      = levelObjects
+                         , _objects     = levelObjects
                          , doors = mapMaybe getDoor doors
                          , forms  = forms col
                                  ++ fmap targetForm levelHooks
@@ -189,7 +189,7 @@ buildLevel [] = Level [] [] (V2 1 0) [] [] [] [] []
 
 updateLevel :: Time -> Actor -> Level -> Level
 updateLevel dt p l = l
-  { objects = fmap (updateObject dt l p)
-            $ objects l
+  { _objects = fmap (updateObject dt l p)
+             $ _objects l
   }
 

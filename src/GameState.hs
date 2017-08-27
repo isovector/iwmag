@@ -9,16 +9,15 @@ module GameState
   , initState
   ) where
 
-import BasePrelude
-import Math
-import Level.Level
-import Game.Sequoia
-
 import Actor.Constants
-import Actor.Controller
 import Actor.Data
 import Actor.Signal
-import Types hiding (update)
+import BasePrelude
+import Control.Monad.State (runState)
+import Game.Sequoia
+import Level.Level
+import Math
+import Types hiding (update, to)
 
 doorHandler :: GameState -> GameState
 doorHandler s@(GameState {player = p, currentLevel = l}) =
@@ -28,13 +27,14 @@ doorHandler s@(GameState {player = p, currentLevel = l}) =
 
 update :: Time -> Controller -> GameState -> GameState
 update dt ctrl state@(GameState {player = p, currentLevel = l}) =
-    doorHandler $ case playerHandler dt l ctrl p of
-      Just p' -> state
-        { player = p'
-        , camera = aPos p'
-        , currentLevel  = updateLevel dt p' l
-        }
-      Nothing -> resetState l
+    doorHandler $ case flip runState l $ playerHandler dt l ctrl p of
+      (Just p', l') ->
+        state
+          { player = p'
+          , camera = aPos p'
+          , currentLevel  = updateLevel dt p' l'
+          }
+      (Nothing, l') -> resetState l'
 
 setLevel :: String -> GameState -> GameState
 setLevel ln s

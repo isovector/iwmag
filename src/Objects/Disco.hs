@@ -24,3 +24,5 @@ instance IsObject "disco" where
   update dt _ _ t@Disco {..} =
     t { discoDur = discoDur + dt * 3 }
 
+  grasp _ _ = Nothing
+

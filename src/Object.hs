@@ -8,11 +8,17 @@
 module Object where
 
 import Types
-import Actor.Constants
+
 
 updateObject :: Time -> Level -> Actor -> Object -> Object
 updateObject dt l p Object {..}
-  = Object (updateObj dt l p obj) renderObj updateObj
+  = Object (updateObj dt l p obj) renderObj updateObj graspObj
+
+graspObject :: Actor -> Object -> Maybe (Object, Actor -> Actor)
+graspObject a Object {..} =
+  fmap (first $ \obj' -> Object obj' renderObj updateObj graspObj)
+    $ graspObj a obj
 
 renderObject :: Object -> Form
 renderObject Object {..} = renderObj obj
+

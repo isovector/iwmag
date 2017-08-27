@@ -27,7 +27,7 @@ render state = collage gameWidth gameHeight
              . group
              $ drawActor (player state)
                ++ forms level
-               ++ fmap renderObject (objects level)
+               ++ fmap renderObject (_objects level)
     where cam    = camera state
           center = V2 (fromIntegral gameWidth) (fromIntegral gameHeight) ^* 0.5
           level = currentLevel state

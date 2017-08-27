@@ -4,6 +4,7 @@
 
 module Objects.Follower where
 
+import Control.Monad.State (evalState)
 import Actor
 import Actor.Controller
 import Actor.Data
@@ -32,6 +33,11 @@ instance IsObject "follower" where
     Follower . followerHandler dt l (makeController l p a)
              $ a
 
+  grasp p (fActor -> a) =
+    case norm (aPos p - aPos a) <= 15 of
+      True  -> Just (Follower $ a { aColor = blue }, id)
+      False -> Nothing
+
 
 makeController :: Level -> Actor -> Actor -> Controller
 makeController _ p a = initController
@@ -43,9 +49,13 @@ makeController _ p a = initController
 
 followerHandler :: Time -> Level -> Controller -> Actor -> Actor
 followerHandler dt l ctrl p
-  = fallHandler
-  . jumpHandler dt l ctrl
-  . actionHandler l ctrl
-  . walkHandler dt l ctrl
-  $ p
+   = fallHandler
+   . jumpHandler dt l ctrl
+   . flip evalState l
+   $ actionHandler l ctrl
+ =<< k (walkHandler dt l ctrl)
+ =<< pure p
+  where
+    k :: Monad m => (a -> b) -> a -> m b
+    k = (pure .)
 
