@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.0" orientation="orthogonal" renderorder="right-down" width="30" height="15" tilewidth="16" tileheight="16" nextobjectid="53">
+<map version="1.0" orientation="orthogonal" renderorder="right-down" width="30" height="15" tilewidth="16" tileheight="16" nextobjectid="63">
  <objectgroup name="collision">
   <object id="2" x="0" y="0">
    <polyline points="0,0 0,240"/>
@@ -73,37 +73,57 @@
    </properties>
    <ellipse/>
   </object>
-  <object id="42" type="gem" x="64" y="96" width="16" height="16">
+  <object id="42" type="gem" x="71.2727" y="102" width="2" height="2.18182">
    <properties>
     <property name="color" value="1 1 0 1"/>
    </properties>
   </object>
-  <object id="47" type="gem" x="80" y="96" width="16" height="16">
+  <object id="53" type="gem" x="79.1818" y="102.545" width="2" height="2.18182">
    <properties>
     <property name="color" value="1 1 0 1"/>
    </properties>
   </object>
-  <object id="48" type="gem" x="96" y="96" width="16" height="16">
+  <object id="54" type="gem" x="75.3636" y="102.545" width="2" height="2.18182">
    <properties>
     <property name="color" value="1 1 0 1"/>
    </properties>
   </object>
-  <object id="49" type="gem" x="112" y="96" width="16" height="16">
+  <object id="55" type="gem" x="82.4545" y="102.909" width="2" height="2.18182">
    <properties>
     <property name="color" value="1 1 0 1"/>
    </properties>
   </object>
-  <object id="50" type="gem" x="72" y="96" width="16" height="16">
+  <object id="56" type="gem" x="87.5455" y="102" width="2" height="2.18182">
    <properties>
     <property name="color" value="1 1 0 1"/>
    </properties>
   </object>
-  <object id="51" type="gem" x="89" y="96" width="16" height="16">
+  <object id="57" type="gem" x="92.2727" y="102.364" width="2" height="2.18182">
    <properties>
     <property name="color" value="1 1 0 1"/>
    </properties>
   </object>
-  <object id="52" type="gem" x="104" y="95" width="16" height="16">
+  <object id="58" type="gem" x="96.4545" y="102" width="2" height="2.18182">
+   <properties>
+    <property name="color" value="1 1 0 1"/>
+   </properties>
+  </object>
+  <object id="59" type="gem" x="104.273" y="102.727" width="2" height="2.18182">
+   <properties>
+    <property name="color" value="1 1 0 1"/>
+   </properties>
+  </object>
+  <object id="60" type="gem" x="101.364" y="102.182" width="2" height="2.18182">
+   <properties>
+    <property name="color" value="1 1 0 1"/>
+   </properties>
+  </object>
+  <object id="61" type="gem" x="109.545" y="102.182" width="2" height="2.18182">
+   <properties>
+    <property name="color" value="1 1 0 1"/>
+   </properties>
+  </object>
+  <object id="62" type="gem" x="115.364" y="102.909" width="2" height="2.18182">
    <properties>
     <property name="color" value="1 1 0 1"/>
    </properties>

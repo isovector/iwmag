@@ -97,11 +97,10 @@ parseLayers ls = let dz =  map (getRect) $ getZones isDeath
 
 
 getPosOfObj :: Object -> V2
-getPosOfObj Object{objectX = x, objectY = y} =
-    V2 (fromIntegral x * importScale) (fromIntegral y * importScale)
+getPosOfObj Object{objectX = x, objectY = y} = scaleDouble x y
 
-scaleInts :: Int -> Int -> V2
-scaleInts x y = V2 (importScale * fromIntegral x) (importScale * fromIntegral y)
+scaleDouble :: Double -> Double -> V2
+scaleDouble x y = V2 (importScale * x) (importScale * y)
 
 parseMeta :: Maybe Layer -> (V2, [Zone])
 parseMeta (Just ObjectLayer{layerObjects = objs}) =
@@ -117,7 +116,7 @@ parseMeta (Just ObjectLayer{layerObjects = objs}) =
 
         getObjs t = filter (maybe False (== t) . objectType) objs
         toRect obj@(Object{objectWidth = w, objectHeight = h}) =
-            Rect (getPosOfObj obj) $ scaleInts (fromJust w) (fromJust h)
+            Rect (getPosOfObj obj) $ scaleDouble (fromJust w) (fromJust h)
         getZone cons name = map (cons . toRect) $ getObjs name
 parseMeta _ = (V2 0 0, [])
 
@@ -156,22 +155,22 @@ parseCollision layers =
           | isJust l =
               let (Polyline pl) = fromJust l
                   ls = zip pl $ tail pl
-                  x = importScale * fromIntegral x'
-                  y = importScale * fromIntegral y'
+                  x = importScale * x'
+                  y = importScale * y'
                   fromPair ((ax,ay),(bx,by))
                       | ax == bx || ay == by =
                           Wall (lineBetween
-                               (V2 (x + fromIntegral ax * importScale) (y + fromIntegral ay * importScale))
-                               (V2 (x + fromIntegral bx * importScale) (y + fromIntegral by * importScale)))
+                               (V2 (x + ax * importScale) (y + ay * importScale))
+                               (V2 (x + bx * importScale) (y + by * importScale)))
                                green
                       | otherwise = error "level contains slopes"
                in map fromPair ls
 
           | otherwise =
-              let x = importScale * fromIntegral x'
-                  y = importScale * fromIntegral y'
-                  w = importScale * (fromIntegral $ fromJust w')
-                  h = importScale * (fromIntegral $ fromJust h')
+              let x = importScale * x'
+                  y = importScale * y'
+                  w = importScale * fromJust w'
+                  h = importScale * fromJust h'
                in [ Wall (lineRel (V2 x y)       (V2 w 0)) green
                   , Wall (lineRel (V2 x (y + h)) (V2 w 0)) green
                   , Wall (lineRel (V2 x y)       (V2 0 h)) green
