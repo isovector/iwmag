@@ -72,6 +72,7 @@ levels = zip names
        $ names
   where names = [ "test1"
                 , "test2"
+                , "test3"
                 ]
 {-# NOINLINE levels #-}
 
