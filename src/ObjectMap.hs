@@ -1,9 +1,5 @@
-{-# LANGUAGE DataKinds           #-}
 {-# LANGUAGE NoImplicitPrelude   #-}
-{-# LANGUAGE PolyKinds           #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell     #-}
-{-# LANGUAGE TypeApplications    #-}
 
 module ObjectMap
   ( objectMap
@@ -12,7 +8,7 @@ module ObjectMap
 import qualified Data.Map as M
 import           GHC.TypeLits
 import           Language.Haskell.Discovery
-import           Object ()
+import           Objects.Disco ()
 import           Types
 
 

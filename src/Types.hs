@@ -1,8 +1,4 @@
-{-# LANGUAGE DataKinds         #-}
-{-# LANGUAGE GADTs             #-}
 {-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE PolyKinds         #-}
-{-# LANGUAGE TypeFamilies      #-}
 
 module Types
   ( module Types

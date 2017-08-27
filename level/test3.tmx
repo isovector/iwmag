@@ -37,39 +37,39 @@
   </object>
  </objectgroup>
  <objectgroup name="objects">
-  <object id="35" type="tree" x="64" y="96" width="16" height="16">
+  <object id="35" type="disco" x="64" y="96" width="16" height="16">
    <properties>
-    <property name="color" value="Color 1 0 0 1"/>
+    <property name="color" value="1 0 0 1"/>
    </properties>
    <ellipse/>
   </object>
-  <object id="37" type="tree" x="80" y="96" width="16" height="16">
+  <object id="37" type="disco" x="80" y="96" width="16" height="16">
    <properties>
-    <property name="color" value="Color 1 1 0 1"/>
+    <property name="color" value="1 1 0 1"/>
    </properties>
    <ellipse/>
   </object>
-  <object id="38" type="tree" x="96" y="96" width="16" height="16">
+  <object id="38" type="disco" x="96" y="96" width="16" height="16">
    <properties>
-    <property name="color" value="Color 0 1 0 1"/>
+    <property name="color" value="0 1 0 1"/>
    </properties>
    <ellipse/>
   </object>
-  <object id="39" type="tree" x="112" y="96" width="16" height="16">
+  <object id="39" type="disco" x="112" y="96" width="16" height="16">
    <properties>
-    <property name="color" value="Color 0 1 1 1"/>
+    <property name="color" value="0 1 1 1"/>
    </properties>
    <ellipse/>
   </object>
-  <object id="40" type="tree" x="128" y="96" width="16" height="16">
+  <object id="40" type="disco" x="128" y="96" width="16" height="16">
    <properties>
-    <property name="color" value="Color 0 0 1 1"/>
+    <property name="color" value="0 0 1 1"/>
    </properties>
    <ellipse/>
   </object>
-  <object id="41" type="tree" x="144" y="96" width="16" height="16">
+  <object id="41" type="disco" x="144" y="96" width="16" height="16">
    <properties>
-    <property name="color" value="Color 1 0 1 1"/>
+    <property name="color" value="1 0 1 1"/>
    </properties>
    <ellipse/>
   </object>
