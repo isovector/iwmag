@@ -1,9 +1,8 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Player.Constants where
+module Actor.Constants where
 
 import BasePrelude
-import Collision
 import Types
 
 targetRadius :: Double
@@ -41,14 +40,6 @@ gravity = 700
 
 terminalVelocity :: Double
 terminalVelocity = 1400
-
-playerGeom :: BoxGeom
-playerGeom = BoxGeom
-  { topY    = 24
-  , bottomY = 0
-  , leftX   = 8
-  , rightX  = 8
-  }
 
 firstLevel :: String
 firstLevel = "test3"

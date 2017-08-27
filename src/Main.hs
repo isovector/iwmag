@@ -10,8 +10,8 @@ import GameState
 import Level.Level
 import Linear.Vector
 import Object
-import Player
-import Player.Controller
+import Actor
+import Actor.Controller
 
 gameWidth :: Int
 gameWidth = 600
@@ -25,7 +25,7 @@ render state = collage gameWidth gameHeight
              . pure
              . move (center - cam)
              . group
-             $ drawPlayer (player state)
+             $ drawActor (player state)
                ++ forms level
                ++ fmap renderObject (objects level)
     where cam    = camera state

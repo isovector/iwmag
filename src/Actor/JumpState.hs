@@ -1,6 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Player.JumpState
+module Actor.JumpState
   ( JumpState (..)
   , isStand
   , isJump

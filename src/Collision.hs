@@ -2,20 +2,12 @@
 
 module Collision where
 
-import BasePrelude hiding (left, right)
 import Control.Lens hiding (to)
 import Game.Sequoia
 import Linear.Metric
-import Linear.Vector
 import Math
+import Types hiding (left, right)
 
-
-data BoxGeom = BoxGeom
-  { leftX   :: Double
-  , rightX  :: Double
-  , topY    :: Double
-  , bottomY :: Double
-  }
 
 boxGeomToRect :: BoxGeom -> V2 -> Rect
 boxGeomToRect b p =

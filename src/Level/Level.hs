@@ -19,7 +19,7 @@ import           Game.Sequoia.Color
 import           Linear.Vector
 import           Math
 import           ObjectMap
-import           Player.Constants
+import           Actor.Constants
 import qualified Types as T
 import           Types hiding (Object (..))
 import Object
@@ -187,7 +187,7 @@ buildLevel ((Wall l c):pxs) =
 buildLevel [] = Level [] [] (V2 1 0) [] [] [] [] []
 
 
-updateLevel :: Time -> Player -> Level -> Level
+updateLevel :: Time -> Actor -> Level -> Level
 updateLevel dt p l = l
   { objects = fmap (updateObject dt l p)
             $ objects l

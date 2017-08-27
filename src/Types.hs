@@ -35,21 +35,29 @@ data Zone = Death   Rect
           deriving Show
 data Door = Door Rect String deriving Show
 
-data PlayerAttachment
+data ActorAttachment
   = Unattached
   | StandingOn Line
   | Grasping Hook V2
   deriving (Eq, Show)
 
 
-data Player = Player
-  { pPos         :: !V2
+data Actor = Actor
+  { aPos         :: !V2
   , jumpState    :: !JumpState
   , jumpsLeft    :: !Int
   , boostsLeft   :: !Int
   , recoveryTime :: !Time
-  , attachment   :: PlayerAttachment
-  } deriving (Show)
+  , attachment   :: ActorAttachment
+  , aGeom        :: BoxGeom
+  } deriving (Show, Eq)
+
+data BoxGeom = BoxGeom
+  { leftX   :: Double
+  , rightX  :: Double
+  , topY    :: Double
+  , bottomY :: Double
+  } deriving (Show, Eq)
 
 
 
@@ -66,7 +74,7 @@ data Object where
   Object ::
     { obj       :: a
     , renderObj :: a -> Form
-    , updateObj :: Time -> Level -> Player -> a -> a
+    , updateObj :: Time -> Level -> Actor -> a -> a
     } -> Object
 
 instance Show Object where
@@ -76,10 +84,10 @@ class KnownSymbol name => IsObject name where
   data InternalObj name
   spawn :: V2 -> [(String, String)] -> InternalObj name
   render :: InternalObj name -> Form
-  update :: Time -> Level -> Player -> InternalObj name -> InternalObj name
+  update :: Time -> Level -> Actor -> InternalObj name -> InternalObj name
 
 data GameState = GameState
   { currentLevel :: !Level
-  , player       :: !Player
+  , player       :: !Actor
   , camera       :: !V2
   }

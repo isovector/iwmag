@@ -1,8 +1,8 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Player.Signal
-  ( Player
-  , pPos
+module Actor.Signal
+  ( Actor
+  , aPos
   , jumpState
   , playerHandler
   , isBoosting
@@ -16,47 +16,48 @@ import Level.Level
 import Linear.Metric
 import Linear.Vector
 import Math
-import Player.Constants
-import Player.Controller
-import Player.Data
-import Player.JumpState
+import Actor.Constants
+import Actor.Controller
+import Actor.Data
+import Actor.JumpState
+import Types
 
 
-getGraspHook :: Level -> Player -> Maybe Hook
+getGraspHook :: Level -> Actor -> Maybe Hook
 getGraspHook l p = getFirst
                  . mconcat
-                 . fmap intersectsWithPlayer
+                 . fmap intersectsWithActor
                  $ targets l
   where
-    intersectsWithPlayer t = First
+    intersectsWithActor t = First
                            . bool Nothing (Just t)
-                           . withinRadius playerGeom
-                                          (pPos p)
+                           . withinRadius (aGeom p)
+                                          (aPos p)
                                           targetRadius
                            $ hookPos t
 
 
-isStanding :: Player -> Bool
+isStanding :: Actor -> Bool
 isStanding = isStand . jumpState
 
-isBoosting :: Player -> Bool
+isBoosting :: Actor -> Bool
 isBoosting p = let state = jumpState p
                 in isBoost state
 
-isGrasping :: Player -> Bool
+isGrasping :: Actor -> Bool
 isGrasping p = case attachment p of
                  Grasping _ _ -> True
                  _            -> False
 
-canAct :: Player -> Bool
+canAct :: Actor -> Bool
 canAct p = go $ jumpState p
   where go (Boost _ _) = False
         go _           = True
 
-collision :: Level -> Axis -> V2 -> Double -> (Maybe Line, V2)
-collision l ax pos dx = sweep playerGeom pos (geometry l) ax dx
+collision :: Level -> Axis -> BoxGeom -> V2 -> Double -> (Maybe Line, V2)
+collision l ax geom pos dx = sweep geom pos (geometry l) ax dx
 
-jumpHandler :: Time -> Level -> Controller -> Player -> Player
+jumpHandler :: Time -> Level -> Controller -> Actor -> Actor
 jumpHandler dt l ctrl p = bool (go $ jumpState p) p $ isGrasping p
   where
     go (Stand)  = p
@@ -65,55 +66,55 @@ jumpHandler dt l ctrl p = bool (go $ jumpState p) p $ isGrasping p
       case collided of
         Just line ->
           let landed = onLandHandler p
-           in landed { pPos =  pos'
+           in landed { aPos =  pos'
                      , attachment = StandingOn line
                      }
         Nothing ->
           p { jumpState = Jump $ y + (min gravity' terminalVelocity) * dt
-            , pPos = pos'
+            , aPos = pos'
             }
       where
           gravity' = if ctrlJump ctrl && y < 0
                         then gravity * jumpAttenuation
                         else gravity
-          (collided, pos') = collision l AxisY (pPos p) $ dt * y
+          (collided, pos') = collision l AxisY (aGeom p) (aPos p) $ dt * y
 
     go (Boost dir t)
         | t > 0 = p { jumpState = Boost dir $ t - dt
-                    , pPos      = xy'
+                    , aPos      = xy'
                     }
         | otherwise = addRecovery $ setFalling p
-      where (_, x')  = collision l AxisX (pPos p) $ view _x boostDt
-            (_, xy') = collision l AxisY x' $ view _y boostDt
+      where (_, x')  = collision l AxisX (aGeom p) (aPos p) $ view _x boostDt
+            (_, xy') = collision l AxisY (aGeom p) x' $ view _y boostDt
             boostDt = (dt * boostStrength) *^ dir
 
-setBoosting :: V2 -> Player -> Player
+setBoosting :: V2 -> Actor -> Actor
 setBoosting dir p = p
   { jumpState  = Boost dir boostTime
   , boostsLeft = boostsLeft p - 1
   , attachment = Unattached
   }
 
-onLandHandler :: Player -> Player
+onLandHandler :: Actor -> Actor
 onLandHandler p = p
   { jumpState  = Stand
   , jumpsLeft  = jumpCount
   , boostsLeft = boostCount
   }
 
-canBoost :: Level -> Player -> Bool
+canBoost :: Level -> Actor -> Bool
 canBoost (Level{noBoostZones = zs}) p = boostsLeft p > 0
                                      && recoveryTime p == 0
-                                     && not (flip any zs $ flip inRect (pPos p))
+                                     && not (flip any zs $ flip inRect (aPos p))
 
-doJump :: Player -> Player
+doJump :: Actor -> Actor
 doJump p = p
   { jumpState  = Jump (-jumpStrength)
   , jumpsLeft  = jumpsLeft p - 1
   , attachment = Unattached
   }
 
-actionHandler :: Level -> Controller -> Player -> Player
+actionHandler :: Level -> Controller -> Actor -> Actor
 actionHandler l ctrl p
     | not (canAct p) = p
     | shouldBoost    = setBoosting (fromJust $ wantsBoost ctrl) p
@@ -124,7 +125,7 @@ actionHandler l ctrl p
                    { attachment = Grasping t
                                 . normalize
                                 . set _y 0
-                                $ pPos p - hookPos t
+                                $ aPos p - hookPos t
                    }
         Nothing -> p
     | otherwise       = p
@@ -136,23 +137,23 @@ actionHandler l ctrl p
     shouldJump  = wantsJump ctrl
                && jumpsLeft p > 0
 
-setFalling :: Player -> Player
+setFalling :: Actor -> Actor
 setFalling p =
   p { jumpState  = Jump 0
     , attachment = Unattached
     }
 
-stillStanding :: Player -> Bool
+stillStanding :: Actor -> Bool
 stillStanding p =
   case attachment p of
     Unattached -> False
-    StandingOn l -> isJust . fst $ sweep playerGeom (pPos p) [l] AxisY 1
+    StandingOn l -> isJust . fst $ sweep (aGeom p) (aPos p) [l] AxisY 1
     Grasping _ _ -> True
 
-recoveryHandler :: Time -> Player -> Player
+recoveryHandler :: Time -> Actor -> Actor
 recoveryHandler dt p = p { recoveryTime = max 0 $ recoveryTime p - dt }
 
-fallHandler :: Player -> Player
+fallHandler :: Actor -> Actor
 fallHandler p
   | isStanding p =
     if stillStanding p
@@ -160,23 +161,23 @@ fallHandler p
        else setFalling p
   | otherwise    = p
 
-addRecovery :: Player -> Player
+addRecovery :: Actor -> Actor
 addRecovery p = p { recoveryTime = recoverTime }
 
-walkHandler :: Time -> Level -> Controller -> Player -> Player
+walkHandler :: Time -> Level -> Controller -> Actor -> Actor
 walkHandler dt l ctrl p
     | isGrasping p = p
-    | canAct p     = p { pPos = pos' }
+    | canAct p     = p { aPos = pos' }
     | otherwise    = p
-  where (_, pos') = collision l AxisX (pPos p) $ walkSpeed * dt * dir
+  where (_, pos') = collision l AxisX (aGeom p) (aPos p) $ walkSpeed * dt * dir
         dir       = view _x . ctrlDir $ ctrl
 
-deathHandler :: Level -> Player -> Maybe Player
-deathHandler l p = if any (flip inRect (pPos p)) $ deathZones l
+deathHandler :: Level -> Actor -> Maybe Actor
+deathHandler l p = if any (flip inRect (aPos p)) $ deathZones l
                       then Nothing
                       else Just p
 
-graspHandler :: Controller -> Player -> Player
+graspHandler :: Controller -> Actor -> Actor
 graspHandler ctrl p =
   case attachment p of
     Grasping t dir -> case (wantsJump ctrl, wantsGrasp ctrl) of
@@ -185,11 +186,11 @@ graspHandler ctrl p =
                       then ctrlDir ctrl
                       else dir
         in p { attachment = Grasping t dir'
-             , pPos = hookPos t
+             , aPos = hookPos t
                     + dir' ^* targetRadius
                     + onSideways
                         (V2 0 0)
-                        ((V2 0 0.5) ^* topY playerGeom)
+                        ((V2 0 0.5) ^* topY (aGeom p))
                         dir'
              }
       (False, True) -> setBoosting (boostDir dir) p
@@ -201,7 +202,7 @@ graspHandler ctrl p =
     boostDir dir = normalize $ dir + onSideways (V2 0 0) (V2 0 $ -1) dir
 
 
-playerHandler :: Time -> Level -> Controller -> Player -> Maybe Player
+playerHandler :: Time -> Level -> Controller -> Actor -> Maybe Actor
 playerHandler dt l ctrl p = deathHandler l
                           . fallHandler
                           . jumpHandler dt l ctrl

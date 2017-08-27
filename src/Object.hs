@@ -8,9 +8,9 @@
 module Object where
 
 import Types
-import Player.Constants
+import Actor.Constants
 
-updateObject :: Time -> Level -> Player -> Object -> Object
+updateObject :: Time -> Level -> Actor -> Object -> Object
 updateObject dt l p Object {..}
   = Object (updateObj dt l p obj) renderObj updateObj
 

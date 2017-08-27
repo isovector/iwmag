@@ -1,23 +1,22 @@
 {-# LANGUAGE NoImplicitPrelude   #-}
 
-module Player
-  ( Player
-  , drawPlayer
+module Actor
+  ( Actor
+  , drawActor
   , playerHandler
   ) where
 
+import Actor.Data
+import Actor.JumpState
+import Actor.Signal
 import BasePrelude
-import Collision
 import Game.Sequoia
 import Game.Sequoia.Color
 import Linear.Vector
-import Player.Constants
-import Player.Data
-import Player.JumpState
-import Player.Signal
+import Types
 
-drawPlayer :: Player -> [Form]
-drawPlayer p = fmap (move pos) $
+drawActor :: Actor -> [Form]
+drawActor p = fmap (move pos) $
   [ move (V2 ((r - l) / 2) $ (b - t) / 2)
       . filled white
       $ rect width height
@@ -32,15 +31,15 @@ drawPlayer p = fmap (move pos) $
   , let color = 1 - fromIntegral n / 6
   ]
   where
-    pos    = pPos $ p
-    l      = leftX   playerGeom
-    r      = rightX  playerGeom
-    t      = topY    playerGeom
-    b      = bottomY playerGeom
+    pos    = aPos $ p
+    l      = leftX   (aGeom p)
+    r      = rightX  (aGeom p)
+    t      = topY    (aGeom p)
+    b      = bottomY (aGeom p)
     width  = l + r
     height = t + b
 
-getBoostDir :: Player -> Maybe V2
+getBoostDir :: Actor -> Maybe V2
 getBoostDir p =
   case jumpState p of
     Boost dir _ -> Just dir

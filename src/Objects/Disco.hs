@@ -4,7 +4,7 @@
 module Objects.Disco where
 
 import Types
-import Player.Constants
+import Actor.Constants
 
 
 instance IsObject "disco" where

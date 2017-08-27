@@ -1,7 +1,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE RecordWildCards   #-}
 
-module Player.Controller
+module Actor.Controller
   ( Controller (..)
   , ctrlSignal
   , initController
@@ -10,7 +10,7 @@ module Player.Controller
 
 import BasePrelude
 import Linear.Metric
-import Player.Constants
+import Actor.Constants
 import Game.Sequoia
 import Game.Sequoia.Keyboard
 

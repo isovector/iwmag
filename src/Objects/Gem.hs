@@ -4,7 +4,6 @@
 module Objects.Gem where
 
 import Collision
-import Player.Constants
 import Types hiding (form)
 
 
@@ -32,7 +31,7 @@ instance IsObject "gem" where
   update _ _ p t@Gem {..}
     | collected = t
     | otherwise =
-        case withinRadius playerGeom (pPos p) 4 gemPos of
+        case withinRadius (aGeom p) (aPos p) 4 gemPos of
           True ->  t { collected = True }
           False -> t
 
