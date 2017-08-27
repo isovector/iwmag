@@ -28,7 +28,7 @@ ctrlSignal keys keys' = signal
                      , wantsBoost = boost' && not boost
                      }
 
-      signal   = makeState <$> arrows keys'
+      signal   = makeState <$> wasd keys'
                            <*> jumpKey keys'
                            <*> jumpKey keys
                            <*> boostKey keys'

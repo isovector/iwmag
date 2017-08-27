@@ -87,7 +87,6 @@ setBoosting ctrl p = p { jumpState  = Boost (normalize . ctrlDir $ ctrl) boostTi
 onLandHandler :: Player -> Player
 onLandHandler p = p { jumpState  = Stand
                     , jumpsLeft  = jumpCount
-                    , hasBoosted = False
                     , boostsLeft = boostCount
                     }
 
@@ -100,7 +99,6 @@ actionHandler l ctrl p
     | not (canAct p) = p
     | shouldBoost    = p { jumpState  = Prepare prepareTime
                          , jumpsLeft  = 0
-                         , hasBoosted = True
                          , standingOn = Nothing
                          }
     | shouldJump     = p { jumpState  = Jump (-jumpStrength)
@@ -110,7 +108,6 @@ actionHandler l ctrl p
     | otherwise      = p
       where shouldBoost =  wantsBoost ctrl
                         && not (isBoosting p)
-                        && not (hasBoosted p)
                         && canBoost l p
             shouldJump  =  wantsJump ctrl
                         && jumpsLeft p > 0
