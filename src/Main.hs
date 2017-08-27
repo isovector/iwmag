@@ -8,6 +8,7 @@ import Game.Sequoia.Keyboard
 import Player.Controller
 import GameState
 import Level.Level
+import Control.FRPNow.Time (delayTime)
 import Player
 import Linear.Vector
 
@@ -33,12 +34,12 @@ runGame :: Engine -> N (B Element)
 runGame _ = do
   clock      <- getClock
   controller <- getKeyboard
+  oldCtrller <- sample $ delayTime (deltaTime clock) [] controller
 
-  (game, _) <-
-    foldmp initState $ \g -> do
-      dt   <- sample $ deltaTime clock
-      ctrl <- sample $ ctrlSignal controller
-      pure $ update dt g
+  (game, _) <- foldmp initState $ \g -> do
+    dt   <- sample $ deltaTime clock
+    ctrl <- sample $ ctrlSignal oldCtrller controller
+    pure $ update dt ctrl g
 
   return $ do
     game' <- sample game

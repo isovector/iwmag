@@ -1,14 +1,9 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Player.Controller ( Controller
-                         , ctrlDir
-                         , ctrlJump
-                         , ctrlBoost
-                         , ctrlSignal
-                         , wantsJump
-                         , wantsBoost
-                         , noCtrls
-                         ) where
+module Player.Controller
+  ( Controller (..)
+  , ctrlSignal
+  ) where
 
 import BasePrelude
 import Game.Sequoia
@@ -22,28 +17,22 @@ data Controller =
                , wantsBoost :: !Bool
                } deriving (Show)
 
--- TODO(sandy): can we delete this?
-noCtrls :: Controller
-noCtrls =
-    Controller { ctrlDir    = V2 0 0
-               , ctrlJump   = False
-               , ctrlBoost  = False
-               , wantsJump  = False
-               , wantsBoost = False
-               }
-
-ctrlSignal :: B [Key] -> B Controller
-ctrlSignal keys = signal
+ctrlSignal :: B [Key] -> B [Key] -> B Controller
+ctrlSignal keys keys' = signal
   where
-      makeState dir jump boost =
+      makeState dir jump' jump boost' boost =
           Controller { ctrlDir    = dir
-                     , ctrlJump   = jump
-                     , ctrlBoost  = boost
-                     , wantsJump  = False
-                     , wantsBoost = False
+                     , ctrlJump   = jump'
+                     , ctrlBoost  = boost'
+                     , wantsJump  = jump' && not jump
+                     , wantsBoost = boost' && not boost
                      }
 
-      signal   = makeState <$> arrows keys <*> jumpKey keys <*> boostKey keys
+      signal   = makeState <$> arrows keys'
+                           <*> jumpKey keys'
+                           <*> jumpKey keys
+                           <*> boostKey keys'
+                           <*> boostKey keys
       jumpKey  = flip isDown LeftShiftKey
       boostKey = flip isDown ZKey
 
