@@ -5,6 +5,9 @@ module Player.Constants where
 import BasePrelude
 import Collision
 
+doubleTapTime :: Double
+doubleTapTime = 0.1
+
 jumpAttenuation :: Double
 jumpAttenuation = 0.45
 
@@ -15,16 +18,16 @@ jumpCount :: Int
 jumpCount = 2
 
 boostCount :: Int
-boostCount = 3
+boostCount = 100
 
 boostTime :: Double
 boostTime = 0.2
 
 boostStrength :: Double
-boostStrength = 100 / boostTime
+boostStrength = 80 / boostTime
 
-prepareTime :: Double
-prepareTime = 0.35
+recoverTime :: Double
+recoverTime = 0.35
 
 walkSpeed :: Double
 walkSpeed = 200
@@ -42,3 +45,4 @@ playerGeom =
 
 firstLevel :: String
 firstLevel = "test1"
+

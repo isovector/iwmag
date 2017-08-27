@@ -11,6 +11,7 @@ import Level.Level
 import Control.FRPNow.Time (delayTime)
 import Player
 import Linear.Vector
+import Utils
 
 
 gameWidth :: Int
@@ -33,16 +34,17 @@ render state = collage gameWidth gameHeight
 runGame :: Engine -> N (B Element)
 runGame _ = do
   clock      <- getClock
-  controller <- getKeyboard
-  oldCtrller <- sample $ delayTime (deltaTime clock) [] controller
+  rController <- getKeyboard
+  rOldCtrller <- sample $ delayTime (deltaTime clock) [] rController
 
-  (game, _) <- foldmp initState $ \g -> do
+  (gameAndCtrl, _) <- foldmp (initState, initController) $ \(g, ctrl) -> do
     dt   <- sample $ deltaTime clock
-    ctrl <- sample $ ctrlSignal oldCtrller controller
-    pure $ update dt ctrl g
+    rctrl <- sample $ ctrlSignal rOldCtrller rController
+    let ctrl' = foldController dt rctrl ctrl
+    pure $ (update dt ctrl' g, ctrl')
 
   return $ do
-    game' <- sample game
+    (game', _) <- sample gameAndCtrl
     pure $ render game'
 
 
