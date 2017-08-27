@@ -14,8 +14,7 @@ module Math ( unpackV2
 import BasePrelude
 import Game.Sequoia
 import Linear.Vector
-
-data Line = Line V2 V2 deriving (Show, Eq)
+import Types
 
 lineBetween :: V2 -> V2 -> Line
 lineBetween a b = Line a $ b - a
@@ -46,7 +45,6 @@ linesIntersect a b = onLine $ lineIntersect' a b
   where onLine Nothing       = False
         onLine (Just (x, y)) = x >= 0 && x <= 1 && y >= 0 && y <= 1
 
-data Rect = Rect V2 V2 deriving (Show, Eq)
 
 inRect :: Rect -> V2 -> Bool
 inRect (Rect (V2 x y) (V2 w h))

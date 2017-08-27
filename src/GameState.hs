@@ -1,12 +1,13 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module GameState ( GameState
-                 , currentLevel
-                 , player
-                 , camera
-                 , update
-                 , initState
-                 ) where
+module GameState
+  ( GameState
+  , currentLevel
+  , player
+  , camera
+  , update
+  , initState
+  ) where
 
 import BasePrelude
 import Math
@@ -17,12 +18,7 @@ import Player.Constants
 import Player.Controller
 import Player.Data
 import Player.Signal
-
-data GameState =
-    GameState { currentLevel :: !Level
-              , player       :: !Player
-              , camera       :: !V2
-              }
+import Types hiding (update)
 
 doorHandler :: GameState -> GameState
 doorHandler s@(GameState {player = p, currentLevel = l}) =
@@ -33,9 +29,11 @@ doorHandler s@(GameState {player = p, currentLevel = l}) =
 update :: Time -> Controller -> GameState -> GameState
 update dt ctrl state@(GameState {player = p, currentLevel = l}) =
     doorHandler $ case playerHandler dt l ctrl p of
-      Just p' -> state { player = p'
-                       , camera = pPos p'
-                       }
+      Just p' -> state
+        { player = p'
+        , camera = pPos p'
+        , currentLevel  = updateLevel dt p' l
+        }
       Nothing -> resetState l
 
 setLevel :: String -> GameState -> GameState

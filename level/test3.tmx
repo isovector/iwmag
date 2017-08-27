@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.0" orientation="orthogonal" renderorder="right-down" width="30" height="15" tilewidth="16" tileheight="16" nextobjectid="35">
+<map version="1.0" orientation="orthogonal" renderorder="right-down" width="30" height="15" tilewidth="16" tileheight="16" nextobjectid="42">
  <objectgroup name="collision">
   <object id="2" x="0" y="0">
    <polyline points="0,0 0,240"/>
@@ -10,7 +10,7 @@
   </object>
   <object id="32" x="64" y="112" width="128" height="16"/>
  </objectgroup>
- <objectgroup name="objects">
+ <objectgroup name="meta">
   <object id="15" type="death" x="0" y="224" width="480" height="16"/>
   <object id="16" type="spawn" x="32" y="32" width="16" height="16">
    <ellipse/>
@@ -33,6 +33,44 @@
    <ellipse/>
   </object>
   <object id="34" x="192" y="80" width="16" height="16">
+   <ellipse/>
+  </object>
+ </objectgroup>
+ <objectgroup name="objects">
+  <object id="35" type="tree" x="64" y="96" width="16" height="16">
+   <properties>
+    <property name="color" value="Color 1 0 0 1"/>
+   </properties>
+   <ellipse/>
+  </object>
+  <object id="37" type="tree" x="80" y="96" width="16" height="16">
+   <properties>
+    <property name="color" value="Color 1 1 0 1"/>
+   </properties>
+   <ellipse/>
+  </object>
+  <object id="38" type="tree" x="96" y="96" width="16" height="16">
+   <properties>
+    <property name="color" value="Color 0 1 0 1"/>
+   </properties>
+   <ellipse/>
+  </object>
+  <object id="39" type="tree" x="112" y="96" width="16" height="16">
+   <properties>
+    <property name="color" value="Color 0 1 1 1"/>
+   </properties>
+   <ellipse/>
+  </object>
+  <object id="40" type="tree" x="128" y="96" width="16" height="16">
+   <properties>
+    <property name="color" value="Color 0 0 1 1"/>
+   </properties>
+   <ellipse/>
+  </object>
+  <object id="41" type="tree" x="144" y="96" width="16" height="16">
+   <properties>
+    <property name="color" value="Color 1 0 1 1"/>
+   </properties>
    <ellipse/>
   </object>
  </objectgroup>

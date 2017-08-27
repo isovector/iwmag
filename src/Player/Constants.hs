@@ -4,6 +4,7 @@ module Player.Constants where
 
 import BasePrelude
 import Collision
+import Types
 
 targetRadius :: Double
 targetRadius = 8
@@ -48,4 +49,10 @@ playerGeom = BoxGeom
 
 firstLevel :: String
 firstLevel = "test3"
+
+importScale :: Double
+importScale = 2
+
+centerOnSquare :: Double -> V2 -> V2
+centerOnSquare n pos = pos + V2 1 1 ^* (importScale * n)
 

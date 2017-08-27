@@ -6,30 +6,8 @@ module Player.Data
   , defaultPlayer
   ) where
 
-import BasePrelude
-import Game.Sequoia
-import Math
 import Player.Constants
-import Player.JumpState
-import Level.Level
-
--- TODO(sandy): UMM WHAT NAME
-data PlayerAttachment
-  = Unattached
-  | StandingOn Line
-  | Grasping Hook V2
-  deriving (Eq, Show)
-
-
-data Player = Player
-  { pPos         :: !V2
-  , jumpState    :: !JumpState
-  , jumpsLeft    :: !Int
-  , boostsLeft   :: !Int
-  , recoveryTime :: !Time
-  , attachment   :: PlayerAttachment
-  } deriving (Show)
-
+import Types
 
 defaultPlayer :: Player
 defaultPlayer = Player

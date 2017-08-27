@@ -1,39 +1,39 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.0" orientation="orthogonal" width="30" height="23" tilewidth="16" tileheight="16">
- <objectgroup name="collision" width="30" height="23">
-  <object x="32" y="176" width="48" height="16"/>
-  <object x="256" y="240" width="48" height="16"/>
-  <object x="112" y="256" width="48" height="16"/>
-  <object x="128" y="224" width="16" height="16"/>
-  <object x="144" y="176" width="48" height="16"/>
-  <object x="256" y="80" width="32" height="16"/>
-  <object x="64" y="80" width="32" height="16"/>
-  <object x="384" y="128">
+<map version="1.0" orientation="orthogonal" renderorder="right-down" width="30" height="23" tilewidth="16" tileheight="16" nextobjectid="18">
+ <objectgroup name="collision">
+  <object id="1" x="32" y="176" width="48" height="16"/>
+  <object id="2" x="256" y="240" width="48" height="16"/>
+  <object id="3" x="112" y="256" width="48" height="16"/>
+  <object id="4" x="128" y="224" width="16" height="16"/>
+  <object id="5" x="144" y="176" width="48" height="16"/>
+  <object id="6" x="256" y="80" width="32" height="16"/>
+  <object id="7" x="64" y="80" width="32" height="16"/>
+  <object id="8" x="384" y="128">
    <polyline points="0,0 16,0 16,32 48,32 48,64 32,64 32,112 16,112 16,64 -32,64 -32,48 0,48 0,16 -32,16 -32,0 0,0"/>
   </object>
-  <object x="320" y="352">
+  <object id="9" x="320" y="352">
    <polyline points="0,0 0,-48 -96,-48 -96,-112 -128,-112 -128,-48 -224,-48 -224,-64 -240,-64 -240,-80 -256,-80 -256,-96 -272,-96 -272,-112 -288,-112 -288,-128 -304,-128 -304,-144 -320,-144 -320,0 0,0"/>
   </object>
-  <object x="320" y="112">
+  <object id="10" x="320" y="112">
    <polyline points="0,0 0,80 -48,80 -48,64 -32,64 -32,32 -16,32 -16,0 0,0"/>
   </object>
-  <object x="0" y="0">
+  <object id="11" x="0" y="0">
    <polyline points="0,0 0,208"/>
   </object>
-  <object x="480" y="0">
+  <object id="12" x="480" y="0">
    <polyline points="0,0 0,368"/>
   </object>
-  <object x="0" y="0">
+  <object id="13" x="0" y="0">
    <polyline points="0,0 480,0"/>
   </object>
  </objectgroup>
- <objectgroup name="objects" width="30" height="23">
-  <object type="spawn" x="48" y="160" width="16" height="16">
+ <objectgroup name="meta">
+  <object id="14" type="spawn" x="48" y="160" width="16" height="16">
    <ellipse/>
   </object>
-  <object type="death" x="0" y="352" width="480" height="16"/>
-  <object type="noboost" x="0" y="0" width="80" height="272"/>
-  <object type="door" x="368" y="144" width="16" height="32">
+  <object id="15" type="death" x="0" y="352" width="480" height="16"/>
+  <object id="16" type="noboost" x="0" y="0" width="80" height="272"/>
+  <object id="17" type="door" x="368" y="144" width="16" height="32">
    <properties>
     <property name="to" value="test2"/>
    </properties>

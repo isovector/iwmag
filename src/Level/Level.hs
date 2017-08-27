@@ -5,39 +5,24 @@
 module Level.Level
   ( Piece (..)
   , Hook (..)
-  , levels
   , Level (..)
   , Door (..)
+  , levels
+  , updateLevel
   ) where
 
-import BasePrelude
-import Data.Tiled
-import Game.Sequoia
-import Game.Sequoia.Color
-import Linear.Vector
-import Math
-import Player.Constants
-
-
-data Piece = Wall Line Color
-
-data Hook = Hook { hookPos :: V2 }
-  deriving (Eq, Show)
-
-data Level = Level { geometry     :: [Line]
-                   , forms        :: [Form]
-                   , playerSpawn  :: V2
-                   , deathZones   :: [Rect]
-                   , noBoostZones :: [Rect]
-                   , doors        :: [Door]
-                   , targets      :: [Hook]
-                   } deriving Show
-
-data Zone = Death   Rect
-          | NoBoost Rect
-          | DoorZ   Door
-          deriving Show
-data Door = Door Rect String deriving Show
+import           BasePrelude
+import qualified Data.Map as M
+import           Data.Tiled
+import           Game.Sequoia
+import           Game.Sequoia.Color
+import           Linear.Vector
+import           Math
+import           ObjectMap
+import           Player.Constants
+import qualified Types as T
+import           Types hiding (Object (..))
+import Object
 
 isDeath :: Zone -> Bool
 isDeath (Death _) = True
@@ -79,9 +64,6 @@ levels = zip names
                 ]
 {-# NOINLINE levels #-}
 
-importScale :: Double
-importScale = 2
-
 parseLayers :: [Layer] -> Level
 parseLayers ls = let dz =  map (getRect) $ getZones isDeath
                      nbz = map (getRect) $ getZones isNoBoost
@@ -90,6 +72,7 @@ parseLayers ls = let dz =  map (getRect) $ getZones isDeath
                          , deathZones   = dz
                          , noBoostZones = nbz
                          , targets      = levelHooks
+                         , objects      = levelObjects
                          , doors = mapMaybe getDoor doors
                          , forms  = forms col
                                  ++ fmap targetForm levelHooks
@@ -97,9 +80,10 @@ parseLayers ls = let dz =  map (getRect) $ getZones isDeath
                                  ++ zonesToForm nbz cyan
                                  ++ zonesToForm (map getRect doors) purple
                          }
-  where (spawn, zones) = parseObjects $ getLayer "objects"
+  where (spawn, zones) = parseMeta $ getLayer "meta"
         col            = buildLevel . parseCollision $ getLayer "collision"
-        levelHooks   = parseHooks . fromJust $ getLayer "targets"
+        levelHooks   = parseHooks $ getLayer "targets"
+        levelObjects = parseObjects $ getLayer "objects"
         getLayer name  = listToMaybe $ filter ((== name) . layerName) ls
         getZones f = filter f zones
         zonesToForm zs c = map (mkForm c) zs
@@ -119,8 +103,8 @@ getPosOfObj Object{objectX = x, objectY = y} =
 scaleInts :: Int -> Int -> V2
 scaleInts x y = V2 (importScale * fromIntegral x) (importScale * fromIntegral y)
 
-parseObjects :: Maybe Layer -> (V2, [Zone])
-parseObjects (Just ObjectLayer{layerObjects = objs}) =
+parseMeta :: Maybe Layer -> (V2, [Zone])
+parseMeta (Just ObjectLayer{layerObjects = objs}) =
     (spawn, deaths ++ noboosts ++ doors)
   where spawn = maybe (V2 0 0) getPosOfObj . listToMaybe $ getObjs "spawn"
         deaths = getZone Death "death"
@@ -135,13 +119,25 @@ parseObjects (Just ObjectLayer{layerObjects = objs}) =
         toRect obj@(Object{objectWidth = w, objectHeight = h}) =
             Rect (getPosOfObj obj) $ scaleInts (fromJust w) (fromJust h)
         getZone cons name = map (cons . toRect) $ getObjs name
-parseObjects _ = (V2 0 0, [])
+parseMeta _ = (V2 0 0, [])
 
-parseHooks :: Layer -> [Hook]
-parseHooks = fmap (Hook . getPos . getPosOfObj)
-             . layerObjects
+
+parseHooks :: Maybe Layer -> [Hook]
+parseHooks layers =
+  case layers of
+    Just layer ->
+      fmap (Hook . centerOnSquare targetRadius . getPosOfObj)
+           $ layerObjects layer
+    Nothing -> []
+
+
+parseObjects :: Maybe Layer -> [T.Object]
+parseObjects layers =
+  case layers of
+    Just layer -> fmap makeObject $ layerObjects layer
+    Nothing -> []
   where
-    getPos pos = pos + V2 1 1 ^* (targetRadius * importScale)
+    makeObject obj@Object {..} = (objectMap M.! fromJust objectType) (getPosOfObj obj) objectProperties
 
 
 parseCollision :: Maybe Layer -> [Piece]
@@ -189,5 +185,12 @@ buildLevel ((Wall l c):pxs) =
      in built { geometry = l    : (geometry built)
               , forms    = form : (forms built)
               }
-buildLevel []               = Level [] [] (V2 1 0) [] [] [] []
+buildLevel [] = Level [] [] (V2 1 0) [] [] [] [] []
+
+
+updateLevel :: Time -> Player -> Level -> Level
+updateLevel dt p l = l
+  { objects = fmap (updateObject dt l p)
+            $ objects l
+  }
 

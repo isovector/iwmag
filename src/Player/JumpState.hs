@@ -7,14 +7,7 @@ module Player.JumpState
   , isBoost
   ) where
 
-import BasePrelude
-import Game.Sequoia
-
-data JumpState
-  = Stand
-  | Jump Double
-  | Boost V2 Double
-  deriving (Show, Eq)
+import Types
 
 isStand :: JumpState -> Bool
 isStand Stand = True

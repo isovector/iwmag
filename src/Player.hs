@@ -1,9 +1,10 @@
 {-# LANGUAGE NoImplicitPrelude   #-}
 
-module Player ( Player
-              , drawPlayer
-              , playerHandler
-              ) where
+module Player
+  ( Player
+  , drawPlayer
+  , playerHandler
+  ) where
 
 import BasePrelude
 import Collision
@@ -27,7 +28,7 @@ drawPlayer p = fmap (move pos) $
       . circle
       $ 7 * color
   | dir <- maybeToList $ getBoostDir p
-  , n <- [0 :: Int .. 5]
+  , n   <- [0 :: Int .. 5]
   , let color = 1 - fromIntegral n / 6
   ]
   where

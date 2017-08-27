@@ -3,15 +3,15 @@
 module Main where
 
 import BasePrelude hiding (group)
+import Control.FRPNow.Time (delayTime)
 import Game.Sequoia
 import Game.Sequoia.Keyboard
-import Player.Controller
 import GameState
 import Level.Level
-import Control.FRPNow.Time (delayTime)
-import Player
 import Linear.Vector
-
+import Object
+import Player
+import Player.Controller
 
 gameWidth :: Int
 gameWidth = 600
@@ -25,9 +25,12 @@ render state = collage gameWidth gameHeight
              . pure
              . move (center - cam)
              . group
-             $ drawPlayer (player state) ++ (forms $ currentLevel state)
+             $ drawPlayer (player state)
+               ++ forms level
+               ++ fmap renderObject (objects level)
     where cam    = camera state
           center = V2 (fromIntegral gameWidth) (fromIntegral gameHeight) ^* 0.5
+          level = currentLevel state
 
 
 runGame :: Engine -> N (B Element)
