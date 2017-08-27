@@ -20,8 +20,8 @@ import Player.Data
 import Player.JumpState
 
 
-getGraspTarget :: Level -> Player -> Maybe Target
-getGraspTarget l p = getFirst
+getGraspHook :: Level -> Player -> Maybe Hook
+getGraspHook l p = getFirst
                    . mconcat
                    . fmap intersectsWithPlayer
                    $ targets l
@@ -31,7 +31,7 @@ getGraspTarget l p = getFirst
                            . withinRadius playerGeom
                                           (pPos p)
                                           targetRadius
-                           $ targetPos t
+                           $ hookPos t
 
 
 isStanding :: Player -> Bool
@@ -117,12 +117,12 @@ actionHandler l ctrl p
     | shouldBoost    = setBoosting (fromJust $ wantsBoost ctrl) p
     | shouldJump     = doJump p
     | wantsGrasp ctrl =
-      case getGraspTarget l p of
+      case getGraspHook l p of
         Just t  -> onLandHandler p
                    { attachment = Grasping t
                                 . normalize
                                 . set _y 0
-                                $ pPos p - targetPos t
+                                $ pPos p - hookPos t
                    }
         Nothing -> p
     | otherwise       = p
@@ -183,7 +183,7 @@ graspHandler ctrl p =
                       then ctrlDir ctrl
                       else dir
         in p { attachment = Grasping t dir'
-             , pPos = targetPos t
+             , pPos = hookPos t
                     + dir' ^* targetRadius
                     + onSideways
                         (V2 0 0)

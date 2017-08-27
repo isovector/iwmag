@@ -17,7 +17,7 @@ import Level.Level
 data PlayerAttachment
   = Unattached
   | StandingOn Line
-  | Grasping Target V2
+  | Grasping Hook V2
   deriving (Eq, Show)
 
 

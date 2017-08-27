@@ -4,7 +4,7 @@
 
 module Level.Level
   ( Piece (..)
-  , Target (..)
+  , Hook (..)
   , levels
   , Level (..)
   , Door (..)
@@ -21,7 +21,7 @@ import Player.Constants
 
 data Piece = Wall Line Color
 
-data Target = Target { targetPos :: V2 }
+data Hook = Hook { hookPos :: V2 }
   deriving (Eq, Show)
 
 data Level = Level { geometry     :: [Line]
@@ -30,7 +30,7 @@ data Level = Level { geometry     :: [Line]
                    , deathZones   :: [Rect]
                    , noBoostZones :: [Rect]
                    , doors        :: [Door]
-                   , targets      :: [Target]
+                   , targets      :: [Hook]
                    } deriving Show
 
 data Zone = Death   Rect
@@ -89,21 +89,21 @@ parseLayers ls = let dz =  map (getRect) $ getZones isDeath
                   in col { playerSpawn  = spawn
                          , deathZones   = dz
                          , noBoostZones = nbz
-                         , targets      = levelTargets
+                         , targets      = levelHooks
                          , doors = mapMaybe getDoor doors
                          , forms  = forms col
-                                 ++ fmap targetForm levelTargets
+                                 ++ fmap targetForm levelHooks
                                  ++ zonesToForm dz  red
                                  ++ zonesToForm nbz cyan
                                  ++ zonesToForm (map getRect doors) purple
                          }
   where (spawn, zones) = parseObjects $ getLayer "objects"
         col            = buildLevel . parseCollision $ getLayer "collision"
-        levelTargets   = parseTargets . fromJust $ getLayer "targets"
+        levelHooks   = parseHooks . fromJust $ getLayer "targets"
         getLayer name  = listToMaybe $ filter ((== name) . layerName) ls
         getZones f = filter f zones
         zonesToForm zs c = map (mkForm c) zs
-        targetForm (Target pos) = move pos
+        targetForm (Hook pos) = move pos
                                 . outlined (dashed red)
                                 $ circle targetRadius
         mkForm c (Rect pos size) = move (pos + size ^* 0.5)
@@ -137,8 +137,8 @@ parseObjects (Just ObjectLayer{layerObjects = objs}) =
         getZone cons name = map (cons . toRect) $ getObjs name
 parseObjects _ = (V2 0 0, [])
 
-parseTargets :: Layer -> [Target]
-parseTargets = fmap (Target . getPos . getPosOfObj)
+parseHooks :: Layer -> [Hook]
+parseHooks = fmap (Hook . getPos . getPosOfObj)
              . layerObjects
   where
     getPos pos = pos + V2 1 1 ^* (targetRadius * importScale)

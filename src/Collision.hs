@@ -46,7 +46,7 @@ withinRadius
     :: BoxGeom
     -> V2  -- ^ Position of box
     -> Double
-    -> V2  -- ^ Target
+    -> V2  -- ^ Hook
     -> Bool
 withinRadius b p r t =
   any (\c -> r >= norm (t - c)) (corners b p ^.. each)
