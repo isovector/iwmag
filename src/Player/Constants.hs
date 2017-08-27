@@ -12,7 +12,7 @@ jumpAttenuation :: Double
 jumpAttenuation = 0.45
 
 jumpStrength :: Double
-jumpStrength = 250
+jumpStrength = 300
 
 jumpCount :: Int
 jumpCount = 2
@@ -21,26 +21,26 @@ boostCount :: Int
 boostCount = 100
 
 boostTime :: Double
-boostTime = 0.2
+boostTime = 0.15
 
 boostStrength :: Double
-boostStrength = 80 / boostTime
+boostStrength = 72 / boostTime
 
 recoverTime :: Double
-recoverTime = 0.35
+recoverTime = 0.4
 
 walkSpeed :: Double
-walkSpeed = 200
+walkSpeed = 120
 
 gravity :: Double
-gravity = 1300
+gravity = 1000
 
 playerGeom :: BoxGeom
 playerGeom =
-    BoxGeom { topY    = 16
+    BoxGeom { topY    = 24
             , bottomY = 0
-            , leftX   = 4
-            , rightX  = 4
+            , leftX   = 8
+            , rightX  = 8
             }
 
 firstLevel :: String
