@@ -27,9 +27,9 @@ objectMap = M.fromList . ffmap allObjects
                        $ \(p :: Proxy name) ->
   ( symbolVal p
   , \pos props ->
-      Object (spawn  @name pos props)
-             (render @name)
-             (update @name)
-             (grasp  @name)
+      Object (spawn @name pos props)
+             render
+             update
+             grasp
   )
 
