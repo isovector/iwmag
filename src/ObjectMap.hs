@@ -10,6 +10,7 @@ import qualified Data.Map as M
 import           GHC.TypeLits
 import           Language.Haskell.Discovery
 import           Objects.Disco ()
+import           Objects.Follower ()
 import           Objects.Gem ()
 import           Types
 

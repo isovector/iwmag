@@ -2,34 +2,15 @@
 {-# LANGUAGE RecordWildCards   #-}
 
 module Actor.Controller
-  ( Controller (..)
-  , ctrlSignal
+  ( ctrlSignal
   , initController
   , foldController
   ) where
 
-import BasePrelude
-import Linear.Metric
 import Actor.Constants
-import Game.Sequoia
 import Game.Sequoia.Keyboard
-
-data RawController = RawController
-  { rctrlDir        :: !V2
-  , rctrlJump       :: !Bool
-  , rctrlWantsJump  :: !Bool
-  , rctrlWantsGrasp :: !Bool
-  }
-
-data Controller = Controller
-  { ctrlDir     :: !V2
-  , ctrlLastDir :: !V2
-  , timeIdle    :: !Time
-  , ctrlJump    :: !Bool
-  , wantsJump   :: !Bool
-  , wantsBoost  :: !(Maybe V2)
-  , wantsGrasp  :: !Bool
-  } deriving (Show)
+import Linear.Metric
+import Types
 
 initController :: Controller
 initController = Controller

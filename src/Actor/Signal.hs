@@ -1,25 +1,17 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Actor.Signal
-  ( Actor
-  , aPos
-  , jumpState
-  , playerHandler
-  , isBoosting
-  ) where
+module Actor.Signal where
 
+import Actor.Constants
+import Actor.Data
+import Actor.JumpState
 import BasePrelude
 import Collision
 import Control.Lens hiding (Level)
 import Game.Sequoia
-import Level.Level
 import Linear.Metric
 import Linear.Vector
 import Math
-import Actor.Constants
-import Actor.Controller
-import Actor.Data
-import Actor.JumpState
 import Types
 
 
@@ -203,12 +195,13 @@ graspHandler ctrl p =
 
 
 playerHandler :: Time -> Level -> Controller -> Actor -> Maybe Actor
-playerHandler dt l ctrl p = deathHandler l
-                          . fallHandler
-                          . jumpHandler dt l ctrl
-                          . actionHandler l ctrl
-                          . graspHandler ctrl
-                          . recoveryHandler dt
-                          . walkHandler dt l ctrl
-                          $ p
+playerHandler dt l ctrl p
+  = deathHandler l
+  . fallHandler
+  . jumpHandler dt l ctrl
+  . actionHandler l ctrl
+  . graspHandler ctrl
+  . recoveryHandler dt
+  . walkHandler dt l ctrl
+  $ p
 

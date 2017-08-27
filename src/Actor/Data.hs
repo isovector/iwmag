@@ -7,6 +7,7 @@ module Actor.Data
   ) where
 
 import Actor.Constants
+import Game.Sequoia.Color
 import Types
 
 defaultActor :: Actor
@@ -18,6 +19,7 @@ defaultActor = Actor
   , recoveryTime = 0
   , attachment   = Unattached
   , aGeom        = playerGeom
+  , aColor       = white
   }
 
 playerGeom :: BoxGeom

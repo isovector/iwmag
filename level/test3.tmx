@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.0" orientation="orthogonal" renderorder="right-down" width="30" height="15" tilewidth="16" tileheight="16" nextobjectid="63">
+<map version="1.0" orientation="orthogonal" renderorder="right-down" width="30" height="15" tilewidth="16" tileheight="16" nextobjectid="64">
  <objectgroup name="collision">
   <object id="2" x="0" y="0">
    <polyline points="0,0 0,240"/>
@@ -128,5 +128,6 @@
     <property name="color" value="1 1 0 1"/>
    </properties>
   </object>
+  <object id="63" name="john" type="follower" x="176" y="96" width="16" height="16"/>
  </objectgroup>
 </map>

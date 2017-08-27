@@ -50,6 +50,7 @@ data Actor = Actor
   , recoveryTime :: !Time
   , attachment   :: ActorAttachment
   , aGeom        :: BoxGeom
+  , aColor       :: Color
   } deriving (Show, Eq)
 
 data BoxGeom = BoxGeom
@@ -91,3 +92,21 @@ data GameState = GameState
   , player       :: !Actor
   , camera       :: !V2
   }
+
+data RawController = RawController
+  { rctrlDir        :: !V2
+  , rctrlJump       :: !Bool
+  , rctrlWantsJump  :: !Bool
+  , rctrlWantsGrasp :: !Bool
+  }
+
+data Controller = Controller
+  { ctrlDir     :: !V2
+  , ctrlLastDir :: !V2
+  , timeIdle    :: !Time
+  , ctrlJump    :: !Bool
+  , wantsJump   :: !Bool
+  , wantsBoost  :: !(Maybe V2)
+  , wantsGrasp  :: !Bool
+  } deriving (Show)
+

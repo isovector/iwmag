@@ -18,7 +18,7 @@ import Types
 drawActor :: Actor -> [Form]
 drawActor p = fmap (move pos) $
   [ move (V2 ((r - l) / 2) $ (b - t) / 2)
-      . filled white
+      . filled (aColor p)
       $ rect width height
   ]
   ++
