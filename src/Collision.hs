@@ -21,7 +21,7 @@ data BoxGeom = BoxGeom
 boxGeomToRect :: BoxGeom -> V2 -> Rect
 boxGeomToRect b p =
   let (tl, _, _, br) = corners b p
-   in Rect tl br
+   in Rect tl $ br - tl
 
 corners :: BoxGeom -> V2 -> (V2, V2, V2, V2)
 corners b p =
@@ -30,12 +30,13 @@ corners b p =
     , V2 left  bottom
     , V2 right bottom
     )
-  where x = view _x p
-        y = view _y p
-        left   = x - leftX b
-        right  = x + rightX b
-        top    = y - topY b
-        bottom = y + bottomY b
+  where
+    x = view _x p
+    y = view _y p
+    left   = x - leftX b
+    right  = x + rightX b
+    top    = y - topY b
+    bottom = y + bottomY b
 
 
 data Axis = AxisX | AxisY deriving Eq
@@ -49,7 +50,13 @@ withinRadius
     -> Bool
 withinRadius b p r t =
   any (\c -> r >= norm (t - c)) (corners b p ^.. each)
-    || withinBox b p t
+    || any (\c -> withinBox b p $ t + c ^* r)
+           [ V2 1 0
+           , V2 (-1) 0
+           , V2 0 1
+           , V2 0 (-1)
+           , V2 0 0
+           ]
 
 
 withinBox :: BoxGeom -> V2 -> V2 -> Bool

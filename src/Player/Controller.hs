@@ -9,6 +9,7 @@ module Player.Controller
   ) where
 
 import BasePrelude
+import Linear.Metric
 import Player.Constants
 import Game.Sequoia
 import Game.Sequoia.Keyboard
@@ -73,7 +74,7 @@ ctrlSignal keys keys' =
             <*> graspKey keys
   where
     makeState dir jump' jump grasp' grasp = RawController
-      { rctrlDir        = dir
+      { rctrlDir        = normalize dir
       , rctrlJump       = jump'
       , rctrlWantsJump  = jump' && not jump
       , rctrlWantsGrasp = grasp' && not grasp

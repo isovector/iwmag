@@ -89,6 +89,7 @@ setBoosting :: V2 -> Player -> Player
 setBoosting dir p = p
   { jumpState  = Boost dir boostTime
   , boostsLeft = boostsLeft p - 1
+  , attachment = Unattached
   }
 
 onLandHandler :: Player -> Player
@@ -103,14 +104,18 @@ canBoost (Level{noBoostZones = zs}) p = boostsLeft p > 0
                                      && recoveryTime p == 0
                                      && not (flip any zs $ flip inRect (pPos p))
 
+doJump :: Player -> Player
+doJump p = p
+  { jumpState  = Jump (-jumpStrength)
+  , jumpsLeft  = jumpsLeft p - 1
+  , attachment = Unattached
+  }
+
 actionHandler :: Level -> Controller -> Player -> Player
 actionHandler l ctrl p
     | not (canAct p) = p
     | shouldBoost    = setBoosting (fromJust $ wantsBoost ctrl) p
-    | shouldJump     = p { jumpState  = Jump (-jumpStrength)
-                         , jumpsLeft  = jumpsLeft p - 1
-                         , attachment = Unattached
-                         }
+    | shouldJump     = doJump p
     | wantsGrasp ctrl =
       case getGraspTarget l p of
         Just t  -> onLandHandler p
@@ -124,6 +129,7 @@ actionHandler l ctrl p
   where
     shouldBoost = isJust (wantsBoost ctrl)
                && not (isBoosting p)
+               && not (isGrasping p)
                && canBoost l p
     shouldJump  = wantsJump ctrl
                && jumpsLeft p > 0
@@ -171,8 +177,8 @@ deathHandler l p = if any (flip inRect (pPos p)) $ deathZones l
 graspHandler :: Controller -> Player -> Player
 graspHandler ctrl p =
   case attachment p of
-    Grasping t dir -> case wantsJump ctrl of
-      False ->
+    Grasping t dir -> case (wantsJump ctrl, wantsGrasp ctrl) of
+      (False, False) ->
         let dir' = if ctrlDir ctrl /= V2 0 0
                       then ctrlDir ctrl
                       else dir
@@ -184,8 +190,9 @@ graspHandler ctrl p =
                         ((V2 0 0.5) ^* topY playerGeom)
                         dir'
              }
-      True -> setBoosting (boostDir dir)
-                $ p { attachment = Unattached }
+      (False, True) -> setBoosting (boostDir dir) p
+      (True, False) -> doJump p { jumpsLeft = 0 }
+      _ -> p
     _ -> p
   where
     onSideways a b dir = bool a b $ view _x dir /= 0

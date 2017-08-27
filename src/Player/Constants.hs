@@ -15,7 +15,7 @@ jumpAttenuation :: Double
 jumpAttenuation = 0.45
 
 jumpStrength :: Double
-jumpStrength = 300
+jumpStrength = 225
 
 jumpCount :: Int
 jumpCount = 2
@@ -39,12 +39,12 @@ gravity :: Double
 gravity = 1000
 
 playerGeom :: BoxGeom
-playerGeom =
-    BoxGeom { topY    = 24
-            , bottomY = 0
-            , leftX   = 8
-            , rightX  = 8
-            }
+playerGeom = BoxGeom
+  { topY    = 24
+  , bottomY = 0
+  , leftX   = 8
+  , rightX  = 8
+  }
 
 firstLevel :: String
 firstLevel = "test3"
