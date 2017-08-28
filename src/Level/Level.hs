@@ -117,7 +117,11 @@ parseTileset (Just (ts, fp)) (Just Layer {layerData}) = group . fmap toTile $ M.
       $ croppedImage (getCrop t) fp
 
     getCrop :: Word32 -> Crop
-    getCrop g = Crop (fromIntegral g * 16) 0 16 16
+    getCrop (subtract 1 . fromIntegral -> g) =
+      Crop ((g `mod` stride) * 16) ((g `div` stride) * 16) 16 16
+
+    stride = let img = head $ tsImages ts
+              in iWidth img `div` 16
 
 parseTileset _ _ = group []
 

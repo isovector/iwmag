@@ -14,7 +14,7 @@
  </objectgroup>
  <layer name="tiles" width="30" height="23">
   <data encoding="base64" compression="zlib">
-   eJzt0TkKwDAQBMHVffnD/r07FAhlBhk8BZ0tTLBmIiIi8lf3wd1525GnQHFzL9+VKFOhSo06Dbps/e9b9w/B+AK4
+   eJxjYBgFo2AUjIJRMApGAb2BEJE4F4jzgDifyvbCQCUOdbVAXAfE9VS2F2Z3JZrd5kBsAcWWaPqQ3YluDrJfcPHR/UyOe9HNoKW96DQ2dxDLpxdQRcJGdMQAJuYOng==
   </data>
  </layer>
  <objectgroup name="targets">
