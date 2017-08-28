@@ -1,8 +1,9 @@
 {-# LANGUAGE NoImplicitPrelude    #-}
+{-# LANGUAGE TemplateHaskell      #-}
 {-# LANGUAGE ViewPatterns         #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
-module Objects.Follower where
+module Objects.Follower () where
 
 import Control.Monad.State (evalState)
 import Actor
@@ -15,49 +16,48 @@ import Linear.Metric
 import Types
 import Object
 
+data Follower = Follower
+  { _held   :: Bool
+  , _fActor :: Actor
+  }
+
+makeLenses ''Follower
 
 instance IsObject "follower" where
-  data InternalObj "follower" = Follower
-    { held   :: Bool
-    , fActor :: Actor
-    }
+  type InternalObj "follower" = Follower
 
   spawn pos _ =
     Follower False $ defaultActor
-      { aPos = pos
+      { _aPos = pos
       , aColor = green
       }
 
   render =
-    group . drawActor . fActor
+    group . drawActor . _fActor
 
-  update dt l p f@Follower {..} =
-    case held of
+  update dt l p f =
+    case view held f of
       True  -> f
-      False -> Follower held
-             . followerHandler dt l (makeController l p fActor)
-             $ fActor
+      False -> f & fActor %~ \a ->
+        followerHandler dt l (makeController l p a) a
 
-  grasp (cloneTraversal -> lo) p (fActor -> a) =
-    case norm (aPos p - aPos a) <= 15 of
+  grasp (cloneTraversal -> lo) p (_fActor -> a) =
+    case norm (_aPos p - _aPos a) <= 15 of
       True  -> Just (Follower True $ a { aColor = blue }, hold)
       False -> Nothing
     where
       hold = Holding
        { updateHeld = \_ p' ->
-           lo . internalObj %~ \f ->
-             f { fActor = (fActor f) { aPos = aPos p' + V2 0 (-30) } }
-       , onThrow = \_ dir ->
-           lo . internalObj %~ \f ->
-             f { held = False
-               , fActor = setBoosting dir $ fActor f
-               }
+           lo . internalObj . fActor . aPos .~ _aPos p' + V2 0 (-30)
+       , onThrow = \_ dir l ->
+          l & lo . internalObj . held   .~ False
+            & lo . internalObj . fActor %~ setBoosting dir
        }
 
 
 makeController :: Level -> Actor -> Actor -> Controller
 makeController _ p a = initController
-  { ctrlDir = set _y 0 . normalize $ aPos p - aPos a
+  { ctrlDir = set _y 0 . normalize $ _aPos p - _aPos a
   , ctrlJump = True
   , wantsJump = True
   }

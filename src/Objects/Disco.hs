@@ -1,18 +1,19 @@
 {-# LANGUAGE NoImplicitPrelude    #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
-module Objects.Disco where
+module Objects.Disco () where
 
 import Types
 import Actor.Constants
 
+data Disco = Disco
+  { discoPos :: V2
+  , discoDur :: Time
+  , discoCol :: Color
+  }
 
 instance IsObject "disco" where
-  data InternalObj "disco" = Disco
-    { discoPos :: V2
-    , discoDur :: Time
-    , discoCol :: Color
-    }
+  type InternalObj "disco" = Disco
   spawn pos props = Disco (centerOnSquare 8 pos) 0
                   . read
                   . ("Color " ++)

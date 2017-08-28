@@ -1,5 +1,6 @@
-{-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE TemplateHaskell   #-}
+{-# LANGUAGE NoImplicitPrelude      #-}
+{-# LANGUAGE TemplateHaskell        #-}
+{-# LANGUAGE TypeFamilyDependencies #-}
 
 module Types
   ( module Types
@@ -59,7 +60,7 @@ instance Show GraspTarget where
   show _ = "GraspTarget"
 
 data Actor = Actor
-  { aPos         :: !V2
+  { _aPos         :: !V2
   , jumpState    :: !JumpState
   , jumpsLeft    :: !Int
   , boostsLeft   :: !Int
@@ -100,7 +101,7 @@ instance Show Object where
   show _ = "Object"
 
 class KnownSymbol name => IsObject name where
-  data InternalObj name
+  type InternalObj name = r | r -> name
   spawn :: V2 -> [(String, String)] -> InternalObj name
   render :: InternalObj name -> Form
   update :: Time -> Level -> Actor -> InternalObj name -> InternalObj name
@@ -130,4 +131,5 @@ data Controller = Controller
   } deriving (Show)
 
 makeLenses ''Level
+makeLenses ''Actor
 

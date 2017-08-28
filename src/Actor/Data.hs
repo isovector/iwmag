@@ -12,7 +12,7 @@ import Types
 
 defaultActor :: Actor
 defaultActor = Actor
-  { aPos         = V2 100 100
+  { _aPos         = V2 100 100
   , jumpState    = Stand
   , jumpsLeft    = jumpCount
   , boostsLeft   = boostCount

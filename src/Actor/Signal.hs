@@ -24,7 +24,7 @@ getGraspHook l p = getFirst
     intersectsWithActor t = First
                            . bool Nothing (Just t)
                            . withinRadius (aGeom p)
-                                          (aPos p)
+                                          (_aPos p)
                                           targetRadius
                            $ hookPos t
 
@@ -73,25 +73,25 @@ jumpHandler dt l ctrl p = bool (go $ jumpState p) p $ isGrasping p
       case collided of
         Just line ->
           let landed = onLandHandler p
-           in landed { aPos =  pos'
+           in landed { _aPos =  pos'
                      , attachment = StandingOn line
                      }
         Nothing ->
           p { jumpState = Jump $ y + (min gravity' terminalVelocity) * dt
-            , aPos = pos'
+            , _aPos = pos'
             }
       where
           gravity' = if ctrlJump ctrl && y < 0
                         then gravity * jumpAttenuation
                         else gravity
-          (collided, pos') = collision l AxisY (aGeom p) (aPos p) $ dt * y
+          (collided, pos') = collision l AxisY (aGeom p) (_aPos p) $ dt * y
 
     go (Boost dir t)
         | t > 0 = p { jumpState = Boost dir $ t - dt
-                    , aPos      = xy'
+                    , _aPos      = xy'
                     }
         | otherwise = addRecovery $ setFalling p
-      where (_, x')  = collision l AxisX (aGeom p) (aPos p) $ view _x boostDt
+      where (_, x')  = collision l AxisX (aGeom p) (_aPos p) $ view _x boostDt
             (_, xy') = collision l AxisY (aGeom p) x' $ view _y boostDt
             boostDt = (dt * boostStrength) *^ dir
 
@@ -112,7 +112,7 @@ onLandHandler p = p
 canBoost :: Level -> Actor -> Bool
 canBoost (Level{noBoostZones = zs}) p = boostsLeft p > 0
                                      && recoveryTime p == 0
-                                     && not (flip any zs $ flip inRect (aPos p))
+                                     && not (flip any zs $ flip inRect (_aPos p))
 
 doJump :: Actor -> Actor
 doJump p = p
@@ -136,7 +136,7 @@ actionHandler l ctrl p
             { attachment = Grasping t
                          . normalize
                          . set _y 0
-                         $ aPos p - hookPos t
+                         $ _aPos p - hookPos t
             }
         (_, _, Just (lf, grasp)) -> do
           modify lf
@@ -162,7 +162,7 @@ stillStanding :: Actor -> Bool
 stillStanding p =
   case attachment p of
     Unattached -> False
-    StandingOn l -> isJust . fst $ sweep (aGeom p) (aPos p) [l] AxisY 1
+    StandingOn l -> isJust . fst $ sweep (aGeom p) (_aPos p) [l] AxisY 1
     Grasping _ _ -> True
 
 recoveryHandler :: Time -> Actor -> Actor
@@ -182,13 +182,13 @@ addRecovery p = p { recoveryTime = recoverTime }
 walkHandler :: Time -> Level -> Controller -> Actor -> Actor
 walkHandler dt l ctrl p
     | isGrasping p = p
-    | canAct p     = p { aPos = pos' }
+    | canAct p     = p { _aPos = pos' }
     | otherwise    = p
-  where (_, pos') = collision l AxisX (aGeom p) (aPos p) $ walkSpeed * dt * dir
+  where (_, pos') = collision l AxisX (aGeom p) (_aPos p) $ walkSpeed * dt * dir
         dir       = view _x . ctrlDir $ ctrl
 
 deathHandler :: Level -> Actor -> Maybe Actor
-deathHandler l p = if any (flip inRect (aPos p)) $ deathZones l
+deathHandler l p = if any (flip inRect (_aPos p)) $ deathZones l
                       then Nothing
                       else Just p
 
@@ -201,7 +201,7 @@ graspHandler ctrl p =
                       then ctrlDir ctrl
                       else dir
         in p { attachment = Grasping t dir'
-              , aPos = hookPos t
+              , _aPos = hookPos t
                      + dir' ^* targetRadius
                      + onSideways
                          (V2 0 0)

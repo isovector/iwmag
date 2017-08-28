@@ -1,18 +1,19 @@
 {-# LANGUAGE NoImplicitPrelude    #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
-module Objects.Gem where
+module Objects.Gem () where
 
 import Collision
 import Types hiding (form)
 
+data Gem = Gem
+  { gemPos :: V2
+  , collected :: Bool
+  , gemCol :: Color
+  }
 
 instance IsObject "gem" where
-  data InternalObj "gem" = Gem
-    { gemPos :: V2
-    , collected :: Bool
-    , gemCol :: Color
-    }
+  type InternalObj "gem" = Gem
   spawn pos props = Gem pos False
                   . read
                   . ("Color " ++)
@@ -31,7 +32,7 @@ instance IsObject "gem" where
   update _ _ p t@Gem {..}
     | collected = t
     | otherwise =
-        case withinRadius (aGeom p) (aPos p) 4 gemPos of
+        case withinRadius (aGeom p) (_aPos p) 4 gemPos of
           True ->  t { collected = True }
           False -> t
 

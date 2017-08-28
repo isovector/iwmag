@@ -30,7 +30,7 @@ drawActor p = fmap (move pos) $
   , let color = 1 - fromIntegral n / 6
   ]
   where
-    pos    = aPos $ p
+    pos    = _aPos $ p
     l      = leftX   (aGeom p)
     r      = rightX  (aGeom p)
     t      = topY    (aGeom p)
