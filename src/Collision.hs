@@ -2,11 +2,10 @@
 
 module Collision where
 
-import Control.Lens hiding (to)
 import Game.Sequoia
 import Linear.Metric
 import Math
-import Types hiding (left, right)
+import Types hiding (left, right, to)
 
 
 boxGeomToRect :: BoxGeom -> V2 -> Rect

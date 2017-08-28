@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.0" orientation="orthogonal" renderorder="right-down" width="30" height="15" tilewidth="16" tileheight="16" nextobjectid="64">
+<map version="1.0" orientation="orthogonal" renderorder="right-down" width="30" height="15" tilewidth="16" tileheight="16" nextobjectid="75">
  <objectgroup name="collision">
   <object id="2" x="0" y="0">
    <polyline points="0,0 0,240"/>
@@ -9,10 +9,17 @@
    <polyline points="0,0 0,240"/>
   </object>
   <object id="32" x="64" y="112" width="128" height="16"/>
+  <object id="64" x="224" y="112" width="16" height="64"/>
+  <object id="65" x="240" y="160" width="32" height="16"/>
+  <object id="67" x="272" y="112" width="16" height="64"/>
+  <object id="68" x="336" y="160" width="32" height="16"/>
+  <object id="69" x="368" y="112" width="16" height="64"/>
+  <object id="70" x="320" y="112" width="16" height="64"/>
+  <object id="71" x="272" y="80" width="64" height="16"/>
  </objectgroup>
  <objectgroup name="meta">
   <object id="15" type="death" x="0" y="224" width="480" height="16"/>
-  <object id="16" type="spawn" x="32" y="32" width="16" height="16">
+  <object id="16" name="spawn" type="spawn" x="297" y="62" width="16" height="16">
    <ellipse/>
   </object>
  </objectgroup>
@@ -33,6 +40,12 @@
    <ellipse/>
   </object>
   <object id="34" x="192" y="80" width="16" height="16">
+   <ellipse/>
+  </object>
+  <object id="73" x="248" y="104" width="16" height="16">
+   <ellipse/>
+  </object>
+  <object id="74" x="344" y="104" width="16" height="16">
    <ellipse/>
   </object>
  </objectgroup>
@@ -128,6 +141,7 @@
     <property name="color" value="1 1 0 1"/>
    </properties>
   </object>
-  <object id="63" name="john" type="follower" x="176" y="96" width="16" height="16"/>
+  <object id="63" name="john" type="follower" x="260.5" y="151" width="7" height="5.5"/>
+  <object id="72" name="john" type="follower" x="358" y="150.5" width="5.5" height="4"/>
  </objectgroup>
 </map>

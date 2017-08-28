@@ -10,7 +10,7 @@ module Types
   ) where
 
 import Control.Lens hiding (Level, levels)
-import BasePrelude hiding (rotate, group, (&), uncons, index, lazy)
+import BasePrelude hiding (rotate, group, (&), uncons, index, lazy, throw)
 import Game.Sequoia
 import Linear.Vector hiding (E (..))
 import GHC.TypeLits
@@ -45,6 +45,18 @@ data ActorAttachment
   | Grasping Hook V2
   deriving (Eq, Show)
 
+data GraspTarget
+  = Unarmed
+  | Holding
+    { updateHeld :: Time -> Actor -> Level -> Level
+    , onThrow    :: Actor -> V2 -> Level -> Level
+    }
+
+instance Eq GraspTarget where
+  (==) _ _ = True
+
+instance Show GraspTarget where
+  show _ = "GraspTarget"
 
 data Actor = Actor
   { aPos         :: !V2
@@ -55,6 +67,7 @@ data Actor = Actor
   , attachment   :: ActorAttachment
   , aGeom        :: BoxGeom
   , aColor       :: Color
+  , graspTarget  :: GraspTarget
   } deriving (Show, Eq)
 
 data BoxGeom = BoxGeom
@@ -80,7 +93,7 @@ data Object where
     { obj       :: a
     , renderObj :: a -> Form
     , updateObj :: Time -> Level -> Actor -> a -> a
-    , graspObj  :: Actor -> a -> Maybe (a, Actor -> Actor)
+    , graspObj  :: ATraversal' Level Object -> Actor -> a -> Maybe (a, GraspTarget)
     } -> Object
 
 instance Show Object where
@@ -91,7 +104,7 @@ class KnownSymbol name => IsObject name where
   spawn :: V2 -> [(String, String)] -> InternalObj name
   render :: InternalObj name -> Form
   update :: Time -> Level -> Actor -> InternalObj name -> InternalObj name
-  grasp  :: Actor -> InternalObj name -> Maybe (InternalObj name, Actor -> Actor)
+  grasp  :: ATraversal' Level Object -> Actor -> InternalObj name -> Maybe (InternalObj name, GraspTarget)
 
 data GameState = GameState
   { currentLevel :: !Level

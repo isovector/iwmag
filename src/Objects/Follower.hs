@@ -13,15 +13,17 @@ import Control.Lens hiding (Level)
 import Game.Sequoia.Color
 import Linear.Metric
 import Types
+import Object
 
 
 instance IsObject "follower" where
   data InternalObj "follower" = Follower
-    { fActor   :: Actor
+    { held   :: Bool
+    , fActor :: Actor
     }
 
   spawn pos _ =
-    Follower $ defaultActor
+    Follower False $ defaultActor
       { aPos = pos
       , aColor = green
       }
@@ -29,14 +31,28 @@ instance IsObject "follower" where
   render =
     group . drawActor . fActor
 
-  update dt l p (fActor -> a) =
-    Follower . followerHandler dt l (makeController l p a)
-             $ a
+  update dt l p f@Follower {..} =
+    case held of
+      True  -> f
+      False -> Follower held
+             . followerHandler dt l (makeController l p fActor)
+             $ fActor
 
-  grasp p (fActor -> a) =
+  grasp (cloneTraversal -> lo) p (fActor -> a) =
     case norm (aPos p - aPos a) <= 15 of
-      True  -> Just (Follower $ a { aColor = blue }, id)
+      True  -> Just (Follower True $ a { aColor = blue }, hold)
       False -> Nothing
+    where
+      hold = Holding
+       { updateHeld = \_ p' ->
+           lo . internalObj %~ \f ->
+             f { fActor = (fActor f) { aPos = aPos p' + V2 0 (-30) } }
+       , onThrow = \_ dir ->
+           lo . internalObj %~ \f ->
+             f { held = False
+               , fActor = setBoosting dir $ fActor f
+               }
+       }
 
 
 makeController :: Level -> Actor -> Actor -> Controller

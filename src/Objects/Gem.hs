@@ -35,6 +35,6 @@ instance IsObject "gem" where
           True ->  t { collected = True }
           False -> t
 
-  grasp _ _ = Nothing
+  grasp _ _ _ = Nothing
 
 

@@ -20,6 +20,7 @@ defaultActor = Actor
   , attachment   = Unattached
   , aGeom        = playerGeom
   , aColor       = white
+  , graspTarget  = Unarmed
   }
 
 playerGeom :: BoxGeom
