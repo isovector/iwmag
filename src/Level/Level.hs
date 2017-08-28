@@ -1,5 +1,7 @@
+{-# LANGUAGE NamedFieldPuns              #-}
 {-# LANGUAGE NoImplicitPrelude           #-}
 {-# LANGUAGE RecordWildCards             #-}
+{-# LANGUAGE ViewPatterns                #-}
 {-# OPTIONS_GHC -fno-warn-name-shadowing #-}
 
 module Level.Level
@@ -11,7 +13,6 @@ module Level.Level
   , updateLevel
   ) where
 
-import           BasePrelude
 import qualified Data.Map as M
 import           Data.Tiled
 import           Game.Sequoia
@@ -53,7 +54,7 @@ drawLine c (Line pos size) = move pos
 
 levels :: [(String, Level)]
 levels = zip names
-       $ map (parseLayers . mapLayers)
+       $ map (\x -> parseLayers (fmap getTileset . listToMaybe $ mapTilesets x) $ mapLayers x)
        . unsafePerformIO
        . sequence
        . map (\n -> loadMapFile $ "level/" ++ n ++ ".tmx")
@@ -61,29 +62,36 @@ levels = zip names
   where names = [ "test1"
                 , "test2"
                 , "test3"
+                , "test4"
                 ]
 {-# NOINLINE levels #-}
 
-parseLayers :: [Layer] -> Level
-parseLayers ls = let dz =  map (getRect) $ getZones isDeath
-                     nbz = map (getRect) $ getZones isNoBoost
-                     doors = getZones isDoor
-                  in col { playerSpawn  = spawn
-                         , deathZones   = dz
-                         , noBoostZones = nbz
-                         , targets      = levelHooks
-                         , _objects     = levelObjects
-                         , doors = mapMaybe getDoor doors
-                         , forms  = forms col
-                                 ++ fmap targetForm levelHooks
-                                 ++ zonesToForm dz  red
-                                 ++ zonesToForm nbz cyan
-                                 ++ zonesToForm (map getRect doors) purple
-                         }
+getTileset :: Tileset -> (Tileset, FilePath)
+getTileset x = (x, ("level/" ++) . iSource . head $ tsImages x)
+
+parseLayers :: Maybe (Tileset, FilePath) -> [Layer] -> Level
+parseLayers tileset ls =
+  let dz =  map (getRect) $ getZones isDeath
+      nbz = map (getRect) $ getZones isNoBoost
+      doors = getZones isDoor
+   in col { playerSpawn  = spawn
+          , deathZones   = dz
+          , noBoostZones = nbz
+          , targets      = levelHooks
+          , _objects     = levelObjects
+          , doors = mapMaybe getDoor doors
+          , forms  = tiledata
+                   : forms col
+                  ++ fmap targetForm levelHooks
+                  ++ zonesToForm dz  red
+                  ++ zonesToForm nbz cyan
+                  ++ zonesToForm (map getRect doors) purple
+          }
   where (spawn, zones) = parseMeta $ getLayer "meta"
         col            = buildLevel . parseCollision $ getLayer "collision"
         levelHooks   = parseHooks $ getLayer "targets"
         levelObjects = parseObjects $ getLayer "objects"
+        tiledata     = parseTileset tileset $ getLayer "tiles"
         getLayer name  = listToMaybe $ filter ((== name) . layerName) ls
         getZones f = filter f zones
         zonesToForm zs c = map (mkForm c) zs
@@ -94,6 +102,24 @@ parseLayers ls = let dz =  map (getRect) $ getZones isDeath
                                  . outlined (solid c)
                                  . uncurry rect
                                  $ unpackV2 size
+
+
+parseTileset :: Maybe (Tileset, FilePath) -> Maybe Layer -> Form
+parseTileset (Just (ts, fp)) (Just Layer {layerData}) = group . fmap toTile $ M.toList layerData
+  where
+    toTile :: ((Int, Int), Tile) -> Form
+    toTile ((x, y), (tileGid -> t))
+      = move (V2 (fromIntegral x) (fromIntegral y) ^* (16 * importScale))
+      . group
+      . pure
+      . scale importScale
+      . toForm
+      $ croppedImage (getCrop t) fp
+
+    getCrop :: Word32 -> Crop
+    getCrop g = Crop (fromIntegral g * 16) 0 16 16
+
+parseTileset _ _ = group []
 
 
 getPosOfObj :: Object -> V2

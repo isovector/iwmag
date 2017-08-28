@@ -1,6 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude   #-}
 {-# LANGUAGE TemplateHaskell     #-}
-{-# OPTIONS_GHC -ddump-splices     #-}
 
 module ObjectMap
   ( objectMap
