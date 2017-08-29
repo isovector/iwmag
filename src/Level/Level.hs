@@ -80,12 +80,12 @@ parseLayers tileset ls =
           , targets      = levelHooks
           , _objects     = levelObjects
           , doors = mapMaybe getDoor doors
-          , forms  = tiledata
-                   : forms col
+          , forms  = concat [forms col | null tiledata ]
                   ++ fmap targetForm levelHooks
                   ++ zonesToForm dz  red
                   ++ zonesToForm nbz cyan
                   ++ zonesToForm (map getRect doors) purple
+                  ++ tiledata
           }
   where (spawn, zones) = parseMeta $ getLayer "meta"
         col            = buildLevel . parseCollision $ getLayer "collision"
@@ -96,16 +96,18 @@ parseLayers tileset ls =
         getZones f = filter f zones
         zonesToForm zs c = map (mkForm c) zs
         targetForm (Hook pos) = move pos
-                                . outlined (dashed red)
-                                $ circle targetRadius
+                              . scale 0.2
+                              . move (- V2 90 99)
+                              . toForm
+                              $ image "assets/hook.png"
         mkForm c (Rect pos size) = move (pos + size ^* 0.5)
                                  . outlined (solid c)
                                  . uncurry rect
                                  $ unpackV2 size
 
 
-parseTileset :: Maybe (Tileset, FilePath) -> Maybe Layer -> Form
-parseTileset (Just (ts, fp)) (Just Layer {layerData}) = group . fmap toTile $ M.toList layerData
+parseTileset :: Maybe (Tileset, FilePath) -> Maybe Layer -> [Form]
+parseTileset (Just (ts, fp)) (Just Layer {layerData}) = fmap toTile $ M.toList layerData
   where
     toTile :: ((Int, Int), Tile) -> Form
     toTile ((x, y), (tileGid -> t))
@@ -123,7 +125,7 @@ parseTileset (Just (ts, fp)) (Just Layer {layerData}) = group . fmap toTile $ M.
     stride = let img = head $ tsImages ts
               in iWidth img `div` 16
 
-parseTileset _ _ = group []
+parseTileset _ _ = []
 
 
 getPosOfObj :: Object -> V2
@@ -217,9 +219,16 @@ buildLevel ((Wall l c):pxs) =
 buildLevel [] = Level [] [] (V2 1 0) [] [] [] [] []
 
 
-updateLevel :: Time -> Actor -> Level -> Level
-updateLevel dt p l = l
-  { _objects = fmap (updateObject dt l p)
-             $ _objects l
-  }
+updateLevel :: Time -> Actor -> Level -> (Level, Actor -> Actor)
+updateLevel dt p l =
+  let x          = fmap (updateObject dt l p) $ _objects l
+      (objs', f) = foldr (\(obj', f') (objs, f) -> (obj' : objs, f . f')) ([], id) x
+   in ( l & objects .~ objs'
+      , f
+      )
+
+  -- l
+  -- { _objects = fmap (updateObject dt l p)
+  --            $ _objects l
+  -- }
 

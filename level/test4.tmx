@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.0" orientation="orthogonal" renderorder="right-down" width="30" height="23" tilewidth="16" tileheight="16" nextobjectid="28">
- <tileset firstgid="1" name="notshit" tilewidth="16" tileheight="16" tilecount="144" columns="16">
-  <image source="assets/notshit.png" trans="5e81a2" width="256" height="144"/>
+<map version="1.0" orientation="orthogonal" renderorder="right-down" width="30" height="23" tilewidth="16" tileheight="16" nextobjectid="34">
+ <tileset firstgid="1" name="floating" tilewidth="16" tileheight="16" tilecount="1160" columns="58">
+  <image source="assets/floating.png" trans="5e81a2" width="928" height="320"/>
  </tileset>
  <objectgroup name="collision">
   <object id="26" x="0" y="352" width="480" height="16"/>
-  <object id="27" x="128" y="288" width="64" height="16"/>
+  <object id="31" x="160" y="272">
+   <polyline points="0,0 80,0 80,32 64,32 64,48 48,48 48,64 32,64 32,48 16,48 16,32 0,32 0,0"/>
+  </object>
  </objectgroup>
  <objectgroup name="meta">
   <object id="14" type="spawn" x="80" y="272" width="16" height="16">
@@ -14,7 +16,7 @@
  </objectgroup>
  <layer name="tiles" width="30" height="23">
   <data encoding="base64" compression="zlib">
-   eJxjYBgFo2AUjIJRMApGAb2BEJE4F4jzgDifyvbCQCUOdbVAXAfE9VS2F2Z3JZrd5kBsAcWWaPqQ3YluDrJfcPHR/UyOe9HNoKW96DQ2dxDLpxdQRcJGdMQAJuYOng==
+   eJztzUkOgkAQRuFq7oIonkFwOBSOGxzuowhsQLiP8w18V+hOOnFRL/k2nVT/IpqmaZqm/WMTJEgxxQxzLDzvZlhihTU22GLnefeMCwpcUaJC7Xn3jgeeeOGND76ed0MjMkCEIUaIMTbuf54CkRx7HHAM7N5c73o0aHFDZ/nmevcDzMQ34A==
   </data>
  </layer>
  <objectgroup name="targets">
@@ -30,5 +32,8 @@
   <object id="23" x="256" y="288" width="16" height="16">
    <ellipse/>
   </object>
+ </objectgroup>
+ <objectgroup name="objects">
+  <object id="33" name="follower" type="follower" x="224" y="256" width="16" height="16"/>
  </objectgroup>
 </map>

@@ -10,9 +10,9 @@ module Object where
 import Types
 
 
-updateObject :: Time -> Level -> Actor -> Object -> Object
+updateObject :: Time -> Level -> Actor -> Object -> (Object, Actor -> Actor)
 updateObject dt l p Object {..}
-  = Object (updateObj dt l p obj) renderObj updateObj graspObj
+  = first (\obj' -> Object obj' renderObj updateObj graspObj) $ updateObj dt l p obj
 
 graspObject :: ATraversal' Level Object -> Actor -> Object -> Maybe (Object, GraspTarget)
 graspObject lo a Object {..} =

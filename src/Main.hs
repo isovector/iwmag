@@ -14,10 +14,10 @@ import Actor
 import Actor.Controller
 
 gameWidth :: Int
-gameWidth = 600
+gameWidth = 800
 
 gameHeight :: Int
-gameHeight = 400
+gameHeight = 600
 
 
 render :: GameState -> Element

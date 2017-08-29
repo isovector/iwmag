@@ -30,9 +30,9 @@ instance IsObject "gem" where
            , V2 0 6
            ]
   update _ _ p t@Gem {..}
-    | collected = t
+    | collected = (t, id)
     | otherwise =
-        case withinRadius (aGeom p) (_aPos p) 4 gemPos of
+        (, id) $ case withinRadius (aGeom p) (_aPos p) 4 gemPos of
           True ->  t { collected = True }
           False -> t
 

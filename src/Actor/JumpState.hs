@@ -18,6 +18,6 @@ isJump (Jump _) = True
 isJump _       = False
 
 isBoost :: JumpState -> Bool
-isBoost (Boost _ _) = True
-isBoost _           = False
+isBoost (Boost _ _ _ ) = True
+isBoost _              = False
 

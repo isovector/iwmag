@@ -58,8 +58,8 @@ isGrasping p = case attachment p of
 
 canAct :: Actor -> Bool
 canAct p = go $ jumpState p
-  where go (Boost _ _) = False
-        go _           = True
+  where go (Boost _ _ _ ) = False
+        go _              = True
 
 collision :: Level -> Axis -> BoxGeom -> V2 -> Double -> (Maybe Line, V2)
 collision l ax geom pos dx = sweep geom pos (geometry l) ax dx
@@ -86,18 +86,26 @@ jumpHandler dt l ctrl p = bool (go $ jumpState p) p $ isGrasping p
                         else gravity
           (collided, pos') = collision l AxisY (aGeom p) (_aPos p) $ dt * y
 
-    go (Boost dir t)
-        | t > 0 = p { jumpState = Boost dir $ t - dt
+    go (Boost dir t applyPenalty)
+        | t > 0 = p { jumpState = Boost dir (t - dt) applyPenalty
                     , _aPos      = xy'
                     }
         | otherwise = addRecovery $ setFalling p
       where (_, x')  = collision l AxisX (aGeom p) (_aPos p) $ view _x boostDt
             (_, xy') = collision l AxisY (aGeom p) x' $ view _y boostDt
-            boostDt = (dt * boostStrength) *^ dir
+            boostDt = (^* dt)
+                    $ boostStrength *^ dir
+                    + ( gravity
+                      * boostAttenuation
+                      * bool 1
+                             boostUpPenalty
+                             (dir == V2 0 (-1))
+                      * bool 0 1 applyPenalty
+                      ) *^ V2 0 1
 
-setBoosting :: V2 -> Actor -> Actor
-setBoosting dir p = p
-  { jumpState  = Boost dir boostTime
+setBoosting :: V2 -> Bool -> Actor -> Actor
+setBoosting dir penalty p = p
+  { jumpState  = Boost dir boostTime penalty
   , boostsLeft = boostsLeft p - 1
   , attachment = Unattached
   }
@@ -124,7 +132,7 @@ doJump p = p
 actionHandler :: Level -> Controller -> Actor -> State Level Actor
 actionHandler l ctrl p
     | not (canAct p) = pure p
-    | shouldBoost    = pure $ setBoosting (fromJust $ wantsBoost ctrl) p
+    | shouldBoost    = pure $ setBoosting (fromJust $ wantsBoost ctrl) True p
     | shouldJump     = pure $ doJump p
     | wantsGrasp ctrl =
       case (graspTarget p, getGraspHook l p, graspLevel l p) of
@@ -188,8 +196,9 @@ walkHandler dt l ctrl p
         dir       = view _x . ctrlDir $ ctrl
 
 deathHandler :: Level -> Actor -> Maybe Actor
-deathHandler l p = if any (flip inRect (_aPos p)) $ deathZones l
-                      then Nothing
+deathHandler l p =
+  if (any (flip inRect (_aPos p)) $ deathZones l) || _aHealth p <= 0
+     then Nothing
                       else Just p
 
 graspHandler :: Controller -> Actor -> Actor
@@ -208,7 +217,7 @@ graspHandler ctrl p =
                          ((V2 0 0.5) ^* topY (aGeom p))
                          dir'
               }
-      (False, True) -> setBoosting (boostDir dir) p
+      (False, True) -> setBoosting (boostDir dir) False p
       (True, False) -> doJump p { jumpsLeft = 0 }
       _ -> p
     _ -> p

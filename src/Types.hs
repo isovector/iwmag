@@ -60,7 +60,8 @@ instance Show GraspTarget where
   show _ = "GraspTarget"
 
 data Actor = Actor
-  { _aPos         :: !V2
+  { _aPos        :: !V2
+  , _aHealth     :: !Int
   , jumpState    :: !JumpState
   , jumpsLeft    :: !Int
   , boostsLeft   :: !Int
@@ -83,7 +84,7 @@ data BoxGeom = BoxGeom
 data JumpState
   = Stand
   | Jump Double
-  | Boost V2 Double
+  | Boost V2 Double Bool
   deriving (Show, Eq)
 
 data Line = Line V2 V2 deriving (Show, Eq)
@@ -93,7 +94,7 @@ data Object where
   Object ::
     { obj       :: a
     , renderObj :: a -> Form
-    , updateObj :: Time -> Level -> Actor -> a -> a
+    , updateObj :: Time -> Level -> Actor -> a -> (a, Actor -> Actor)
     , graspObj  :: ATraversal' Level Object -> Actor -> a -> Maybe (a, GraspTarget)
     } -> Object
 
@@ -104,11 +105,12 @@ class KnownSymbol name => IsObject name where
   type InternalObj name = r | r -> name
   spawn :: V2 -> [(String, String)] -> InternalObj name
   render :: InternalObj name -> Form
-  update :: Time -> Level -> Actor -> InternalObj name -> InternalObj name
+  update :: Time -> Level -> Actor -> InternalObj name -> (InternalObj name, Actor -> Actor)
   grasp  :: ATraversal' Level Object -> Actor -> InternalObj name -> Maybe (InternalObj name, GraspTarget)
 
 data GameState = GameState
   { currentLevel :: !Level
+  , levelName    :: !String
   , player       :: !Actor
   , camera       :: !V2
   }

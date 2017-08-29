@@ -22,7 +22,7 @@ instance IsObject "disco" where
   render Disco {..} = move (discoPos + V2 (cos discoDur) (sin discoDur) ^* 10)
                     . filled discoCol
                     $ circle 8
-  update dt _ _ t@Disco {..} =
+  update dt _ _ t@Disco {..} = (, id) $
     t { discoDur = discoDur + dt * 3 }
 
   grasp _ _ _ = Nothing

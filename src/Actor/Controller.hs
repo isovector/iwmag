@@ -26,10 +26,9 @@ initController = Controller
 foldController :: Time -> RawController -> Controller -> Controller
 foldController dt RawController {..} Controller {..} = Controller
   { ctrlDir     = rctrlDir
-  , ctrlLastDir = case (isIdle && not wasIdle, shouldBoost) of
-                    (_, True)  -> V2 0 0
-                    (True, _)  -> ctrlDir
-                    (False, _) -> ctrlLastDir
+  , ctrlLastDir = case isIdle && not wasIdle of
+                    True  -> ctrlDir
+                    False -> ctrlLastDir
   , timeIdle    = if isIdle
                      then timeIdle + dt
                      else 0
@@ -53,13 +52,17 @@ ctrlSignal keys keys' =
             <*> jumpKey keys
             <*> graspKey keys'
             <*> graspKey keys
+            <*> isDown keys QKey
   where
-    makeState dir jump' jump grasp' grasp = RawController
-      { rctrlDir        = normalize dir
-      , rctrlJump       = jump'
-      , rctrlWantsJump  = jump'  && not jump
-      , rctrlWantsGrasp = grasp' && not grasp
-      }
+    makeState dir jump' jump grasp' grasp quit =
+      case quit of
+        True -> error "quit"
+        False -> RawController
+          { rctrlDir        = normalize dir
+          , rctrlJump       = jump'
+          , rctrlWantsJump  = jump'  && not jump
+          , rctrlWantsGrasp = grasp' && not grasp
+          }
 
     jumpKey  = flip isDown LeftShiftKey
     graspKey = flip isDown EKey

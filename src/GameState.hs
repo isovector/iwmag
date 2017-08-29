@@ -26,15 +26,17 @@ doorHandler s@(GameState {player = p, currentLevel = l}) =
       Nothing          -> s
 
 update :: Time -> Controller -> GameState -> GameState
-update dt ctrl state@(GameState {player = p, currentLevel = l}) =
-    doorHandler $ case flip runState l $ playerHandler dt l ctrl p of
-      (Just p', l') ->
-        state
-          { player = p'
-          , camera = _aPos p'
-          , currentLevel  = updateLevel dt p' l'
-          }
-      (Nothing, l') -> resetState l'
+update dt ctrl state@(GameState {player = p, currentLevel = l, levelName = name}) =
+    doorHandler $
+      case flip runState l $ playerHandler dt l ctrl p of
+        (Just p', l') ->
+          let (l'', f) = updateLevel dt p' l'
+           in state
+              { player = f p'
+              , camera = _aPos p'
+              , currentLevel  = l''
+              }
+        (Nothing, _) -> resetState name
 
 setLevel :: String -> GameState -> GameState
 setLevel ln s
@@ -45,14 +47,17 @@ setLevel ln s
     | otherwise = error $ "invalid level requested: " ++ ln
 
 -- TODO: this should probably use setLevel ^^
-resetState :: Level -> GameState
-resetState level = GameState
-  { currentLevel = level
-  , player       = defaultActor { _aPos = pos' }
-  , camera       = pos'
-  }
-  where pos' = playerSpawn level
+resetState :: String -> GameState
+resetState levelname =
+  let level = fromJust $ lookup levelname levels
+      pos' = playerSpawn level
+   in GameState
+      { currentLevel = level
+      , levelName    = levelname
+      , player       = defaultActor { _aPos = pos' }
+      , camera       = pos'
+      }
 
 initState :: GameState
-initState = resetState . fromJust $ lookup firstLevel levels
+initState = resetState firstLevel
 

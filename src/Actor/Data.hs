@@ -12,7 +12,8 @@ import Types
 
 defaultActor :: Actor
 defaultActor = Actor
-  { _aPos         = V2 100 100
+  { _aPos        = V2 100 100
+  , _aHealth     = 100
   , jumpState    = Stand
   , jumpsLeft    = jumpCount
   , boostsLeft   = boostCount
@@ -25,9 +26,9 @@ defaultActor = Actor
 
 playerGeom :: BoxGeom
 playerGeom = BoxGeom
-  { topY    = 24
+  { topY    = 36
   , bottomY = 0
-  , leftX   = 8
-  , rightX  = 8
+  , leftX   = 12
+  , rightX  = 12
   }
 
