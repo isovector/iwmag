@@ -12,10 +12,10 @@ doubleTapTime :: Double
 doubleTapTime = 0.1
 
 jumpAttenuation :: Double
-jumpAttenuation = 0.75
+jumpAttenuation = 0.3
 
 jumpStrength :: Double
-jumpStrength = 425
+jumpStrength = 200
 
 jumpCount :: Int
 jumpCount = 1
@@ -24,31 +24,31 @@ boostCount :: Int
 boostCount = 100
 
 boostTime :: Double
-boostTime = 0.15
+boostTime = 0.10
 
 boostStrength :: Double
-boostStrength = 112 / boostTime
+boostStrength = 40 / boostTime
 
 boostUpPenalty :: Double
-boostUpPenalty = 1.55
+boostUpPenalty = 2.5
 
 boostAttenuation :: Double
-boostAttenuation = 0.45
+boostAttenuation = 0.2
 
 recoverTime :: Double
-recoverTime = 0.15
+recoverTime = 0
 
 walkSpeed :: Double
 walkSpeed = 120
 
 gravity :: Double
-gravity = 1000
+gravity = 800
 
 terminalVelocity :: Double
 terminalVelocity = 2000
 
 firstLevel :: String
-firstLevel = "test1"
+firstLevel = "test2"
 
 importScale :: Double
 importScale = 2.5

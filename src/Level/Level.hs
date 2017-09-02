@@ -1,6 +1,7 @@
 {-# LANGUAGE NamedFieldPuns              #-}
 {-# LANGUAGE NoImplicitPrelude           #-}
 {-# LANGUAGE RecordWildCards             #-}
+{-# LANGUAGE TupleSections               #-}
 {-# LANGUAGE ViewPatterns                #-}
 {-# OPTIONS_GHC -fno-warn-name-shadowing #-}
 
@@ -11,6 +12,7 @@ module Level.Level
   , Door (..)
   , levels
   , updateLevel
+  , drawLine
   ) where
 
 import qualified Data.Map as M
@@ -46,11 +48,12 @@ getDoor :: Zone -> Maybe Door
 getDoor (DoorZ door) = Just door
 getDoor _ = Nothing
 
-drawLine :: Color -> Line -> Form
-drawLine c (Line pos size) = move pos
-                           . traced (solid c)
-                           . segment (0,0)
-                           $ unpackV2 size
+drawLine :: Piece -> Form
+drawLine (Wall (Line pos size) c)
+  = move pos
+  . traced (solid c)
+  . segment (0,0)
+  $ unpackV2 size
 
 levels :: [(String, Level)]
 levels = zip names
@@ -76,22 +79,26 @@ parseLayers size tileset ls =
   let dz =  map (getRect) $ getZones isDeath
       nbz = map (getRect) $ getZones isNoBoost
       doors = getZones isDoor
-   in col { playerSpawn  = spawn
-          , deathZones   = dz
-          , noBoostZones = nbz
-          , targets      = levelHooks
-          , _objects     = levelObjects
-          , doors = mapMaybe getDoor doors
-          , forms  = concat [forms col | null tiledata ]
-                  ++ fmap targetForm levelHooks
-                  ++ zonesToForm dz  red
-                  ++ zonesToForm nbz cyan
-                  ++ zonesToForm (map getRect doors) purple
-                  ++ tiledata
-          , levelSize = size
-          }
+   in Level
+      { levelGeometry = fmap snd . parseCollision green $ getLayer "collision"
+      , playerSpawn  = spawn
+      , deathZones   = dz
+      , noBoostZones = nbz
+      , targets      = levelHooks
+      , _objects     = levelObjects
+      , doors = mapMaybe getDoor doors
+      , forms  = fmap targetForm levelHooks
+              ++ zonesToForm dz  red
+              ++ zonesToForm nbz cyan
+              ++ zonesToForm (map getRect doors) purple
+              ++ tiledata
+      , levelSize = size
+      , destructableGeometry = M.fromListWith (++)
+                             . fmap (second pure)
+                             . parseCollision red
+                             $ getLayer "destructable"
+      }
   where (spawn, zones) = parseMeta $ getLayer "meta"
-        col            = buildLevel . parseCollision $ getLayer "collision"
         levelHooks   = parseHooks $ getLayer "targets"
         levelObjects = parseObjects $ getLayer "objects"
         tiledata     = parseTileset tileset $ getLayer "tiles"
@@ -174,8 +181,8 @@ parseObjects layers =
     makeObject obj@Object {..} = (objectMap M.! fromJust objectType) (getPosOfObj obj) objectProperties
 
 
-parseCollision :: Maybe Layer -> [Piece]
-parseCollision layers =
+parseCollision :: Color -> Maybe Layer -> [(String, Piece)]
+parseCollision c layers =
     case layers of
       Just ObjectLayer {layerObjects = objs} -> concatMap toPiece objs
       _ -> error "bad collision"
@@ -186,6 +193,7 @@ parseCollision layers =
                 , objectWidth = w'
                 , objectHeight = h'
                 , objectPolyline = l
+                , objectName = maybe "" id -> name
                 })
           | isJust l =
               let (Polyline pl) = fromJust l
@@ -197,29 +205,21 @@ parseCollision layers =
                           Wall (lineBetween
                                (V2 (x + ax * importScale) (y + ay * importScale))
                                (V2 (x + bx * importScale) (y + by * importScale)))
-                               green
+                               c
                       | otherwise = error "level contains slopes"
-               in map fromPair ls
+               in map ((name, ) . fromPair) ls
 
           | otherwise =
               let x = importScale * x'
                   y = importScale * y'
                   w = importScale * fromJust w'
                   h = importScale * fromJust h'
-               in [ Wall (lineRel (V2 x y)       (V2 w 0)) green
-                  , Wall (lineRel (V2 x (y + h)) (V2 w 0)) green
-                  , Wall (lineRel (V2 x y)       (V2 0 h)) green
-                  , Wall (lineRel (V2 (x + w) y) (V2 0 h)) green
+               in fmap (name, )
+                  [ Wall (lineRel (V2 x y)       (V2 w 0)) c
+                  , Wall (lineRel (V2 x (y + h)) (V2 w 0)) c
+                  , Wall (lineRel (V2 x y)       (V2 0 h)) c
+                  , Wall (lineRel (V2 (x + w) y) (V2 0 h)) c
                   ]
-
-buildLevel :: [Piece] -> Level
-buildLevel ((Wall l c):pxs) =
-    let built = buildLevel pxs
-        form  = drawLine c l
-     in built { geometry = l    : (geometry built)
-              , forms    = form : (forms built)
-              }
-buildLevel [] = Level [] [] (V2 1 0) [] [] [] [] [] (V2 0 0)
 
 
 updateLevel :: Time -> Actor -> Level -> (Level, Actor -> Actor)

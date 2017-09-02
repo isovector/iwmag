@@ -10,29 +10,45 @@ module Types
   , module Control.Lens
   ) where
 
-import Control.Lens hiding (Level, levels)
-import BasePrelude hiding (rotate, group, (&), uncons, index, lazy, throw)
-import Game.Sequoia
-import Linear.Vector hiding (E (..))
-import GHC.TypeLits
+import           BasePrelude hiding (rotate, group, (&), uncons, index, lazy, throw)
+import           Control.Lens hiding (Level, levels)
+import qualified Data.Map as M
+import           GHC.TypeLits
+import           Game.Sequoia
+import           Linear.Vector hiding (E (..))
 
 
-data Piece = Wall Line Color
+data Piece = Wall
+  { pieceLine :: Line
+  , pieceColor :: Color
+  }
+  deriving (Eq, Show)
 
 data Hook = Hook { hookPos :: V2 }
   deriving (Eq, Show)
 
 data Level = Level
-  { geometry     :: [Line]
-  , forms        :: [Form]
-  , playerSpawn  :: V2
-  , deathZones   :: [Rect]
-  , noBoostZones :: [Rect]
-  , doors        :: [Door]
-  , targets      :: [Hook]
-  , _objects     :: [Object]
-  , levelSize    :: V2
+  { levelGeometry :: [Piece]
+  , forms         :: [Form]
+  , playerSpawn   :: V2
+  , deathZones    :: [Rect]
+  , noBoostZones  :: [Rect]
+  , doors         :: [Door]
+  , targets       :: [Hook]
+  , _objects      :: [Object]
+  , levelSize     :: V2
+  , destructableGeometry :: M.Map String [Piece]
   } deriving Show
+
+geometry :: Level -> [Line]
+geometry = fmap pieceLine . levelPieces
+
+levelPieces :: Level -> [Piece]
+levelPieces level = mappend (levelGeometry level)
+                  . mconcat
+                  . fmap snd
+                  . M.toList
+                  $ destructableGeometry level
 
 
 data Zone = Death   Rect
