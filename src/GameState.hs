@@ -42,6 +42,7 @@ setLevel :: String -> GameState -> GameState
 setLevel ln s
     | Just l <- lookup ln levels =
         s { currentLevel = l
+          , levelName = ln
           , player = (player s) { _aPos = playerSpawn l }
           }
     | otherwise = error $ "invalid level requested: " ++ ln

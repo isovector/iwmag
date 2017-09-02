@@ -1,7 +1,10 @@
-{-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE NoImplicitPrelude                #-}
+{-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}
 
 module Main where
 
+import Actor
+import Actor.Controller
 import BasePrelude hiding (group)
 import Control.FRPNow.Time (delayTime)
 import Game.Sequoia
@@ -9,9 +12,8 @@ import Game.Sequoia.Keyboard
 import GameState
 import Level.Level
 import Linear.Vector
+import Math (clamp')
 import Object
-import Actor
-import Actor.Controller
 
 gameWidth :: Int
 gameWidth = 800
@@ -28,9 +30,23 @@ render state = collage gameWidth gameHeight
              $ forms level
             ++ fmap renderObject (_objects level)
             ++ drawActor (player state)
-    where cam    = camera state
+    where cam    = clampCamera (levelSize $ currentLevel state) $ camera state
           center = V2 (fromIntegral gameWidth) (fromIntegral gameHeight) ^* 0.5
           level = currentLevel state
+
+
+clampCamera :: V2  -- ^ Level size.
+            -> V2  -- ^ Focal point.
+            -> V2
+clampCamera (V2 rx ry)
+            (V2 x y) = result
+  where
+    sx = fromIntegral gameWidth
+    sy = fromIntegral gameHeight
+    w = sx / 2
+    h = sy / 2
+    result = V2 (clamp' w (rx - w) x) (clamp' h (ry - h) y)
+
 
 
 runGame :: Engine -> N (B Element)

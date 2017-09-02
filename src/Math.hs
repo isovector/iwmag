@@ -9,6 +9,8 @@ module Math ( unpackV2
             , lineRel
             , linesIntersection
             , linesIntersect
+            , clamp
+            , clamp'
             ) where
 
 import BasePrelude
@@ -52,4 +54,13 @@ inRect (Rect (V2 x y) (V2 w h))
                   && px <  x + w
                   && y  <= py
                   && py <  y + h
+
+
+------------------------------------------------------------------------------
+-- | Clamp a vector.
+clamp :: V2 -> V2 -> V2 -> V2
+clamp (V2 lx ly) (V2 ux uy) (V2 x y) = V2 (clamp' lx ux x) (clamp' ly uy y)
+
+clamp' :: Ord a => a -> a -> a -> a
+clamp' l u z = min u $ max l z
 

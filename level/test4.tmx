@@ -1,39 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.0" orientation="orthogonal" renderorder="right-down" width="30" height="23" tilewidth="16" tileheight="16" nextobjectid="34">
+<map version="1.0" orientation="orthogonal" renderorder="right-down" width="20" height="16" tilewidth="16" tileheight="16" nextobjectid="37">
  <tileset firstgid="1" name="floating" tilewidth="16" tileheight="16" tilecount="1160" columns="58">
   <image source="assets/floating.png" trans="5e81a2" width="928" height="320"/>
  </tileset>
- <objectgroup name="collision">
-  <object id="26" x="0" y="352" width="480" height="16"/>
-  <object id="31" x="160" y="272">
-   <polyline points="0,0 80,0 80,32 64,32 64,48 48,48 48,64 32,64 32,48 16,48 16,32 0,32 0,0"/>
-  </object>
- </objectgroup>
  <objectgroup name="meta">
-  <object id="14" type="spawn" x="80" y="272" width="16" height="16">
+  <object id="34" name="spawn" type="spawn" x="144" y="224" width="16" height="16">
    <ellipse/>
   </object>
  </objectgroup>
- <layer name="tiles" width="30" height="23">
+ <layer name="tiles" width="20" height="16">
   <data encoding="base64" compression="zlib">
-   eJztzUkOgkAQRuFq7oIonkFwOBSOGxzuowhsQLiP8w18V+hOOnFRL/k2nVT/IpqmaZqm/WMTJEgxxQxzLDzvZlhihTU22GLnefeMCwpcUaJC7Xn3jgeeeOGND76ed0MjMkCEIUaIMTbuf54CkRx7HHAM7N5c73o0aHFDZ/nmevcDzMQ34A==
+   eJzF0lkOgjAQgOEGeHLjDq7HcAko3sH1POir66Vc7+B6B/9GCEKgSmLCw5dCmSmddixDCMvjoK8Yo3FWChctPGbJ/ONaqrOQtV5xwx0PPL36d3q6/8j4MiqoooY6Gt46uZR1yvgBuUOMMMYEUz3Is3+s0/HGBblLrLDGBlv9nRe31rd7kDXvccARJ5z1oIdU+4tbW9acRwFFlH7sBVXtcg9d9L7EZSGpx/x5VQ9Gz8U0knvMn4/7Hnd+n+9Jd2gnfHe5+6YQooU2Ophr7/mZFn6OxrlawI99AYV1Zx4=
   </data>
  </layer>
- <objectgroup name="targets">
-  <object id="20" x="64" y="288" width="16" height="16">
-   <ellipse/>
+ <objectgroup name="collision">
+  <object id="35" x="0" y="256">
+   <polyline points="0,0 320,0 320,-256 0,-256 0,0"/>
   </object>
-  <object id="21" x="64" y="272" width="16" height="16">
-   <ellipse/>
-  </object>
-  <object id="22" x="80" y="288" width="16" height="16">
-   <ellipse/>
-  </object>
-  <object id="23" x="256" y="288" width="16" height="16">
-   <ellipse/>
-  </object>
- </objectgroup>
- <objectgroup name="objects">
-  <object id="33" name="follower" type="follower" x="224" y="256" width="16" height="16"/>
  </objectgroup>
 </map>

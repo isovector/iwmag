@@ -54,7 +54,9 @@ drawLine c (Line pos size) = move pos
 
 levels :: [(String, Level)]
 levels = zip names
-       $ map (\x -> parseLayers (fmap getTileset . listToMaybe $ mapTilesets x) $ mapLayers x)
+       $ map (\x -> parseLayers (importScale *^ V2 (fromIntegral $ mapWidth x * mapTileWidth x) (fromIntegral $ mapHeight x * mapTileHeight x))
+                                (fmap getTileset . listToMaybe $ mapTilesets x)
+                                (mapLayers x))
        . unsafePerformIO
        . sequence
        . map (\n -> loadMapFile $ "level/" ++ n ++ ".tmx")
@@ -69,8 +71,8 @@ levels = zip names
 getTileset :: Tileset -> (Tileset, FilePath)
 getTileset x = (x, ("level/" ++) . iSource . head $ tsImages x)
 
-parseLayers :: Maybe (Tileset, FilePath) -> [Layer] -> Level
-parseLayers tileset ls =
+parseLayers :: V2 -> Maybe (Tileset, FilePath) -> [Layer] -> Level
+parseLayers size tileset ls =
   let dz =  map (getRect) $ getZones isDeath
       nbz = map (getRect) $ getZones isNoBoost
       doors = getZones isDoor
@@ -86,6 +88,7 @@ parseLayers tileset ls =
                   ++ zonesToForm nbz cyan
                   ++ zonesToForm (map getRect doors) purple
                   ++ tiledata
+          , levelSize = size
           }
   where (spawn, zones) = parseMeta $ getLayer "meta"
         col            = buildLevel . parseCollision $ getLayer "collision"
@@ -216,7 +219,7 @@ buildLevel ((Wall l c):pxs) =
      in built { geometry = l    : (geometry built)
               , forms    = form : (forms built)
               }
-buildLevel [] = Level [] [] (V2 1 0) [] [] [] [] []
+buildLevel [] = Level [] [] (V2 1 0) [] [] [] [] [] (V2 0 0)
 
 
 updateLevel :: Time -> Actor -> Level -> (Level, Actor -> Actor)

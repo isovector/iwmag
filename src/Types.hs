@@ -31,6 +31,7 @@ data Level = Level
   , doors        :: [Door]
   , targets      :: [Hook]
   , _objects     :: [Object]
+  , levelSize    :: V2
   } deriving Show
 
 
