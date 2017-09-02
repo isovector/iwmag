@@ -19,8 +19,9 @@ import           Linear.Vector hiding (E (..))
 
 
 data Piece = Wall
-  { pieceLine :: Line
+  { pieceLine  :: Line
   , pieceColor :: Color
+  , pieceGroup :: String
   }
   deriving (Eq, Show)
 
@@ -40,15 +41,12 @@ data Level = Level
   , destructableGeometry :: M.Map String [Piece]
   } deriving Show
 
-geometry :: Level -> [Line]
-geometry = fmap pieceLine . levelPieces
-
-levelPieces :: Level -> [Piece]
-levelPieces level = mappend (levelGeometry level)
-                  . mconcat
-                  . fmap snd
-                  . M.toList
-                  $ destructableGeometry level
+geometry :: Level -> [Piece]
+geometry level = mappend (levelGeometry level)
+               . mconcat
+               . fmap snd
+               . M.toList
+               $ destructableGeometry level
 
 
 data Zone = Death   Rect
@@ -59,7 +57,7 @@ data Door = Door Rect String deriving Show
 
 data ActorAttachment
   = Unattached
-  | StandingOn Line
+  | StandingOn Piece
   | Grasping Hook V2
   deriving (Eq, Show)
 

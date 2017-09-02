@@ -1,7 +1,6 @@
 {-# LANGUAGE NamedFieldPuns              #-}
 {-# LANGUAGE NoImplicitPrelude           #-}
 {-# LANGUAGE RecordWildCards             #-}
-{-# LANGUAGE TupleSections               #-}
 {-# LANGUAGE ViewPatterns                #-}
 {-# OPTIONS_GHC -fno-warn-name-shadowing #-}
 
@@ -49,7 +48,7 @@ getDoor (DoorZ door) = Just door
 getDoor _ = Nothing
 
 drawLine :: Piece -> Form
-drawLine (Wall (Line pos size) c)
+drawLine (Wall (Line pos size) c _)
   = move pos
   . traced (solid c)
   . segment (0,0)
@@ -80,21 +79,21 @@ parseLayers size tileset ls =
       nbz = map (getRect) $ getZones isNoBoost
       doors = getZones isDoor
    in Level
-      { levelGeometry = fmap snd . parseCollision green $ getLayer "collision"
+      { levelGeometry = parseCollision green $ getLayer "collision"
       , playerSpawn  = spawn
       , deathZones   = dz
       , noBoostZones = nbz
       , targets      = levelHooks
       , _objects     = levelObjects
       , doors = mapMaybe getDoor doors
-      , forms  = fmap targetForm levelHooks
-              ++ zonesToForm dz  red
-              ++ zonesToForm nbz cyan
-              ++ zonesToForm (map getRect doors) purple
-              ++ tiledata
+      , forms = fmap targetForm levelHooks
+             ++ zonesToForm dz  red
+             ++ zonesToForm nbz cyan
+             ++ zonesToForm (map getRect doors) purple
+             ++ tiledata
       , levelSize = size
       , destructableGeometry = M.fromListWith (++)
-                             . fmap (second pure)
+                             . fmap (\x -> (pieceGroup x, pure x))
                              . parseCollision red
                              $ getLayer "destructable"
       }
@@ -181,7 +180,7 @@ parseObjects layers =
     makeObject obj@Object {..} = (objectMap M.! fromJust objectType) (getPosOfObj obj) objectProperties
 
 
-parseCollision :: Color -> Maybe Layer -> [(String, Piece)]
+parseCollision :: Color -> Maybe Layer -> [Piece]
 parseCollision c layers =
     case layers of
       Just ObjectLayer {layerObjects = objs} -> concatMap toPiece objs
@@ -206,19 +205,19 @@ parseCollision c layers =
                                (V2 (x + ax * importScale) (y + ay * importScale))
                                (V2 (x + bx * importScale) (y + by * importScale)))
                                c
+                               name
                       | otherwise = error "level contains slopes"
-               in map ((name, ) . fromPair) ls
+               in map fromPair ls
 
           | otherwise =
               let x = importScale * x'
                   y = importScale * y'
                   w = importScale * fromJust w'
                   h = importScale * fromJust h'
-               in fmap (name, )
-                  [ Wall (lineRel (V2 x y)       (V2 w 0)) c
-                  , Wall (lineRel (V2 x (y + h)) (V2 w 0)) c
-                  , Wall (lineRel (V2 x y)       (V2 0 h)) c
-                  , Wall (lineRel (V2 (x + w) y) (V2 0 h)) c
+               in [ Wall (lineRel (V2 x y)       (V2 w 0)) c name
+                  , Wall (lineRel (V2 x (y + h)) (V2 w 0)) c name
+                  , Wall (lineRel (V2 x y)       (V2 0 h)) c name
+                  , Wall (lineRel (V2 (x + w) y) (V2 0 h)) c name
                   ]
 
 

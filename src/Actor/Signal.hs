@@ -14,6 +14,8 @@ import Math
 import Object
 import Types hiding (grasp)
 
+sweep' :: BoxGeom -> V2 -> [Piece] -> Axis -> Double -> (Maybe Piece, V2)
+sweep' b v = sweep b v pieceLine
 
 getGraspHook :: Level -> Actor -> Maybe Hook
 getGraspHook l p = getFirst
@@ -59,8 +61,8 @@ isGrasping p = case attachment p of
 canAct :: Actor -> Bool
 canAct = not . isBoosting
 
-collision :: Level -> Axis -> BoxGeom -> V2 -> Double -> (Maybe Line, V2)
-collision l ax geom pos dx = sweep geom pos (geometry l) ax dx
+collision :: Level -> Axis -> BoxGeom -> V2 -> Double -> (Maybe Piece, V2)
+collision l ax geom pos dx = sweep' geom pos (geometry l) ax dx
 
 jumpHandler :: Time -> Level -> Controller -> Actor -> Actor
 jumpHandler dt l ctrl p = bool (go $ jumpState p) p $ isGrasping p
@@ -168,7 +170,7 @@ stillStanding :: Actor -> Bool
 stillStanding p =
   case attachment p of
     Unattached -> False
-    StandingOn l -> isJust . fst $ sweep (aGeom p) (_aPos p) [l] AxisY 1
+    StandingOn l -> isJust . fst $ sweep' (aGeom p) (_aPos p) [l] AxisY 1
     Grasping _ _ -> True
 
 recoveryHandler :: Time -> Actor -> Actor

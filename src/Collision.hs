@@ -53,8 +53,8 @@ withinBox :: BoxGeom -> V2 -> V2 -> Bool
 withinBox b p t = inRect (boxGeomToRect b p) t
 
 
-sweep :: BoxGeom -> V2 -> [Line] -> Axis -> Double -> (Maybe Line, V2)
-sweep bg pos ls ax dx
+sweep :: BoxGeom -> V2 -> (a -> Line) -> [a] -> Axis -> Double -> (Maybe a, V2)
+sweep bg pos f ls ax dx
     | ax == AxisX && dx <  0 = sweep' tl bl $ V2 1 0
     | ax == AxisX && dx >= 0 = sweep' tr br $ V2 1 0
     | ax == AxisY && dx <  0 = sweep' tl tr $ V2 0 1
@@ -65,13 +65,13 @@ sweep bg pos ls ax dx
    sweep' c1 c2 u =
      let to = dx *^ u
          diff res = (res - c1) * u + (negate $ normalize to)
-      in case listToMaybe $ mapMaybe (collision' ls . flip lineRel to) [c1, c2] of
+      in case listToMaybe $ mapMaybe (collision' f ls . flip lineRel to) [c1, c2] of
            Just (l, v) -> (Just l, pos + diff v)
            Nothing     -> (Nothing, pos + to)
 
 
 
-collision' :: [Line] -> Line -> Maybe (Line, V2)
-collision' ls dp = listToMaybe
-                 . mapMaybe (\a -> (a,) <$> linesIntersection dp a)
-                 $ ls
+collision' :: (a -> Line) -> [a] -> Line -> Maybe (a, V2)
+collision' f ls dp = listToMaybe
+                   . mapMaybe (\a -> (a,) <$> linesIntersection dp (f a))
+                   $ ls

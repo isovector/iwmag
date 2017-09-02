@@ -14,7 +14,7 @@ import Level.Level
 import Linear.Vector
 import Math (clamp')
 import Object
-import Types (levelPieces)
+import Types (geometry)
 
 gameWidth :: Int
 gameWidth = 800
@@ -28,7 +28,7 @@ render state = collage gameWidth gameHeight
              . pure
              . move (center - cam)
              . group
-             $ fmap drawLine (levelPieces level)
+             $ fmap drawLine (geometry level)
             ++ forms level
             ++ fmap renderObject (_objects level)
             ++ drawActor (player state)
