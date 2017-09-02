@@ -101,7 +101,7 @@ data BoxGeom = BoxGeom
 data JumpState
   = Stand
   | Jump Double
-  | Boost V2 Double Bool
+  | Boost V2 Double Time Bool
   deriving (Show, Eq)
 
 data Line = Line V2 V2 deriving (Show, Eq)

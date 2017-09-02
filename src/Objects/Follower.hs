@@ -5,16 +5,17 @@
 
 module Objects.Follower () where
 
-import Control.Monad.State (evalState)
 import Actor
+import Actor.Constants
 import Actor.Controller
 import Actor.Data
 import Actor.Signal
 import Control.Lens hiding (Level)
+import Control.Monad.State (evalState)
 import Game.Sequoia.Color
 import Linear.Metric
-import Types
 import Object
+import Types
 
 data Follower = Follower
   { _held       :: Bool
@@ -55,7 +56,7 @@ instance IsObject "follower" where
            lo . internalObj . fActor . aPos .~ _aPos p' + V2 0 (-30)
        , onThrow = \_ dir l ->
           l & lo . internalObj . held   .~ False
-            & lo . internalObj . fActor %~ setBoosting dir False
+            & lo . internalObj . fActor %~ setBoosting dir False throwStrength throwTime
        }
 
 
@@ -104,6 +105,6 @@ getPunched :: V2 -> Actor -> Actor
 getPunched pos a =
   let dir = _aPos a - pos
    in case norm dir < 40 of
-        True -> (aHealth -~ 40) $ setBoosting (normalize dir) False a
+        True -> (aHealth -~ 40) $ setBoosting (normalize dir) False throwStrength throwTime a
         False -> a
 

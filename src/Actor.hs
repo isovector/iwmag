@@ -41,6 +41,6 @@ drawActor p = fmap (move pos) $
 getBoostDir :: Actor -> Maybe V2
 getBoostDir p =
   case jumpState p of
-    Boost dir _ _ -> Just dir
-    _             -> Nothing
+    Boost dir _ _ _ -> Just dir
+    _               -> Nothing
 

@@ -57,9 +57,7 @@ isGrasping p = case attachment p of
                  _            -> False
 
 canAct :: Actor -> Bool
-canAct p = go $ jumpState p
-  where go (Boost _ _ _ ) = False
-        go _              = True
+canAct = not . isBoosting
 
 collision :: Level -> Axis -> BoxGeom -> V2 -> Double -> (Maybe Line, V2)
 collision l ax geom pos dx = sweep geom pos (geometry l) ax dx
@@ -86,15 +84,15 @@ jumpHandler dt l ctrl p = bool (go $ jumpState p) p $ isGrasping p
                         else gravity
           (collided, pos') = collision l AxisY (aGeom p) (_aPos p) $ dt * y
 
-    go (Boost dir t applyPenalty)
-        | t > 0 = p { jumpState = Boost dir (t - dt) applyPenalty
+    go (Boost dir strength t applyPenalty)
+        | t > 0 = p { jumpState = Boost dir strength (t - dt) applyPenalty
                     , _aPos      = xy'
                     }
         | otherwise = addRecovery $ setFalling p
       where (_, x')  = collision l AxisX (aGeom p) (_aPos p) $ view _x boostDt
             (_, xy') = collision l AxisY (aGeom p) x' $ view _y boostDt
             boostDt = (^* dt)
-                    $ boostStrength *^ dir
+                    $ strength *^ dir
                     + ( gravity
                       * boostAttenuation
                       * bool 1
@@ -103,9 +101,9 @@ jumpHandler dt l ctrl p = bool (go $ jumpState p) p $ isGrasping p
                       * bool 0 1 applyPenalty
                       ) *^ V2 0 1
 
-setBoosting :: V2 -> Bool -> Actor -> Actor
-setBoosting dir penalty p = p
-  { jumpState  = Boost dir boostTime penalty
+setBoosting :: V2 -> Bool -> Double -> Time -> Actor -> Actor
+setBoosting dir penalty strength duration p = p
+  { jumpState  = Boost dir strength duration penalty
   , boostsLeft = boostsLeft p - 1
   , attachment = Unattached
   }
@@ -132,7 +130,7 @@ doJump p = p
 actionHandler :: Level -> Controller -> Actor -> State Level Actor
 actionHandler l ctrl p
     | not (canAct p) = pure p
-    | shouldBoost    = pure $ setBoosting (fromJust $ wantsBoost ctrl) True p
+    | shouldBoost    = pure $ setBoosting (fromJust $ wantsBoost ctrl) True boostStrength boostTime p
     | shouldJump     = pure $ doJump p
     | wantsGrasp ctrl =
       case (graspTarget p, getGraspHook l p, graspLevel l p) of
@@ -217,7 +215,7 @@ graspHandler ctrl p =
                          ((V2 0 0.5) ^* topY (aGeom p))
                          dir'
               }
-      (False, True) -> setBoosting (boostDir dir) False p
+      (False, True) -> setBoosting (boostDir dir) False boostStrength boostTime p
       (True, False) -> doJump p { jumpsLeft = 0 }
       _ -> p
     _ -> p

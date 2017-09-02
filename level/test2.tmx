@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.0" orientation="orthogonal" renderorder="right-down" width="45" height="15" tilewidth="16" tileheight="16" nextobjectid="55">
+<map version="1.0" orientation="orthogonal" renderorder="right-down" width="45" height="15" tilewidth="16" tileheight="16" nextobjectid="56">
  <objectgroup name="meta">
   <object id="16" name="spawn" type="spawn" x="16" y="208" width="16" height="16">
    <ellipse/>
@@ -37,5 +37,10 @@
   <object id="25" name="pyramid" x="200" y="144" width="24" height="24"/>
   <object id="23" name="pyramid" x="152" y="192" width="24" height="24"/>
   <object id="26" name="pyramid" x="224" y="168" width="24" height="24"/>
+ </objectgroup>
+ <objectgroup name="objects">
+  <object id="55" name="bomb" type="bomb" x="96" y="212" width="12" height="12">
+   <ellipse/>
+  </object>
  </objectgroup>
 </map>

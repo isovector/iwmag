@@ -29,6 +29,12 @@ boostTime = 0.10
 boostStrength :: Double
 boostStrength = 40 / boostTime
 
+throwStrength :: Double
+throwStrength = 130 / throwTime
+
+throwTime :: Double
+throwTime = 0.4
+
 boostUpPenalty :: Double
 boostUpPenalty = 2.5
 
