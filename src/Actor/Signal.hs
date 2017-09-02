@@ -1,4 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE TupleSections     #-}
 
 module Actor.Signal where
 
@@ -64,13 +65,13 @@ canAct = not . isBoosting
 collision :: Level -> Axis -> BoxGeom -> V2 -> Double -> (Maybe Piece, V2)
 collision l ax geom pos dx = sweep' geom pos (geometry l) ax dx
 
-jumpHandler :: Time -> Level -> Controller -> Actor -> Actor
-jumpHandler dt l ctrl p = bool (go $ jumpState p) p $ isGrasping p
+jumpHandler :: Time -> Level -> Controller -> Actor -> (Actor, Maybe Piece)
+jumpHandler dt l ctrl p = bool (go $ jumpState p) (p, Nothing) $ isGrasping p
   where
-    go (Stand)  = p
+    go (Stand)  = (p, Nothing)
 
     go (Jump y) =
-      case collided of
+      (, collided) $ case collided of
         Just line ->
           let landed = onLandHandler p
            in landed { _aPos =  pos'
@@ -87,12 +88,14 @@ jumpHandler dt l ctrl p = bool (go $ jumpState p) p $ isGrasping p
           (collided, pos') = collision l AxisY (aGeom p) (_aPos p) $ dt * y
 
     go (Boost dir strength t applyPenalty)
-        | t > 0 = p { jumpState = Boost dir strength (t - dt) applyPenalty
+        | t > 0 = (, wall)
+                $ p { jumpState = Boost dir strength (t - dt) applyPenalty
                     , _aPos      = xy'
                     }
-        | otherwise = addRecovery $ setFalling p
-      where (_, x')  = collision l AxisX (aGeom p) (_aPos p) $ view _x boostDt
-            (_, xy') = collision l AxisY (aGeom p) x' $ view _y boostDt
+        | otherwise = (addRecovery $ setFalling p, Nothing)
+      where (wx, x')  = collision l AxisX (aGeom p) (_aPos p) $ view _x boostDt
+            (wy, xy') = collision l AxisY (aGeom p) x' $ view _y boostDt
+            wall = wx <|> wy
             boostDt = (^* dt)
                     $ strength *^ dir
                     + ( gravity
@@ -240,7 +243,7 @@ playerHandler dt l ctrl p
     = k (deathHandler l)
   =<< holdHandler dt
   =<< k (fallHandler)
-  =<< k (jumpHandler dt l ctrl)
+  =<< k (fst <$> jumpHandler dt l ctrl)
   =<< actionHandler l ctrl
   =<< k (graspHandler ctrl)
   =<< k (recoveryHandler dt)

@@ -68,7 +68,7 @@ makeController = initController
 followerHandler :: Time -> Level -> Controller -> Actor -> Actor
 followerHandler dt l ctrl p
    = fallHandler
-   . jumpHandler dt l ctrl
+   . (fst <$> jumpHandler dt l ctrl)
    . flip evalState l
    $ actionHandler l ctrl
  =<< k (walkHandler dt l ctrl)
