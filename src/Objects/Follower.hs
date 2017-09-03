@@ -10,6 +10,7 @@ import Actor.Constants
 import Actor.Controller
 import Actor.Data
 import Actor.Signal
+import Collision (actorsIntersect)
 import Control.Lens hiding (Level)
 import Control.Monad.State (evalState)
 import Game.Sequoia.Color
@@ -52,7 +53,7 @@ instance IsObject "follower" where
   grasp (_fActor -> a) = do
     p  <- asks ctxPlayer
     lo <- cloneLens <$> asks ctxLens
-    pure $ case norm (_aPos p - _aPos a) <= 15 of
+    pure $ case actorsIntersect a p of
       True  -> Just (Follower True 0 False $ a { aColor = blue }, hold lo, id)
       False -> Nothing
     where

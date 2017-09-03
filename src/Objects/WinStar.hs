@@ -4,6 +4,7 @@
 module Objects.WinStar () where
 
 import Actor.Constants
+import Collision (boxesIntersect)
 import Game.Sequoia.Color
 import Types hiding (form)
 
@@ -33,7 +34,7 @@ instance IsObject "winstar" where
   grasp ws@WinStar {..} = do
     p  <- asks ctxPlayer
 
-    pure $ case norm (_aPos p - pos) <= 15 of
+    pure $ case boxesIntersect (aGeom p) (_aPos p) (BoxGeom 7 7 7 7) pos of
       True  -> Just (ws, Unarmed, nextLevel ?~ destination)
       False -> Nothing
 

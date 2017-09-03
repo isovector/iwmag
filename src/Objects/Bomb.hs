@@ -9,11 +9,11 @@ import Actor
 import Actor.Constants
 import Actor.Controller
 import Actor.Data
+import Collision (actorsIntersect)
 import Actor.Signal
 import Control.Lens hiding (Level)
 import Control.Monad.State (evalState)
 import Game.Sequoia.Color
-import Linear.Metric
 import Object
 import Types
 
@@ -68,7 +68,7 @@ instance IsObject "bomb" where
   grasp (_fActor -> a) = do
     p  <- asks ctxPlayer
     lo <- cloneLens <$> asks ctxLens
-    pure $ case norm (_aPos p - _aPos a) <= 15 of
+    pure $ case actorsIntersect a p of
       True  -> Just (Bomb True a, hold lo, id)
       False -> Nothing
     where

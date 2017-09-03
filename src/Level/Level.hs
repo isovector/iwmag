@@ -98,10 +98,10 @@ parseLayers size tileset ls =
                               . parseCollision red
                               $ getLayer "destructable"
       }
-  where (spawn, zones) = parseMeta $ getLayer "meta"
-        levelHooks   = parseHooks $ getLayer "targets"
-        levelObjects = parseObjects $ getLayer "objects"
-        tiledata     = parseTileset tileset $ getLayer "tiles"
+  where (spawn, zones) = parseMeta    $ getLayer "meta"
+        levelHooks     = parseHooks   $ getLayer "targets"
+        levelObjects   = parseObjects $ getLayer "objects"
+        tiledata       = parseTileset tileset $ getLayer "tiles"
         getLayer name  = listToMaybe $ filter ((== name) . layerName) ls
         getZones f = filter f zones
         zonesToForm zs c = map (mkForm c) zs
