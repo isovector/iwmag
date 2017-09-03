@@ -1,4 +1,5 @@
-{-# LANGUAGE NoImplicitPrelude   #-}
+{-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE ViewPatterns      #-}
 
 module GameState
   ( GameState
@@ -7,6 +8,7 @@ module GameState
   , _camera
   , update
   , initState
+  , setLevel
   ) where
 
 import           Actor.Constants
@@ -14,9 +16,9 @@ import           Actor.Data
 import           Actor.Signal
 import           Control.Monad.State (runState)
 import           Game.Sequoia
+import           ObjectMap
 import           Level.Level
 import           Math
-import           ObjectMap
 import           Types hiding (update, to)
 
 
@@ -27,12 +29,13 @@ doorHandler s@(GameState {_player = p, _currentLevel = l}) =
       Nothing          -> s
 
 update :: Time -> Controller -> GameState -> GameState
-update dt ctrl state@(GameState {_player = p, _currentLevel = l, _levelName = name}) =
+update _ _ s@(_nextLevel -> Just next) = setLevel next s
+update dt ctrl state@(GameState {_player = p, _levelName = name}) =
     doorHandler $
-      case flip runState l $ playerHandler dt state ctrl p of
-        (Just p', l') ->
-          let (l'', f) = updateLevel dt $ state { _player = p', _currentLevel = l' }
-           in f $ state
+      case flip runState state $ playerHandler dt state ctrl p of
+        (Just p', gs') ->
+          let (l'', f) = updateLevel dt $ gs' { _player = p' }
+           in f $ gs'
               { _player = p'
               , _camera = _aPos p'
               , _currentLevel  = l''
@@ -46,6 +49,7 @@ setLevel ln s
         s { _currentLevel = l
           , _levelName = ln
           , _player = (_player s) { _aPos = playerSpawn l }
+          , _nextLevel    = Nothing
           }
     | otherwise = error $ "invalid level requested: " ++ ln
 
@@ -61,6 +65,7 @@ resetState levelname =
       , _camera       = pos'
       , _geometryChanged = True
       , objectMap     = theObjectMap
+      , _nextLevel    = Nothing
       }
 
 initState :: GameState

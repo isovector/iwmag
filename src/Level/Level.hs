@@ -195,7 +195,8 @@ parseCollision :: Color -> Maybe Layer -> [Piece]
 parseCollision c layers =
     case layers of
       Just ObjectLayer {layerObjects = objs} -> concatMap toPiece objs
-      _ -> error "bad collision"
+      Just _ -> error "bad collision"
+      Nothing -> []
   where
       toPiece (Object
                 { objectX = x'

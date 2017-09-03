@@ -32,7 +32,7 @@ getGraspHook l p = getFirst
                                           targetRadius
                            $ hookPos t
 
-graspLevel :: GameState -> Maybe (Level -> Level, GraspTarget)
+graspLevel :: GameState -> Maybe (GameState -> GameState, GraspTarget)
 graspLevel gs = getFirst
               . mconcat
               . fmap f
@@ -40,9 +40,12 @@ graspLevel gs = getFirst
               . _objects
               $ _currentLevel gs
   where
-    f :: Object -> First (Level -> Level, GraspTarget)
+    f :: Object -> First (GameState -> GameState, GraspTarget)
     f obj = First
-          . fmap (first $ \obj' -> cloneLens (objLens obj) ?~ obj')
+          . fmap (\(obj', gt, gs') ->
+
+              ( (currentLevel . cloneLens (objLens obj) ?~ obj') . gs'
+              , gt))
           $ graspObject gs obj
 
 
@@ -137,7 +140,7 @@ doJump p = p
   , attachment = Unattached
   }
 
-actionHandler :: GameState -> Controller -> Actor -> State Level Actor
+actionHandler :: GameState -> Controller -> Actor -> State GameState Actor
 actionHandler gs ctrl p
     | not (canAct p) = pure p
     | shouldBoost    = pure $ setBoosting (fromJust $ wantsBoost ctrl) True boostStrength boostTime p
@@ -240,7 +243,7 @@ graspHandler ctrl p =
     onSideways a b dir = bool a b $ view _x dir /= 0
     boostDir dir = normalize $ dir + onSideways (V2 0 0) (V2 0 $ -1) dir
 
-holdHandler :: Time -> Actor -> State Level Actor
+holdHandler :: Time -> Actor -> State GameState Actor
 holdHandler dt p = do
   case graspTarget p of
     Unarmed     -> pure ()
@@ -250,7 +253,7 @@ holdHandler dt p = do
 
 
 -- TODO(sandy): remove the kleisli so each of these gets the level from the monad
-playerHandler :: Time -> GameState -> Controller -> Actor -> State Level (Maybe Actor)
+playerHandler :: Time -> GameState -> Controller -> Actor -> State GameState (Maybe Actor)
 playerHandler dt gs ctrl p
     = k (deathHandler l)
   =<< holdHandler dt

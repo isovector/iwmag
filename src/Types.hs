@@ -66,8 +66,8 @@ data ActorAttachment
 data GraspTarget
   = Unarmed
   | Holding
-    { updateHeld :: Time -> Actor -> Level -> Level
-    , onThrow    :: Actor -> V2 -> Level -> Level
+    { updateHeld :: Time -> Actor -> GameState -> GameState
+    , onThrow    :: Actor -> V2 -> GameState -> GameState
     }
 
 instance Eq GraspTarget where
@@ -112,7 +112,7 @@ data Object where
     { obj       :: a
     , renderObj :: a -> Form
     , updateObj :: Time -> a -> Context (a, GameState -> GameState)
-    , graspObj  :: a -> Context (Maybe (a, GraspTarget))
+    , graspObj  :: a -> Context (Maybe (a, GraspTarget, GameState -> GameState))
     , objLens   :: ALens' Level (Maybe Object)
     , objProps  :: [(String, String)]
     } -> Object
@@ -138,8 +138,12 @@ class KnownSymbol name => IsObject name where
   type InternalObj name = r | r -> name
   spawn :: V2 -> Context (InternalObj name)
   render :: InternalObj name -> Form
+
   update :: Time -> InternalObj name -> Context (InternalObj name, GameState -> GameState)
-  grasp  :: InternalObj name -> Context (Maybe (InternalObj name, GraspTarget))
+  update _  o = pure (o, id)
+
+  grasp  :: InternalObj name -> Context (Maybe (InternalObj name, GraspTarget, GameState -> GameState))
+  grasp = const $ pure Nothing
 
 data GameState = GameState
   { _currentLevel :: !Level
@@ -153,6 +157,7 @@ data GameState = GameState
                       -> [(String, String)]
                       -> Object
                        )
+  , _nextLevel    :: Maybe String
   }
 
 data RawController = RawController

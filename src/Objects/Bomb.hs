@@ -69,15 +69,15 @@ instance IsObject "bomb" where
     p  <- asks ctxPlayer
     lo <- cloneLens <$> asks ctxLens
     pure $ case norm (_aPos p - _aPos a) <= 15 of
-      True  -> Just (Bomb True a, hold lo)
+      True  -> Just (Bomb True a, hold lo, id)
       False -> Nothing
     where
       hold lo = Holding
        { updateHeld = \_ p' ->
-           lo . _Just . internalObj . fActor . aPos .~ _aPos p' + V2 0 (-30)
+           currentLevel . lo . _Just . internalObj . fActor . aPos .~ _aPos p' + V2 0 (-30)
        , onThrow = \_ dir l ->
-          l & lo . _Just . internalObj . held   .~ False
-            & lo . _Just . internalObj . fActor %~ setBoosting dir False throwStrength throwTime
+          l & currentLevel . lo . _Just . internalObj . held   .~ False
+            & currentLevel . lo . _Just . internalObj . fActor %~ setBoosting dir False throwStrength throwTime
        }
 
 
@@ -93,7 +93,7 @@ followerHandler :: Time -> GameState -> Controller -> Actor -> (Actor, Maybe Pie
 followerHandler dt gs ctrl p
    = first (fallHandler gs)
    . jumpHandler dt l ctrl
-   . flip evalState l
+   . flip evalState gs
    $ actionHandler gs ctrl
  =<< k (walkHandler dt l ctrl)
  =<< pure p

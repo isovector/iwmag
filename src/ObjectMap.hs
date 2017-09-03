@@ -13,6 +13,7 @@ import           Objects.Bomb ()
 import           Objects.Disco ()
 import           Objects.Follower ()
 import           Objects.Gem ()
+import           Objects.WinStar ()
 import           Types
 
 

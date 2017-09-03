@@ -20,9 +20,9 @@ updateObject dt gs o@Object {..}
   . runContext gs o
   $ updateObj dt obj
 
-graspObject :: GameState -> Object -> Maybe (Object, GraspTarget)
+graspObject :: GameState -> Object -> Maybe (Object, GraspTarget, GameState -> GameState)
 graspObject gs o@Object {..}
-  = fmap (first $ \obj' -> Object obj' renderObj updateObj graspObj objLens objProps)
+  = fmap (_1 %~ \obj' -> Object obj' renderObj updateObj graspObj objLens objProps)
   . runContext gs o
   $ graspObj obj
 
