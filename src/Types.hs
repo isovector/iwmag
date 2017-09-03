@@ -11,9 +11,10 @@ module Types
   , asks
   ) where
 
-import           BasePrelude hiding (rotate, group, (&), uncons, index, lazy, throw)
+import           BasePrelude hiding (rotate, group, (&), uncons, index, lazy, throw, Handler, runHandlers)
 import           Control.Lens hiding (Level, levels, Context)
-import           Control.Monad.Reader (Reader, asks)
+import           Control.Monad.Reader (Reader, asks, ReaderT)
+import           Control.Monad.State (State)
 import qualified Data.Map as M
 import           GHC.TypeLits
 import           Game.Sequoia
@@ -76,17 +77,40 @@ instance Eq GraspTarget where
 instance Show GraspTarget where
   show _ = "GraspTarget"
 
+data HandlerContext = HContext
+  { hctxTime       :: Time
+  , hctxController :: Controller
+  }
+
+
+type Handler = ReaderT HandlerContext (State (GameState, Actor))
+
+data Handlers = Handlers
+  { walkHandler       :: Handler ()
+  , standHandler      :: Handler ()
+  , startJumpHandler  :: Handler ()
+  , jumpHandler       :: Double -> Handler (Maybe Piece)
+  , startBoostHandler :: Handler ()
+  , boostHandler      :: V2 -> Double -> Time -> Bool -> Handler (Maybe Piece)
+  , collideHandler    :: Piece -> Handler ()
+  -- , hookHandler       :: Handler ()
+  }
+
+instance Show Handlers where
+  show _ = "Handlers"
+
+instance Eq Handlers where
+  (==) _ _ = True
+
 data Actor = Actor
   { _aPos        :: !V2
   , _aHealth     :: !Int
-  , jumpState    :: !JumpState
-  , jumpsLeft    :: !Int
-  , boostsLeft   :: !Int
-  , recoveryTime :: !Time
-  , attachment   :: ActorAttachment
+  , _jumpData    :: JumpData
+  , _attachment   :: ActorAttachment
   , aGeom        :: BoxGeom
   , aColor       :: Color
   , graspTarget  :: GraspTarget
+  , handlers     :: Handlers
   } deriving (Show, Eq)
 
 data BoxGeom = BoxGeom
@@ -96,7 +120,12 @@ data BoxGeom = BoxGeom
   , bottomY :: Double
   } deriving (Show, Eq)
 
-
+data JumpData = JumpData
+  { _jumpState    :: !JumpState
+  , _jumpsLeft    :: !Int
+  , _boostsLeft   :: !Int
+  , _recoveryTime :: !Time
+  } deriving (Show, Eq)
 
 data JumpState
   = Stand
@@ -185,4 +214,15 @@ data Controller = Controller
 makeLenses ''Level
 makeLenses ''Actor
 makeLenses ''GameState
+makeLenses ''JumpData
+
+
+hctxState :: Lens' (GameState, Actor) GameState
+hctxState = _1
+
+hctxPlayer :: Lens' (GameState, Actor) Actor
+hctxPlayer = _2
+
+hctxLevel :: Lens' (GameState, Actor) Level
+hctxLevel = _1 . currentLevel
 

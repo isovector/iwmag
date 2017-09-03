@@ -21,7 +21,7 @@ doorHandler s@(GameState {_player = p, _currentLevel = l}) =
 update :: Time -> Controller -> GameState -> GameState
 update dt ctrl state@(GameState {_player = p, _levelName = name}) =
     doorHandler $
-      case flip runState state $ playerHandler dt state ctrl p of
+      case flip runState state . fmap pure $ runHandlers dt ctrl p of
         (Just p', gs') ->
           let (l'', f) = updateLevel dt $ gs' { _player = p' }
            in f $ gs'

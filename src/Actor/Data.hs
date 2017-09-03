@@ -8,20 +8,34 @@ module Actor.Data
 
 import Actor.Constants
 import Game.Sequoia.Color
+import Actor.Signal
 import Types
 
 defaultActor :: Actor
 defaultActor = Actor
   { _aPos        = V2 100 100
   , _aHealth     = 100
-  , jumpState    = Stand
-  , jumpsLeft    = jumpCount
-  , boostsLeft   = boostCount
-  , recoveryTime = 0
-  , attachment   = Unattached
+  , _jumpData = JumpData
+    { _jumpState    = Stand
+    , _jumpsLeft    = jumpCount
+    , _boostsLeft   = boostCount
+    , _recoveryTime = 0
+    }
+  , _attachment  = Unattached
   , aGeom        = playerGeom
   , aColor       = white
   , graspTarget  = Unarmed
+  , handlers     =
+      Handlers
+      { walkHandler       = defaultWalkHandler
+      , standHandler      = defaultStandHandler
+      , startJumpHandler  = defaultStartJumpHandler
+      , jumpHandler       = defaultJumpHandler
+      , startBoostHandler = defaultStartBoostHandler
+      , boostHandler      = defaultBoostHandler
+      , collideHandler    = const $ pure ()
+      }
+
   }
 
 playerGeom :: BoxGeom

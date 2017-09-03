@@ -5,12 +5,10 @@ module Actor
   , drawActor
   , drawPlayer
   , drawWithGeom
-  , playerHandler
   ) where
 
 import Actor.Data
 import Actor.JumpState
-import Actor.Signal
 import BasePrelude
 import Game.Sequoia
 import Linear.Vector
@@ -64,7 +62,7 @@ drawActor p = fmap (move pos) $
 
 getBoostDir :: Actor -> Maybe V2
 getBoostDir p =
-  case jumpState p of
+  case p ^. jumpData . jumpState of
     Boost dir _ _ _ -> Just dir
     _               -> Nothing
 
