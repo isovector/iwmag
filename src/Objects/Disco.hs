@@ -14,16 +14,21 @@ data Disco = Disco
 
 instance IsObject "disco" where
   type InternalObj "disco" = Disco
-  spawn pos props = Disco (centerOnSquare 8 pos) 0
-                  . read
-                  . ("Color " ++)
-                  . fromJust
-                  $ lookup "color" props
+
+  spawn pos = do
+    props <- asks ctxProps
+    pure . Disco (centerOnSquare 8 pos) 0
+         . read
+         . ("Color " ++)
+         . fromJust
+         $ lookup "color" props
+
   render Disco {..} = move (discoPos + V2 (cos discoDur) (sin discoDur) ^* 10)
                     . filled discoCol
                     $ circle 8
-  update dt _ _ t@Disco {..} = (, id) $
+
+  update dt t@Disco {..} = pure . (, id) $
     t { discoDur = discoDur + dt * 3 }
 
-  grasp _ _ _ = Nothing
+  grasp _ = pure Nothing
 

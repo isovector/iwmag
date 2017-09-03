@@ -28,9 +28,9 @@ doorHandler s@(GameState {player = p, currentLevel = l}) =
 update :: Time -> Controller -> GameState -> GameState
 update dt ctrl state@(GameState {player = p, currentLevel = l, levelName = name}) =
     doorHandler $
-      case flip runState l $ playerHandler dt l ctrl p of
+      case flip runState l $ playerHandler dt state ctrl p of
         (Just p', l') ->
-          let (l'', f) = updateLevel dt p' l'
+          let (l'', f) = updateLevel dt $ state { player = p', currentLevel = l' }
            in state
               { player = f p'
               , camera = _aPos p'

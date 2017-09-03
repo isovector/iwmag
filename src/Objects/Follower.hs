@@ -29,7 +29,7 @@ makeLenses ''Follower
 instance IsObject "follower" where
   type InternalObj "follower" = Follower
 
-  spawn pos _ =
+  spawn pos = pure .
     Follower False 0 False $
       defaultActor
         { _aPos = pos
@@ -39,19 +39,24 @@ instance IsObject "follower" where
   render Follower {..} =
     group . drawActor $ _fActor { aColor = bool (aColor _fActor) red _isPunching }
 
-  update dt l p f =
-    case view held f of
+  update dt f = do
+    l <- asks ctxLevel
+    p <- asks ctxPlayer
+    gs <- asks ctxGameState
+    pure $ case view held f of
       True  -> (f, id)
       False -> punchHandler  $
         f & punchTime -~ dt
-          & fActor %~ \a -> followerHandler dt l (makeController l p a) a
+          & fActor %~ \a -> followerHandler dt gs (makeController l p a) a
 
-  grasp (cloneTraversal -> lo) p (_fActor -> a) =
-    case norm (_aPos p - _aPos a) <= 15 of
-      True  -> Just (Follower True 0 False $ a { aColor = blue }, hold)
+  grasp (_fActor -> a) = do
+    p  <- asks ctxPlayer
+    lo <- cloneTraversal <$> asks ctxLens
+    pure $ case norm (_aPos p - _aPos a) <= 15 of
+      True  -> Just (Follower True 0 False $ a { aColor = blue }, hold lo)
       False -> Nothing
     where
-      hold = Holding
+      hold lo = Holding
        { updateHeld = \_ p' ->
            lo . internalObj . fActor . aPos .~ _aPos p' + V2 0 (-30)
        , onThrow = \_ dir l ->
@@ -71,15 +76,16 @@ makeController _ p a = initController
   }
 
 
-followerHandler :: Time -> Level -> Controller -> Actor -> Actor
-followerHandler dt l ctrl p
+followerHandler :: Time -> GameState -> Controller -> Actor -> Actor
+followerHandler dt gs ctrl p
    = fallHandler
    . (fst <$> jumpHandler dt l ctrl)
    . flip evalState l
-   $ actionHandler l ctrl
+   $ actionHandler gs ctrl
  =<< k (walkHandler dt l ctrl)
  =<< pure p
   where
+    l = currentLevel gs
     k :: Monad m => (a -> b) -> a -> m b
     k = (pure .)
 

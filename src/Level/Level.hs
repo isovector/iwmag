@@ -174,10 +174,10 @@ parseHooks layers =
 parseObjects :: Maybe Layer -> [T.Object]
 parseObjects layers =
   case layers of
-    Just layer -> fmap makeObject $ layerObjects layer
+    Just layer -> fmap makeObject . zip [0..] $ layerObjects layer
     Nothing -> []
   where
-    makeObject obj@Object {..} = (objectMap M.! fromJust objectType) (getPosOfObj obj) objectProperties
+    makeObject (idx, obj@Object {..}) = (objectMap M.! fromJust objectType) (objects . ix idx) (getPosOfObj obj) objectProperties
 
 
 parseCollision :: Color -> Maybe Layer -> [Piece]
@@ -221,9 +221,10 @@ parseCollision c layers =
                   ]
 
 
-updateLevel :: Time -> Actor -> Level -> (Level, Actor -> Actor)
-updateLevel dt p l =
-  let x          = fmap (updateObject dt l p) $ _objects l
+updateLevel :: Time -> GameState -> (Level, Actor -> Actor)
+updateLevel dt gs =
+  let l          = currentLevel gs
+      x          = fmap (updateObject dt gs) $ _objects l
       (objs', f) = foldr (\(obj', f') (objs, f) -> (obj' : objs, f . f')) ([], id) x
    in ( l & objects .~ objs'
       , f

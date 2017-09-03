@@ -31,14 +31,20 @@ getGraspHook l p = getFirst
                                           targetRadius
                            $ hookPos t
 
-graspLevel :: Level -> Actor -> Maybe (Level -> Level, GraspTarget)
-graspLevel l p = getFirst . mconcat . fmap f . zip [0..] $ _objects l
+graspLevel :: GameState -> Maybe (Level -> Level, GraspTarget)
+graspLevel gs = getFirst
+              . mconcat
+              . fmap f
+              . zip [0..]
+              . _objects
+              $ currentLevel gs
   where
     f :: (Int, Object) -> First (Level -> Level, GraspTarget)
     f (idx, obj) =
       let lo = objects . ix idx
+          -- TODO(sandy): move this into the construction
        in First . fmap (first $ \obj' -> cloneTraversal lo .~ obj')
-                $ graspObject lo p obj
+                $ graspObject gs obj
 
 
 
@@ -132,13 +138,13 @@ doJump p = p
   , attachment = Unattached
   }
 
-actionHandler :: Level -> Controller -> Actor -> State Level Actor
-actionHandler l ctrl p
+actionHandler :: GameState -> Controller -> Actor -> State Level Actor
+actionHandler gs ctrl p
     | not (canAct p) = pure p
     | shouldBoost    = pure $ setBoosting (fromJust $ wantsBoost ctrl) True boostStrength boostTime p
     | shouldJump     = pure $ doJump p
     | wantsGrasp ctrl =
-      case (graspTarget p, getGraspHook l p, graspLevel l p) of
+      case (graspTarget p, getGraspHook l p, graspLevel gs) of
         (Holding _ throw, _, _) -> do
           modify $ throw p $ ctrlDir ctrl
           pure $ p { graspTarget = Unarmed }
@@ -155,6 +161,7 @@ actionHandler l ctrl p
         (_, Nothing, Nothing) -> pure p
     | otherwise       = pure p
   where
+    l = currentLevel gs
     -- TODO(sandy): rename grasp to cling for hooks
     shouldBoost = isJust (wantsBoost ctrl)
                && not (isBoosting p)
@@ -238,13 +245,13 @@ holdHandler dt p = do
 
 
 -- TODO(sandy): remove the kleisli so each of these gets the level from the monad
-playerHandler :: Time -> Level -> Controller -> Actor -> State Level (Maybe Actor)
-playerHandler dt l ctrl p
+playerHandler :: Time -> GameState -> Controller -> Actor -> State Level (Maybe Actor)
+playerHandler dt gs ctrl p
     = k (deathHandler l)
   =<< holdHandler dt
   =<< k (fallHandler)
   =<< k (fst <$> jumpHandler dt l ctrl)
-  =<< actionHandler l ctrl
+  =<< actionHandler gs ctrl
   =<< k (graspHandler ctrl)
   =<< k (recoveryHandler dt)
   =<< k (walkHandler dt l ctrl)
@@ -252,4 +259,6 @@ playerHandler dt l ctrl p
   where
     k :: Monad m => (a -> b) -> a -> m b
     k = (pure .)
+
+    l = currentLevel gs
 

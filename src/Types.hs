@@ -8,10 +8,12 @@ module Types
   , module Linear.Vector
   , module BasePrelude
   , module Control.Lens
+  , asks
   ) where
 
 import           BasePrelude hiding (rotate, group, (&), uncons, index, lazy, throw)
-import           Control.Lens hiding (Level, levels)
+import           Control.Lens hiding (Level, levels, Context)
+import           Control.Monad.Reader (Reader, asks)
 import qualified Data.Map as M
 import           GHC.TypeLits
 import           Game.Sequoia
@@ -109,19 +111,35 @@ data Object where
   Object ::
     { obj       :: a
     , renderObj :: a -> Form
-    , updateObj :: Time -> Level -> Actor -> a -> (a, Actor -> Actor)
-    , graspObj  :: ATraversal' Level Object -> Actor -> a -> Maybe (a, GraspTarget)
+    , updateObj :: Time -> a -> Context (a, Actor -> Actor)
+    , graspObj  :: a -> Context (Maybe (a, GraspTarget))
+    , objLens   :: ATraversal' Level Object
+    , objProps  :: [(String, String)]
     } -> Object
 
 instance Show Object where
   show _ = "Object"
 
+data ObjectContext = ObjectContext
+  { ctxLens   :: ATraversal' Level Object
+  , ctxGameState :: GameState
+  , ctxProps  :: [(String, String)]
+  }
+
+ctxPlayer :: ObjectContext -> Actor
+ctxPlayer = player . ctxGameState
+
+ctxLevel :: ObjectContext -> Level
+ctxLevel = currentLevel . ctxGameState
+
+type Context = Reader ObjectContext
+
 class KnownSymbol name => IsObject name where
   type InternalObj name = r | r -> name
-  spawn :: V2 -> [(String, String)] -> InternalObj name
+  spawn :: V2 -> Context (InternalObj name)
   render :: InternalObj name -> Form
-  update :: Time -> Level -> Actor -> InternalObj name -> (InternalObj name, Actor -> Actor)
-  grasp  :: ATraversal' Level Object -> Actor -> InternalObj name -> Maybe (InternalObj name, GraspTarget)
+  update :: Time -> InternalObj name -> Context (InternalObj name, Actor -> Actor)
+  grasp  :: InternalObj name -> Context (Maybe (InternalObj name, GraspTarget))
 
 data GameState = GameState
   { currentLevel :: !Level

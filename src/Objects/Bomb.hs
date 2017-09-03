@@ -27,8 +27,8 @@ makeLenses ''Bomb
 instance IsObject "bomb" where
   type InternalObj "bomb" = Bomb
 
-  spawn pos _ =
-    Bomb False $
+  spawn pos =
+    pure . Bomb False $
       defaultActor
         { _aPos = pos
         , aColor = purple
@@ -37,18 +37,21 @@ instance IsObject "bomb" where
   render =
     group . drawActor . _fActor
 
-  update dt l _ f =
-    case view held f of
+  update dt f = do
+    gs <- asks ctxGameState
+    pure $ case view held f of
       True  -> (f, id)
       False -> (, id) $
-        f & fActor %~ \a -> followerHandler dt l makeController a
+        f & fActor %~ \a -> followerHandler dt gs makeController a
 
-  grasp (cloneTraversal -> lo) p (_fActor -> a) =
-    case norm (_aPos p - _aPos a) <= 15 of
-      True  -> Just (Bomb True a, hold)
+  grasp (_fActor -> a) = do
+    p  <- asks ctxPlayer
+    lo <- cloneTraversal <$> asks ctxLens
+    pure $ case norm (_aPos p - _aPos a) <= 15 of
+      True  -> Just (Bomb True a, hold lo)
       False -> Nothing
     where
-      hold = Holding
+      hold lo = Holding
        { updateHeld = \_ p' ->
            lo . internalObj . fActor . aPos .~ _aPos p' + V2 0 (-30)
        , onThrow = \_ dir l ->
@@ -65,15 +68,16 @@ makeController = initController
   }
 
 
-followerHandler :: Time -> Level -> Controller -> Actor -> Actor
-followerHandler dt l ctrl p
+followerHandler :: Time -> GameState -> Controller -> Actor -> Actor
+followerHandler dt gs ctrl p
    = fallHandler
    . (fst <$> jumpHandler dt l ctrl)
    . flip evalState l
-   $ actionHandler l ctrl
+   $ actionHandler gs ctrl
  =<< k (walkHandler dt l ctrl)
  =<< pure p
   where
+    l = currentLevel gs
     k :: Monad m => (a -> b) -> a -> m b
     k = (pure .)
 
