@@ -14,17 +14,18 @@ module Level.Level
   , drawLine
   ) where
 
+import           Actor.Constants
+import qualified Data.Foldable as F
 import qualified Data.Map as M
 import           Data.Tiled
 import           Game.Sequoia
 import           Game.Sequoia.Color
 import           Linear.Vector
 import           Math
+import           Object
 import           ObjectMap
-import           Actor.Constants
 import qualified Types as T
 import           Types hiding (Object (..))
-import Object
 
 isDeath :: Zone -> Bool
 isDeath (Death _) = True
@@ -171,13 +172,23 @@ parseHooks layers =
     Nothing -> []
 
 
-parseObjects :: Maybe Layer -> [T.Object]
+parseObjects :: Maybe Layer -> M.Map Int T.Object
 parseObjects layers =
   case layers of
-    Just layer -> fmap makeObject . zip [0..] $ layerObjects layer
-    Nothing -> []
+    Just layer -> M.fromList
+                . fmap makeObject
+                . zip [0..]
+                $ layerObjects layer
+    Nothing -> M.empty
   where
-    makeObject (idx, obj@Object {..}) = (objectMap M.! fromJust objectType) (objects . ix idx) (getPosOfObj obj) objectProperties
+
+    makeObject (idx, obj@Object {..}) =
+      ( idx
+      , (objectMap M.! fromJust objectType)
+          (objects . at idx)
+          (getPosOfObj obj)
+          objectProperties
+      )
 
 
 parseCollision :: Color -> Maybe Layer -> [Piece]
@@ -223,9 +234,10 @@ parseCollision c layers =
 
 updateLevel :: Time -> GameState -> (Level, GameState -> GameState)
 updateLevel dt gs =
-  let l          = _currentLevel gs
-      x          = fmap (updateObject dt gs) $ _objects l
-      (objs', f) = foldr (\(obj', f') (objs, f) -> (obj' : objs, f . f')) ([], id) x
+  let l     = _currentLevel gs
+      x     = fmap (updateObject dt gs) $ _objects l
+      objs' = fmap fst x
+      f     = appEndo . mconcat . fmap (Endo . snd) $ F.toList x
    in ( l & objects .~ objs'
       , f
       )

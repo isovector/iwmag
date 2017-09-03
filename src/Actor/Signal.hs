@@ -3,17 +3,18 @@
 
 module Actor.Signal where
 
-import Actor.Constants
-import Actor.Data
-import Actor.JumpState
-import Collision
-import Control.Monad.State (State, modify)
-import Game.Sequoia
-import Linear.Metric
-import Linear.Vector
-import Math
-import Object
-import Types hiding (grasp)
+import           Actor.Constants
+import           Actor.Data
+import           Actor.JumpState
+import           Collision
+import           Control.Monad.State (State, modify)
+import qualified Data.Map as M
+import           Game.Sequoia
+import           Linear.Metric
+import           Linear.Vector
+import           Math
+import           Object
+import           Types hiding (grasp)
 
 sweep' :: BoxGeom -> V2 -> [Piece] -> Axis -> Double -> (Maybe Piece, V2)
 sweep' b v = sweep b v pieceLine
@@ -35,16 +36,14 @@ graspLevel :: GameState -> Maybe (Level -> Level, GraspTarget)
 graspLevel gs = getFirst
               . mconcat
               . fmap f
-              . zip [0..]
+              . M.elems
               . _objects
               $ _currentLevel gs
   where
-    f :: (Int, Object) -> First (Level -> Level, GraspTarget)
-    f (idx, obj) =
-      let lo = objects . ix idx
-          -- TODO(sandy): move this into the construction
-       in First . fmap (first $ \obj' -> cloneTraversal lo .~ obj')
-                $ graspObject gs obj
+    f :: Object -> First (Level -> Level, GraspTarget)
+    f obj = First
+          . fmap (first $ \obj' -> cloneLens (objLens obj) ?~ obj')
+          $ graspObject gs obj
 
 
 

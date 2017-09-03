@@ -24,7 +24,7 @@ ffmap = flip fmap
 
 objectMap
     :: M.Map String
-             ( ATraversal' Level Object
+             ( ALens' Level (Maybe Object)
             -> V2
             -> [(String, String)]
             -> Object
@@ -44,7 +44,7 @@ objectMap = M.fromList . ffmap allObjects
 
 
 runInitContext
-    :: ATraversal' Level Object
+    :: ALens' Level (Maybe Object)
     -> [(String, String)]
     -> Context a
     -> a

@@ -38,7 +38,7 @@ data Level = Level
   , noBoostZones  :: [Rect]
   , doors         :: [Door]
   , targets       :: [Hook]
-  , _objects      :: [Object]
+  , _objects      :: M.Map Int Object
   , levelSize     :: V2
   , _destructableGeometry :: M.Map String [Piece]
   } deriving Show
@@ -113,7 +113,7 @@ data Object where
     , renderObj :: a -> Form
     , updateObj :: Time -> a -> Context (a, GameState -> GameState)
     , graspObj  :: a -> Context (Maybe (a, GraspTarget))
-    , objLens   :: ATraversal' Level Object
+    , objLens   :: ALens' Level (Maybe Object)
     , objProps  :: [(String, String)]
     } -> Object
 
@@ -121,7 +121,7 @@ instance Show Object where
   show _ = "Object"
 
 data ObjectContext = ObjectContext
-  { ctxLens   :: ATraversal' Level Object
+  { ctxLens   :: ALens' Level (Maybe Object)
   , ctxGameState :: GameState
   , ctxProps  :: [(String, String)]
   }

@@ -3,18 +3,19 @@
 
 module Main where
 
-import Actor
-import Actor.Controller
-import BasePrelude hiding (group)
-import Control.FRPNow.Time (delayTime)
-import Game.Sequoia
-import Game.Sequoia.Keyboard
-import GameState
-import Level.Level
-import Linear.Vector
-import Math (clamp')
-import Object
-import Types (geometry)
+import           Actor
+import           Actor.Controller
+import           BasePrelude hiding (group)
+import           Control.FRPNow.Time (delayTime)
+import qualified Data.Map as M
+import           Game.Sequoia
+import           Game.Sequoia.Keyboard
+import           GameState
+import           Level.Level
+import           Linear.Vector
+import           Math (clamp')
+import           Object
+import           Types (geometry)
 
 gameWidth :: Int
 gameWidth = 800
@@ -30,7 +31,7 @@ render state = collage gameWidth gameHeight
              . group
              $ fmap drawLine (geometry level)
             ++ forms level
-            ++ fmap renderObject (_objects level)
+            ++ fmap renderObject (M.elems $ _objects level)
             ++ drawActor (_player state)
     where cam    = clampCamera (levelSize $ _currentLevel state) $ _camera state
           center = V2 (fromIntegral gameWidth) (fromIntegral gameHeight) ^* 0.5

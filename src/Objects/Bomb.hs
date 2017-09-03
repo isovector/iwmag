@@ -49,6 +49,7 @@ instance IsObject "bomb" where
 
   update dt b = do
     gs <- asks ctxGameState
+    lo <- cloneLens <$> asks ctxLens
     pure $ case view held b of
       True  -> (b, id)
       False ->
@@ -59,22 +60,23 @@ instance IsObject "bomb" where
                 "" -> id
                 g  -> (currentLevel . destructableGeometry . at g .~ Nothing)
                     . (geometryChanged .~ True)
+                    . (currentLevel . lo .~ Nothing)
             )
           (a', _) -> (b & fActor .~ a', id)
 
   grasp (_fActor -> a) = do
     p  <- asks ctxPlayer
-    lo <- cloneTraversal <$> asks ctxLens
+    lo <- cloneLens <$> asks ctxLens
     pure $ case norm (_aPos p - _aPos a) <= 15 of
       True  -> Just (Bomb True a, hold lo)
       False -> Nothing
     where
       hold lo = Holding
        { updateHeld = \_ p' ->
-           lo . internalObj . fActor . aPos .~ _aPos p' + V2 0 (-30)
+           lo . _Just . internalObj . fActor . aPos .~ _aPos p' + V2 0 (-30)
        , onThrow = \_ dir l ->
-          l & lo . internalObj . held   .~ False
-            & lo . internalObj . fActor %~ setBoosting dir False throwStrength throwTime
+          l & lo . _Just . internalObj . held   .~ False
+            & lo . _Just . internalObj . fActor %~ setBoosting dir False throwStrength throwTime
        }
 
 

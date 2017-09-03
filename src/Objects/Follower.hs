@@ -51,17 +51,17 @@ instance IsObject "follower" where
 
   grasp (_fActor -> a) = do
     p  <- asks ctxPlayer
-    lo <- cloneTraversal <$> asks ctxLens
+    lo <- cloneLens <$> asks ctxLens
     pure $ case norm (_aPos p - _aPos a) <= 15 of
       True  -> Just (Follower True 0 False $ a { aColor = blue }, hold lo)
       False -> Nothing
     where
       hold lo = Holding
        { updateHeld = \_ p' ->
-           lo . internalObj . fActor . aPos .~ _aPos p' + V2 0 (-30)
+           lo . _Just . internalObj . fActor . aPos .~ _aPos p' + V2 0 (-30)
        , onThrow = \_ dir l ->
-          l & lo . internalObj . held   .~ False
-            & lo . internalObj . fActor %~ setBoosting dir False throwStrength throwTime
+          l & lo . _Just . internalObj . held   .~ False
+            & lo . _Just . internalObj . fActor %~ setBoosting dir False throwStrength throwTime
        }
 
 
