@@ -145,19 +145,22 @@ class KnownSymbol name => IsObject name where
   grasp  :: InternalObj name -> Context (Maybe (InternalObj name, GraspTarget, GameState -> GameState))
   grasp = const $ pure Nothing
 
-data GameState = GameState
-  { _currentLevel :: !Level
-  , _levelName    :: !String
-  , _player       :: !Actor
-  , _camera       :: !V2
-  , _geometryChanged :: !Bool
-  , objectMap :: M.Map String
+type ObjectMap = M.Map String
                        ( ALens' Level (Maybe Object)
                       -> V2
                       -> [(String, String)]
                       -> Object
                        )
-  , _nextLevel    :: Maybe String
+
+
+data GameState = GameState
+  { _currentLevel :: Level
+  , _levelName    :: String
+  , _player       :: Actor
+  , _camera       :: V2
+  , _geometryChanged :: Bool
+  , objectMap     :: ObjectMap
+  , levels        :: [(String, Level)]
   }
 
 data RawController = RawController

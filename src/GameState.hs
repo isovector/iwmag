@@ -1,22 +1,12 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE ViewPatterns      #-}
 
-module GameState
-  ( GameState
-  , _currentLevel
-  , _player
-  , _camera
-  , update
-  , initState
-  , setLevel
-  ) where
+module GameState where
 
-import           Actor.Constants
 import           Actor.Data
 import           Actor.Signal
 import           Control.Monad.State (runState)
 import           Game.Sequoia
-import           ObjectMap
 import           Level.Level
 import           Math
 import           Types hiding (update, to)
@@ -29,7 +19,6 @@ doorHandler s@(GameState {_player = p, _currentLevel = l}) =
       Nothing          -> s
 
 update :: Time -> Controller -> GameState -> GameState
-update _ _ s@(_nextLevel -> Just next) = setLevel next s
 update dt ctrl state@(GameState {_player = p, _levelName = name}) =
     doorHandler $
       case flip runState state $ playerHandler dt state ctrl p of
@@ -41,33 +30,27 @@ update dt ctrl state@(GameState {_player = p, _levelName = name}) =
               , _currentLevel  = l''
               , _geometryChanged = False
               }
-        (Nothing, _) -> resetState name
+        (Nothing, _) -> resetState name state
 
 setLevel :: String -> GameState -> GameState
 setLevel ln s
-    | Just l <- lookup ln levels =
+    | Just l <- lookup ln $ levels s =
         s { _currentLevel = l
           , _levelName = ln
           , _player = (_player s) { _aPos = playerSpawn l }
-          , _nextLevel    = Nothing
           }
     | otherwise = error $ "invalid level requested: " ++ ln
 
 -- TODO: this should probably use setLevel ^^
-resetState :: String -> GameState
-resetState levelname =
-  let level = fromJust $ lookup levelname levels
+resetState :: String -> GameState -> GameState
+resetState levelname gs =
+  let level = fromJust . lookup levelname $ levels gs
       pos' = playerSpawn level
-   in GameState
+   in gs
       { _currentLevel = level
       , _levelName    = levelname
       , _player       = defaultActor { _aPos = pos' }
       , _camera       = pos'
       , _geometryChanged = True
-      , objectMap     = theObjectMap
-      , _nextLevel    = Nothing
       }
-
-initState :: GameState
-initState = resetState firstLevel
 

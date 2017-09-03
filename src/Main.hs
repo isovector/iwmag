@@ -11,11 +11,12 @@ import qualified Data.Map as M
 import           Game.Sequoia
 import           Game.Sequoia.Keyboard
 import           GameState
+import           KnotTying (initState)
 import           Level.Level
 import           Linear.Vector
 import           Math (clamp')
 import           Object
-import           Types (geometry)
+import           Types hiding (update, render)
 
 gameWidth :: Int
 gameWidth = 800

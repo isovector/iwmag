@@ -4,15 +4,7 @@
 {-# LANGUAGE ViewPatterns                #-}
 {-# OPTIONS_GHC -fno-warn-name-shadowing #-}
 
-module Level.Level
-  ( Piece (..)
-  , Hook (..)
-  , Level (..)
-  , Door (..)
-  , levels
-  , updateLevel
-  , drawLine
-  ) where
+module Level.Level where
 
 import           Actor.Constants
 import qualified Data.Foldable as F
@@ -23,7 +15,6 @@ import           Game.Sequoia.Color
 import           Linear.Vector
 import           Math
 import           Object
-import           ObjectMap
 import qualified Types as T
 import           Types hiding (Object (..))
 
@@ -55,27 +46,11 @@ drawLine (Wall (Line pos size) c _)
   . segment (0,0)
   $ unpackV2 size
 
-levels :: [(String, Level)]
-levels = zip names
-       $ map (\x -> parseLayers (importScale *^ V2 (fromIntegral $ mapWidth x * mapTileWidth x) (fromIntegral $ mapHeight x * mapTileHeight x))
-                                (fmap getTileset . listToMaybe $ mapTilesets x)
-                                (mapLayers x))
-       . unsafePerformIO
-       . sequence
-       . map (\n -> loadMapFile $ "level/" ++ n ++ ".tmx")
-       $ names
-  where names = [ "test1"
-                , "test2"
-                , "test3"
-                , "test4"
-                ]
-{-# NOINLINE levels #-}
-
 getTileset :: Tileset -> (Tileset, FilePath)
 getTileset x = (x, ("level/" ++) . iSource . head $ tsImages x)
 
-parseLayers :: V2 -> Maybe (Tileset, FilePath) -> [Layer] -> Level
-parseLayers size tileset ls =
+parseLayers :: ObjectMap -> V2 -> Maybe (Tileset, FilePath) -> [Layer] -> Level
+parseLayers objm size tileset ls =
   let dz =  map (getRect) $ getZones isDeath
       nbz = map (getRect) $ getZones isNoBoost
       doors = getZones isDoor
@@ -100,7 +75,7 @@ parseLayers size tileset ls =
       }
   where (spawn, zones) = parseMeta    $ getLayer "meta"
         levelHooks     = parseHooks   $ getLayer "targets"
-        levelObjects   = parseObjects $ getLayer "objects"
+        levelObjects   = parseObjects objm $ getLayer "objects"
         tiledata       = parseTileset tileset $ getLayer "tiles"
         getLayer name  = listToMaybe $ filter ((== name) . layerName) ls
         getZones f = filter f zones
@@ -172,8 +147,8 @@ parseHooks layers =
     Nothing -> []
 
 
-parseObjects :: Maybe Layer -> M.Map Int T.Object
-parseObjects layers =
+parseObjects :: ObjectMap -> Maybe Layer -> M.Map Int T.Object
+parseObjects objm layers =
   case layers of
     Just layer -> M.fromList
                 . fmap makeObject
@@ -184,7 +159,7 @@ parseObjects layers =
 
     makeObject (idx, obj@Object {..}) =
       ( idx
-      , (theObjectMap M.! fromJust objectType)
+      , (objm M.! fromJust objectType)
           (objects . at idx)
           (getPosOfObj obj)
           objectProperties
