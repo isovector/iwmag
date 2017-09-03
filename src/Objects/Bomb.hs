@@ -39,7 +39,7 @@ instance IsObject "bomb" where
     pure . Bomb False $
       defaultActor
         { _aPos = pos
-        , aColor = purple
+        , aColor = black
         , aGeom = bombGeom
         }
 
