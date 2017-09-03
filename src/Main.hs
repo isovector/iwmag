@@ -32,7 +32,7 @@ render state = collage gameWidth gameHeight
              $ fmap drawLine (geometry level)
             ++ forms level
             ++ fmap renderObject (M.elems $ _objects level)
-            ++ drawActor (_player state)
+            ++ drawPlayer (_player state)
     where cam    = clampCamera (levelSize $ _currentLevel state) $ _camera state
           center = V2 (fromIntegral gameWidth) (fromIntegral gameHeight) ^* 0.5
           level = _currentLevel state
@@ -72,5 +72,5 @@ runGame _ = do
 main :: IO ()
 main = play config runGame pure
   where
-    config = EngineConfig (gameWidth, gameHeight) "IWMAG" $ rgb 0 0 0
+    config = EngineConfig (gameWidth, gameHeight) "IWMAG" $ rgb 0.8 0.8 0.8
 

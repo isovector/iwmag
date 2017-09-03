@@ -3,6 +3,7 @@
 module Actor
   ( Actor
   , drawActor
+  , drawPlayer
   , drawWithGeom
   , playerHandler
   ) where
@@ -26,6 +27,16 @@ drawWithGeom a f = move pos
     r      = rightX  $ aGeom a
     t      = topY    $ aGeom a
     b      = bottomY $ aGeom a
+
+drawPlayer :: Actor -> [Form]
+drawPlayer p = drawActor p
+            ++ [ move (V2 (-18) (-25))
+               . move (V2 0 . negate . topY $ aGeom p)
+               . move (_aPos p)
+               . scale 0.5
+               . toForm
+               $ image "assets/hat.png"
+               ]
 
 drawActor :: Actor -> [Form]
 drawActor p = fmap (move pos) $
