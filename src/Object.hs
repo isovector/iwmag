@@ -11,7 +11,7 @@ import Types
 import Control.Monad.Reader (runReader)
 
 
-updateObject :: Time -> GameState -> Object -> (Object, Actor -> Actor)
+updateObject :: Time -> GameState -> Object -> (Object, GameState -> GameState)
 updateObject dt gs o@Object {..}
   = first (\obj' -> Object obj' renderObj updateObj graspObj objLens objProps)
   . runContext gs o

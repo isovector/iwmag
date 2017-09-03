@@ -2,9 +2,9 @@
 
 module GameState
   ( GameState
-  , currentLevel
-  , player
-  , camera
+  , _currentLevel
+  , _player
+  , _camera
   , update
   , initState
   ) where
@@ -20,30 +20,30 @@ import Math
 import Types hiding (update, to)
 
 doorHandler :: GameState -> GameState
-doorHandler s@(GameState {player = p, currentLevel = l}) =
+doorHandler s@(GameState {_player = p, _currentLevel = l}) =
     case listToMaybe $ filter (\(Door r _) -> inRect r $ _aPos p) $ doors l of
       Just (Door _ to) -> setLevel to s
       Nothing          -> s
 
 update :: Time -> Controller -> GameState -> GameState
-update dt ctrl state@(GameState {player = p, currentLevel = l, levelName = name}) =
+update dt ctrl state@(GameState {_player = p, _currentLevel = l, _levelName = name}) =
     doorHandler $
       case flip runState l $ playerHandler dt state ctrl p of
         (Just p', l') ->
-          let (l'', f) = updateLevel dt $ state { player = p', currentLevel = l' }
-           in state
-              { player = f p'
-              , camera = _aPos p'
-              , currentLevel  = l''
+          let (l'', f) = updateLevel dt $ state { _player = p', _currentLevel = l' }
+           in f $ state
+              { _player = p'
+              , _camera = _aPos p'
+              , _currentLevel  = l''
               }
         (Nothing, _) -> resetState name
 
 setLevel :: String -> GameState -> GameState
 setLevel ln s
     | Just l <- lookup ln levels =
-        s { currentLevel = l
-          , levelName = ln
-          , player = (player s) { _aPos = playerSpawn l }
+        s { _currentLevel = l
+          , _levelName = ln
+          , _player = (_player s) { _aPos = playerSpawn l }
           }
     | otherwise = error $ "invalid level requested: " ++ ln
 
@@ -53,10 +53,10 @@ resetState levelname =
   let level = fromJust $ lookup levelname levels
       pos' = playerSpawn level
    in GameState
-      { currentLevel = level
-      , levelName    = levelname
-      , player       = defaultActor { _aPos = pos' }
-      , camera       = pos'
+      { _currentLevel = level
+      , _levelName    = levelname
+      , _player       = defaultActor { _aPos = pos' }
+      , _camera       = pos'
       }
 
 initState :: GameState

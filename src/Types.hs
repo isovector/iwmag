@@ -111,7 +111,7 @@ data Object where
   Object ::
     { obj       :: a
     , renderObj :: a -> Form
-    , updateObj :: Time -> a -> Context (a, Actor -> Actor)
+    , updateObj :: Time -> a -> Context (a, GameState -> GameState)
     , graspObj  :: a -> Context (Maybe (a, GraspTarget))
     , objLens   :: ATraversal' Level Object
     , objProps  :: [(String, String)]
@@ -127,10 +127,10 @@ data ObjectContext = ObjectContext
   }
 
 ctxPlayer :: ObjectContext -> Actor
-ctxPlayer = player . ctxGameState
+ctxPlayer = _player . ctxGameState
 
 ctxLevel :: ObjectContext -> Level
-ctxLevel = currentLevel . ctxGameState
+ctxLevel = _currentLevel . ctxGameState
 
 type Context = Reader ObjectContext
 
@@ -138,14 +138,14 @@ class KnownSymbol name => IsObject name where
   type InternalObj name = r | r -> name
   spawn :: V2 -> Context (InternalObj name)
   render :: InternalObj name -> Form
-  update :: Time -> InternalObj name -> Context (InternalObj name, Actor -> Actor)
+  update :: Time -> InternalObj name -> Context (InternalObj name, GameState -> GameState)
   grasp  :: InternalObj name -> Context (Maybe (InternalObj name, GraspTarget))
 
 data GameState = GameState
-  { currentLevel :: !Level
-  , levelName    :: !String
-  , player       :: !Actor
-  , camera       :: !V2
+  { _currentLevel :: !Level
+  , _levelName    :: !String
+  , _player       :: !Actor
+  , _camera       :: !V2
   }
 
 data RawController = RawController
@@ -167,4 +167,5 @@ data Controller = Controller
 
 makeLenses ''Level
 makeLenses ''Actor
+makeLenses ''GameState
 

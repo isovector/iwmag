@@ -37,7 +37,7 @@ graspLevel gs = getFirst
               . fmap f
               . zip [0..]
               . _objects
-              $ currentLevel gs
+              $ _currentLevel gs
   where
     f :: (Int, Object) -> First (Level -> Level, GraspTarget)
     f (idx, obj) =
@@ -161,7 +161,7 @@ actionHandler gs ctrl p
         (_, Nothing, Nothing) -> pure p
     | otherwise       = pure p
   where
-    l = currentLevel gs
+    l = _currentLevel gs
     -- TODO(sandy): rename grasp to cling for hooks
     shouldBoost = isJust (wantsBoost ctrl)
                && not (isBoosting p)
@@ -260,5 +260,5 @@ playerHandler dt gs ctrl p
     k :: Monad m => (a -> b) -> a -> m b
     k = (pure .)
 
-    l = currentLevel gs
+    l = _currentLevel gs
 

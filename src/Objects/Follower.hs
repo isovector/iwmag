@@ -45,7 +45,7 @@ instance IsObject "follower" where
     gs <- asks ctxGameState
     pure $ case view held f of
       True  -> (f, id)
-      False -> punchHandler  $
+      False -> punchHandler $
         f & punchTime -~ dt
           & fActor %~ \a -> followerHandler dt gs (makeController l p a) a
 
@@ -85,18 +85,18 @@ followerHandler dt gs ctrl p
  =<< k (walkHandler dt l ctrl)
  =<< pure p
   where
-    l = currentLevel gs
+    l = _currentLevel gs
     k :: Monad m => (a -> b) -> a -> m b
     k = (pure .)
 
 
-punchHandler :: Follower -> (Follower, Actor -> Actor)
+punchHandler :: Follower -> (Follower, GameState -> GameState)
 punchHandler f =
   case _punchTime f <= 0 of
     True  ->
       ( f & punchTime .~ punchWait
           & isPunching .~ True
-      , getPunched (f ^. fActor . aPos)
+      , player %~ getPunched (f ^. fActor . aPos)
       )
     False ->
       ( f & isPunching .~ False

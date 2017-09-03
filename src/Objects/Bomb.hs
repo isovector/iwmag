@@ -77,7 +77,7 @@ followerHandler dt gs ctrl p
  =<< k (walkHandler dt l ctrl)
  =<< pure p
   where
-    l = currentLevel gs
+    l = _currentLevel gs
     k :: Monad m => (a -> b) -> a -> m b
     k = (pure .)
 

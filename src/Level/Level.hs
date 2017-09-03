@@ -221,9 +221,9 @@ parseCollision c layers =
                   ]
 
 
-updateLevel :: Time -> GameState -> (Level, Actor -> Actor)
+updateLevel :: Time -> GameState -> (Level, GameState -> GameState)
 updateLevel dt gs =
-  let l          = currentLevel gs
+  let l          = _currentLevel gs
       x          = fmap (updateObject dt gs) $ _objects l
       (objs', f) = foldr (\(obj', f') (objs, f) -> (obj' : objs, f . f')) ([], id) x
    in ( l & objects .~ objs'
