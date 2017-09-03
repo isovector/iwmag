@@ -3,6 +3,7 @@
 module Actor
   ( Actor
   , drawActor
+  , drawWithGeom
   , playerHandler
   ) where
 
@@ -13,6 +14,18 @@ import BasePrelude
 import Game.Sequoia
 import Linear.Vector
 import Types
+
+drawWithGeom :: Actor -> (Color -> V2 -> Form) -> Form
+drawWithGeom a f = move pos
+                 . move (V2 ((r - l) / 2) $ (b - t) / 2)
+                 . f (aColor a)
+                 $ V2 (r + l) (b + t)
+  where
+    pos    = _aPos a
+    l      = leftX   $ aGeom a
+    r      = rightX  $ aGeom a
+    t      = topY    $ aGeom a
+    b      = bottomY $ aGeom a
 
 drawActor :: Actor -> [Form]
 drawActor p = fmap (move pos) $
@@ -30,7 +43,7 @@ drawActor p = fmap (move pos) $
   , let color = 1 - fromIntegral n / 6
   ]
   where
-    pos    = _aPos $ p
+    pos    = _aPos p
     l      = leftX   (aGeom p)
     r      = rightX  (aGeom p)
     t      = topY    (aGeom p)

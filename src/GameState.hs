@@ -35,6 +35,7 @@ update dt ctrl state@(GameState {_player = p, _currentLevel = l, _levelName = na
               { _player = p'
               , _camera = _aPos p'
               , _currentLevel  = l''
+              , _geometryChanged = False
               }
         (Nothing, _) -> resetState name
 
@@ -57,6 +58,7 @@ resetState levelname =
       , _levelName    = levelname
       , _player       = defaultActor { _aPos = pos' }
       , _camera       = pos'
+      , _geometryChanged = True
       }
 
 initState :: GameState

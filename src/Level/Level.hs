@@ -92,10 +92,10 @@ parseLayers size tileset ls =
              ++ zonesToForm (map getRect doors) purple
              ++ tiledata
       , levelSize = size
-      , destructableGeometry = M.fromListWith (++)
-                             . fmap (\x -> (pieceGroup x, pure x))
-                             . parseCollision red
-                             $ getLayer "destructable"
+      , _destructableGeometry = M.fromListWith (++)
+                              . fmap (\x -> (pieceGroup x, pure x))
+                              . parseCollision red
+                              $ getLayer "destructable"
       }
   where (spawn, zones) = parseMeta $ getLayer "meta"
         levelHooks   = parseHooks $ getLayer "targets"

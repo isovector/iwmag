@@ -5,21 +5,29 @@
 
 module Objects.Bomb () where
 
-import Control.Monad.State (evalState)
 import Actor
-import Actor.Controller
 import Actor.Constants
+import Actor.Controller
 import Actor.Data
 import Actor.Signal
 import Control.Lens hiding (Level)
+import Control.Monad.State (evalState)
 import Game.Sequoia.Color
 import Linear.Metric
-import Types
 import Object
+import Types
 
 data Bomb = Bomb
   { _held   :: Bool
   , _fActor :: Actor
+  }
+
+bombGeom :: BoxGeom
+bombGeom = BoxGeom
+  { topY    = 24
+  , bottomY = 0
+  , leftX   = 12
+  , rightX  = 12
   }
 
 makeLenses ''Bomb
@@ -32,17 +40,27 @@ instance IsObject "bomb" where
       defaultActor
         { _aPos = pos
         , aColor = purple
+        , aGeom = bombGeom
         }
 
-  render =
-    group . drawActor . _fActor
+  render b =
+    drawWithGeom (_fActor b) $ \col size ->
+      filled col . circle $ view _x size * 0.5
 
-  update dt f = do
+  update dt b = do
     gs <- asks ctxGameState
-    pure $ case view held f of
-      True  -> (f, id)
-      False -> (, id) $
-        f & fActor %~ \a -> followerHandler dt gs makeController a
+    pure $ case view held b of
+      True  -> (b, id)
+      False ->
+        case followerHandler dt gs makeController $ _fActor b of
+          (a', Just p) ->
+            ( b & fActor .~ a',
+              case pieceGroup p of
+                "" -> id
+                g  -> (currentLevel . destructableGeometry . at g .~ Nothing)
+                    . (geometryChanged .~ True)
+            )
+          (a', _) -> (b & fActor .~ a', id)
 
   grasp (_fActor -> a) = do
     p  <- asks ctxPlayer
@@ -68,10 +86,10 @@ makeController = initController
   }
 
 
-followerHandler :: Time -> GameState -> Controller -> Actor -> Actor
+followerHandler :: Time -> GameState -> Controller -> Actor -> (Actor, Maybe Piece)
 followerHandler dt gs ctrl p
-   = fallHandler
-   . (fst <$> jumpHandler dt l ctrl)
+   = first (fallHandler gs)
+   . jumpHandler dt l ctrl
    . flip evalState l
    $ actionHandler gs ctrl
  =<< k (walkHandler dt l ctrl)

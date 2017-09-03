@@ -40,7 +40,7 @@ data Level = Level
   , targets       :: [Hook]
   , _objects      :: [Object]
   , levelSize     :: V2
-  , destructableGeometry :: M.Map String [Piece]
+  , _destructableGeometry :: M.Map String [Piece]
   } deriving Show
 
 geometry :: Level -> [Piece]
@@ -48,7 +48,7 @@ geometry level = mappend (levelGeometry level)
                . mconcat
                . fmap snd
                . M.toList
-               $ destructableGeometry level
+               $ _destructableGeometry level
 
 
 data Zone = Death   Rect
@@ -146,6 +146,7 @@ data GameState = GameState
   , _levelName    :: !String
   , _player       :: !Actor
   , _camera       :: !V2
+  , _geometryChanged :: !Bool
   }
 
 data RawController = RawController

@@ -176,20 +176,26 @@ setFalling p =
     , attachment = Unattached
     }
 
-stillStanding :: Actor -> Bool
-stillStanding p =
+stillStanding :: GameState -> Actor -> Bool
+stillStanding gs p =
   case attachment p of
     Unattached -> False
-    StandingOn l -> isJust . fst $ sweep' (aGeom p) (_aPos p) [l] AxisY 1
+    StandingOn l ->
+      isJust . fst
+             $ sweep' (aGeom p)
+                      (_aPos p)
+                      (bool [l] (geometry $ _currentLevel gs) $ _geometryChanged gs)
+                      AxisY
+                      1
     Grasping _ _ -> True
 
 recoveryHandler :: Time -> Actor -> Actor
 recoveryHandler dt p = p { recoveryTime = max 0 $ recoveryTime p - dt }
 
-fallHandler :: Actor -> Actor
-fallHandler p
+fallHandler :: GameState -> Actor -> Actor
+fallHandler gs p
   | isStanding p =
-    if stillStanding p
+    if stillStanding gs p
        then p
        else setFalling p
   | otherwise    = p
@@ -249,7 +255,7 @@ playerHandler :: Time -> GameState -> Controller -> Actor -> State Level (Maybe 
 playerHandler dt gs ctrl p
     = k (deathHandler l)
   =<< holdHandler dt
-  =<< k (fallHandler)
+  =<< k (fallHandler gs)
   =<< k (fst <$> jumpHandler dt l ctrl)
   =<< actionHandler gs ctrl
   =<< k (graspHandler ctrl)
