@@ -147,6 +147,12 @@ data GameState = GameState
   , _player       :: !Actor
   , _camera       :: !V2
   , _geometryChanged :: !Bool
+  , objectMap :: M.Map String
+                       ( ALens' Level (Maybe Object)
+                      -> V2
+                      -> [(String, String)]
+                      -> Object
+                       )
   }
 
 data RawController = RawController

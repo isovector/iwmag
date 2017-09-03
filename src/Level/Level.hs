@@ -184,7 +184,7 @@ parseObjects layers =
 
     makeObject (idx, obj@Object {..}) =
       ( idx
-      , (objectMap M.! fromJust objectType)
+      , (theObjectMap M.! fromJust objectType)
           (objects . at idx)
           (getPosOfObj obj)
           objectProperties
@@ -241,9 +241,4 @@ updateLevel dt gs =
    in ( l & objects .~ objs'
       , f
       )
-
-  -- l
-  -- { _objects = fmap (updateObject dt l p)
-  --            $ _objects l
-  -- }
 

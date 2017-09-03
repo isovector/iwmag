@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE DataKinds            #-}
 {-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE NoImplicitPrelude    #-}
@@ -7,8 +8,10 @@
 
 module Object where
 
-import Types
-import Control.Monad.Reader (runReader)
+import           Control.Monad.Reader (runReader)
+import qualified Data.Map as M
+import           GHC.TypeLits
+import           Types
 
 
 updateObject :: Time -> GameState -> Object -> (Object, GameState -> GameState)
@@ -36,4 +39,26 @@ runContext gs obj =
   flip runReader $ ObjectContext (objLens obj)
                                  gs
                                  (objProps obj)
+
+spawnObject
+    :: String
+    -> V2
+    -> [(String, String)]
+    -> GameState
+    -> Level
+spawnObject objtype pos props gs =
+  let l   = _currentLevel gs
+      idx = (+ 1) . maximum $ 0 : M.keys (_objects l)
+      lo  = objects . at idx
+   in l & cloneLens lo ?~ (objectMap gs M.! objtype) lo pos props
+
+
+spawnObject'
+    :: forall name
+     . IsObject name
+    => V2
+    -> [(String, String)]
+    -> GameState
+    -> Level
+spawnObject' = spawnObject (symbolVal $ Proxy @name)
 

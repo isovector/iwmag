@@ -61,6 +61,7 @@ instance IsObject "bomb" where
                 g  -> (currentLevel . destructableGeometry . at g .~ Nothing)
                     . (geometryChanged .~ True)
                     . (currentLevel . lo .~ Nothing)
+                    . (currentLevel .~ spawnObject "gem" (_aPos a') [("color", "0 0 1 1")] gs)
             )
           (a', _) -> (b & fActor .~ a', id)
 

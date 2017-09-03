@@ -2,7 +2,7 @@
 {-# LANGUAGE TemplateHaskell     #-}
 
 module ObjectMap
-  ( objectMap
+  ( theObjectMap
   ) where
 
 import           Control.Monad.Reader (runReader)
@@ -22,16 +22,17 @@ allObjects = $(someDicts ''IsObject)
 ffmap :: Functor f => f a -> (a -> b) -> f b
 ffmap = flip fmap
 
-objectMap
+theObjectMap
     :: M.Map String
              ( ALens' Level (Maybe Object)
             -> V2
             -> [(String, String)]
             -> Object
              )
-objectMap = M.fromList . ffmap allObjects
-                       $ withSomeDict1
-                       $ \(p :: Proxy name) ->
+theObjectMap = M.fromList
+             . ffmap allObjects
+             $ withSomeDict1
+             $ \(p :: Proxy name) ->
   ( symbolVal p
   , \lo pos props ->
       Object (runInitContext lo props $ spawn @name pos)

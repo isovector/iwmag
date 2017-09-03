@@ -1,4 +1,4 @@
-{-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE NoImplicitPrelude   #-}
 
 module GameState
   ( GameState
@@ -9,15 +9,16 @@ module GameState
   , initState
   ) where
 
-import Actor.Constants
-import Actor.Data
-import Actor.Signal
-import BasePrelude
-import Control.Monad.State (runState)
-import Game.Sequoia
-import Level.Level
-import Math
-import Types hiding (update, to)
+import           Actor.Constants
+import           Actor.Data
+import           Actor.Signal
+import           Control.Monad.State (runState)
+import           Game.Sequoia
+import           Level.Level
+import           Math
+import           ObjectMap
+import           Types hiding (update, to)
+
 
 doorHandler :: GameState -> GameState
 doorHandler s@(GameState {_player = p, _currentLevel = l}) =
@@ -59,6 +60,7 @@ resetState levelname =
       , _player       = defaultActor { _aPos = pos' }
       , _camera       = pos'
       , _geometryChanged = True
+      , objectMap     = theObjectMap
       }
 
 initState :: GameState
