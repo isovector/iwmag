@@ -60,7 +60,7 @@ parseLayers objm size tileset ls =
       , deathZones   = dz
       , noBoostZones = nbz
       , targets      = levelHooks
-      , _objects     = levelObjects
+      , _objects     = M.empty
       , doors = mapMaybe getDoor doors
       , forms = fmap targetForm levelHooks
              ++ zonesToForm dz  red

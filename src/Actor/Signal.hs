@@ -95,7 +95,7 @@ doLand p = p & jumpData . jumpState  .~ Stand
 canBoost :: Level -> Actor -> Bool
 canBoost (Level{noBoostZones = zs}) p =
   p ^. jumpData . boostsLeft > 0
-    && p ^. jumpData . recoveryTime == 0
+    && p ^. jumpData . recoveryTime <= 0
     && not (flip any zs $ flip inRect (_aPos p))
 
 doJump :: Actor -> Actor
@@ -160,8 +160,7 @@ stillStanding gs p =
     Grasping _ _ -> True
 
 doRecovety :: Time -> Actor -> Actor
-doRecovety dt p =
-  p & jumpData . recoveryTime .~ max 0 (p ^. jumpData . recoveryTime - dt)
+doRecovety dt = jumpData . recoveryTime -~ dt
 
 addRecovery :: Actor -> Actor
 addRecovery p = p & jumpData . recoveryTime .~ recoverTime
@@ -233,24 +232,25 @@ runHandlers dt ctrl a = swizzle a
   hctxPlayer %= doRecovety dt
   walkHandler
 
-  numJumps <- gets . view $ hctxPlayer . jumpData . jumpsLeft
-  when (wantsJump ctrl && numJumps > 0) $ do
-    startJumpHandler
-
-  p <- gets $ view hctxPlayer
-  when (isJust (wantsBoost ctrl) && not (isBoosting p) && not (isGrasping p)) $ do
-    startBoostHandler
-
   let doCollide =
         \case
           Just piece -> collideHandler piece
           Nothing    -> pure ()
 
+  p <- gets $ view hctxPlayer
   case p ^. jumpData . jumpState of
     Stand  -> standHandler
     Jump y -> jumpHandler y >>= doCollide
     Boost dir strength time applyPenalty ->
       boostHandler dir strength time applyPenalty >>= doCollide
+
+  numJumps <- gets . view $ hctxPlayer . jumpData . jumpsLeft
+  when (wantsJump ctrl && numJumps > 0) $ do
+    startJumpHandler
+
+  when (isJust (wantsBoost ctrl) && not (isBoosting p) && not (isGrasping p)) $ do
+    startBoostHandler
+
   where
     Handlers {..} = handlers a
 
@@ -323,7 +323,7 @@ defaultWalkHandler = do
   p    <- gets $ view hctxPlayer
   l    <- gets $ view hctxLevel
 
-  when (isGrasping p && canAct p) $ do
+  when (not (isGrasping p) && canAct p) $ do
     let dir  = view _x . ctrlDir $ ctrl
         pos' = snd . collision l
                                AxisX
