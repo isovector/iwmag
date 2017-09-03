@@ -21,6 +21,7 @@ initController = Controller
   , wantsJump   = False
   , wantsBoost  = Nothing
   , wantsGrasp  = False
+  , wantsDig    = False
   }
 
 foldController :: Time -> RawController -> Controller -> Controller
@@ -38,6 +39,7 @@ foldController dt RawController {..} Controller {..} = Controller
                      then Just rctrlDir
                      else Nothing
   , wantsGrasp  = rctrlWantsGrasp
+  , wantsDig    = rctrlWantsDig
   }
   where
     isIdle = rctrlDir == V2 0 0
@@ -61,7 +63,8 @@ ctrlSignal keys keys' =
           { rctrlDir        = normalize dir
           , rctrlJump       = jump'
           , rctrlWantsJump  = jump'  && not jump
-          , rctrlWantsGrasp = grasp' && not grasp
+          , rctrlWantsGrasp = grasp' && not grasp && dir /= V2 0 1
+          , rctrlWantsDig   = grasp' && not grasp && dir == V2 0 1
           }
 
     jumpKey  = flip isDown LeftShiftKey

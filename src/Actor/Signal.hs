@@ -161,6 +161,12 @@ actionHandler gs ctrl p
           modify lf
           pure $ p { graspTarget = grasp }
         (_, Nothing, Nothing) -> pure p
+    -- | wantsDig ctrl =
+    --   case graspLevel gs of
+    --     (Just (lf, grasp)) -> do
+    --       modify lf
+    --       pure $ p { graspTarget = grasp }
+    --     (Nothing) -> pure p
     | otherwise       = pure p
   where
     l = _currentLevel gs

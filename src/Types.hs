@@ -168,6 +168,7 @@ data RawController = RawController
   , rctrlJump       :: !Bool
   , rctrlWantsJump  :: !Bool
   , rctrlWantsGrasp :: !Bool
+  , rctrlWantsDig   :: !Bool
   }
 
 data Controller = Controller
@@ -178,6 +179,7 @@ data Controller = Controller
   , wantsJump   :: !Bool
   , wantsBoost  :: !(Maybe V2)
   , wantsGrasp  :: !Bool
+  , wantsDig    :: !Bool
   } deriving (Show)
 
 makeLenses ''Level
