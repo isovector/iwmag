@@ -16,7 +16,9 @@ instance IsObject "winstar" where
   type InternalObj "winstar" = WinStar
   spawn pos = do
     props <- asks ctxProps
-    pure . WinStar (centerOnSquare 7 pos) $ fromJust $ lookup "destination" props
+    pure . WinStar (centerOnSquare 7 pos)
+         . fromJust
+         $ lookup "destination" props
 
   render WinStar {..} = move pos
                   . outlined' purple

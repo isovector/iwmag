@@ -124,7 +124,7 @@ parseTileset (Just (ts, fp)) (Just Layer {layerData}) = fmap toTile $ M.toList l
       = move (V2 (fromIntegral x) (fromIntegral y) ^* (16 * importScale))
       . group
       . pure
-      . scale importScale
+      . scale (importScale + 0.01)
       . toForm
       $ croppedImage (getCrop t) fp
 
