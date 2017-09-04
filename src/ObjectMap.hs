@@ -20,9 +20,6 @@ import           Types
 allObjects :: [SomeDict1 IsObject]
 allObjects = $(someDicts ''IsObject)
 
-ffmap :: Functor f => f a -> (a -> b) -> f b
-ffmap = flip fmap
-
 theObjectMap
     :: M.Map String
              ( ALens' Level (Maybe Object)
@@ -31,7 +28,7 @@ theObjectMap
             -> Object
              )
 theObjectMap = M.fromList
-             . ffmap allObjects
+             . flip fmap allObjects
              $ withSomeDict1
              $ \(p :: Proxy name) ->
   ( symbolVal p

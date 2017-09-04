@@ -93,7 +93,7 @@ data Handlers = Handlers
   , startBoostHandler :: Handler ()
   , boostHandler      :: V2 -> Double -> Time -> Bool -> Handler (Maybe Piece)
   , collideHandler    :: Piece -> Handler ()
-  -- , hookHandler       :: Handler ()
+  , hookHandler       :: Hook -> V2 -> Handler ()
   }
 
 instance Show Handlers where

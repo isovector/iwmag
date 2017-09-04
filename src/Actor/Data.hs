@@ -34,6 +34,7 @@ defaultActor = Actor
       , startBoostHandler = defaultStartBoostHandler
       , boostHandler      = defaultBoostHandler
       , collideHandler    = const $ pure ()
+      , hookHandler       = defaultHookHandler
       }
 
   }

@@ -20,18 +20,22 @@ import           Types hiding (grasp)
 sweep' :: BoxGeom -> V2 -> [Piece] -> Axis -> Double -> (Maybe Piece, V2)
 sweep' b v = sweep b v pieceLine
 
--- getGraspHook :: Level -> Actor -> Maybe Hook
--- getGraspHook l p = getFirst
---                  . mconcat
---                  . fmap intersectsWithActor
---                  $ targets l
---   where
---     intersectsWithActor t = First
---                            . bool Nothing (Just t)
---                            . withinRadius (aGeom p)
---                                           (_aPos p)
---                                           targetRadius
---                            $ hookPos t
+getNearbyHook :: Level -> Actor -> Maybe Hook
+getNearbyHook l p = getFirst
+                  . mconcat
+                  . fmap intersectsWithActor
+                  $ targets l
+  where
+    intersectsWithActor t
+      = First
+      . bool Nothing (Just t)
+      . boxesIntersect (aGeom p)
+                       (_aPos p)
+                       (BoxGeom targetRadius
+                                targetRadius
+                                targetRadius
+                                targetRadius)
+      $ hookPos t
 
 -- graspLevel :: GameState -> Maybe (GameState -> GameState, GraspTarget)
 -- graspLevel gs = getFirst
@@ -76,11 +80,6 @@ canAct = not . isBoosting
 collision :: Level -> Axis -> BoxGeom -> V2 -> Double -> (Maybe Piece, V2)
 collision l ax geom pos dx = sweep' geom pos (geometry l) ax dx
 
--- jumpHandler :: Time -> Level -> Controller -> Actor -> (Actor, Maybe Piece)
--- jumpHandler dt l ctrl p = bool (go $ jumpState p) (p, Nothing) $ isGrasping p
---   where
---     go (Stand)  = (p, Nothing)
-
 setBoosting :: V2 -> Bool -> Double -> Time -> Actor -> Actor
 setBoosting dir penalty strength duration p =
   p & jumpData . jumpState  .~ Boost dir strength duration penalty
@@ -106,11 +105,8 @@ doJump p =
 
 -- actionHandler :: GameState -> Controller -> Actor -> State GameState Actor
 -- actionHandler gs ctrl p
---     | not (canAct p) = pure p
---     | shouldBoost    = pure $ setBoosting (fromJust $ wantsBoost ctrl) True boostStrength boostTime p
---     | shouldJump     = pure $ doJump p
 --     | wantsGrasp ctrl =
---       case (graspTarget p, getGraspHook l p, graspLevel gs) of
+--       case (graspTarget p, getNearbyHook l p, graspLevel gs) of
 --         (Holding _ throw, _, _) -> do
 --           modify $ throw p $ ctrlDir ctrl
 --           pure $ p { graspTarget = Unarmed }
@@ -125,22 +121,6 @@ doJump p =
 --           modify lf
 --           pure $ p { graspTarget = grasp }
 --         (_, Nothing, Nothing) -> pure p
---     -- | wantsDig ctrl =
---     --   case graspLevel gs of
---     --     (Just (lf, grasp)) -> do
---     --       modify lf
---     --       pure $ p { graspTarget = grasp }
---     --     (Nothing) -> pure p
---     | otherwise       = pure p
---   where
---     l = _currentLevel gs
---     -- TODO(sandy): rename grasp to cling for hooks
---     shouldBoost = isJust (wantsBoost ctrl)
---                && not (isBoosting p)
---                && not (isGrasping p)
---                && canBoost l p
---     shouldJump  = wantsJump ctrl
---                && jumpsLeft p > 0
 
 setFalling :: Actor -> Actor
 setFalling p = p & jumpData . jumpState .~ Jump 0
@@ -170,30 +150,6 @@ addRecovery p = p & jumpData . recoveryTime .~ recoverTime
 --   if (any (flip inRect (_aPos p)) $ deathZones l) || _aHealth p <= 0
 --      then Nothing
 --                       else Just p
-
--- graspHandler :: Controller -> Actor -> Actor
--- graspHandler ctrl p =
---   case attachment p of
---     Grasping t dir -> case (wantsJump ctrl, wantsGrasp ctrl) of
---       (False, False) ->
---         let dir' = if ctrlDir ctrl /= V2 0 0
---                       then ctrlDir ctrl
---                       else dir
---         in p { attachment = Grasping t dir'
---               , _aPos = hookPos t
---                      + dir' ^* targetRadius
---                      + onSideways
---                          (V2 0 0)
---                          ((V2 0 0.5) ^* topY (aGeom p))
---                          dir'
---               }
---       (False, True) -> setBoosting (boostDir dir) False boostStrength boostTime p
---       (True, False) -> doJump p { jumpsLeft = 0 }
---       _ -> p
---     _ -> p
---   where
---     onSideways a b dir = bool a b $ view _x dir /= 0
---     boostDir dir = normalize $ dir + onSideways (V2 0 0) (V2 0 $ -1) dir
 
 -- holdHandler :: Time -> Actor -> State GameState Actor
 -- holdHandler dt p = do
@@ -238,11 +194,15 @@ runHandlers dt ctrl a = swizzle a
           Nothing    -> pure ()
 
   p <- gets $ view hctxPlayer
-  case p ^. jumpData . jumpState of
-    Stand  -> standHandler
-    Jump y -> jumpHandler y >>= doCollide
-    Boost dir strength time applyPenalty ->
-      boostHandler dir strength time applyPenalty >>= doCollide
+  case p ^. attachment of
+    Grasping t dir -> hookHandler t dir
+
+    _ ->
+      case p ^. jumpData . jumpState of
+        Stand  -> standHandler
+        Jump y -> jumpHandler y >>= doCollide
+        Boost dir strength time applyPenalty ->
+          boostHandler dir strength time applyPenalty >>= doCollide
 
   numJumps <- gets . view $ hctxPlayer . jumpData . jumpsLeft
   when (wantsJump ctrl && numJumps > 0) $ do
@@ -250,6 +210,14 @@ runHandlers dt ctrl a = swizzle a
 
   when (isJust (wantsBoost ctrl) && not (isBoosting p) && not (isGrasping p)) $ do
     startBoostHandler
+
+  when (wantsGrasp ctrl && not (isGrasping p)) $ do
+    l <- gets $ view hctxLevel
+    case getNearbyHook l p of
+      Just t -> do
+        hctxPlayer %= doLand
+        hctxPlayer . attachment .= (Grasping t . normalize . set _y 0 $ _aPos p - hookPos t)
+      Nothing -> pure ()
 
   where
     Handlers {..} = handlers a
@@ -286,7 +254,7 @@ runHandlers dt ctrl a = swizzle a
 --     | not (canAct p) = pure p
 --     | shouldBoost    = pure $ setBoosting (fromJust $ wantsBoost ctrl) True boostStrength boostTime p
 --     | wantsGrasp ctrl =
---       case (graspTarget p, getGraspHook l p, graspLevel gs) of
+--       case (graspTarget p, getNearbyHook l p, graspLevel gs) of
 --         (Holding _ throw, _, _) -> do
 --           modify $ throw p $ ctrlDir ctrl
 --           pure $ p { graspTarget = Unarmed }
@@ -341,6 +309,35 @@ defaultStandHandler = do
 
   when (not $ stillStanding gs p) $ do
     hctxPlayer %= setFalling
+
+
+defaultHookHandler :: Hook -> V2 -> Handler ()
+defaultHookHandler hook dir = do
+  ctrl <- asks hctxController
+  p    <- gets $ view hctxPlayer
+
+  case (wantsJump ctrl, wantsGrasp ctrl) of
+    (False, False) -> do
+      let dir' = if ctrlDir ctrl /= V2 0 0
+                    then ctrlDir ctrl
+                    else dir
+      hctxPlayer . attachment .= Grasping hook dir'
+      hctxPlayer . aPos .= hookPos hook
+                         + dir' ^* targetRadius
+                         + onSideways
+                             (V2 0 0)
+                             ((V2 0 0.5) ^* topY (aGeom p))
+                             dir'
+
+    (False, True) ->
+      hctxPlayer %= setBoosting (boostDir dir) False boostStrength boostTime
+
+    (True, False) -> do
+      hctxPlayer %= doJump
+      hctxPlayer . jumpData . jumpsLeft .= 0
+  where
+    onSideways a b dir = bool a b $ view _x dir /= 0
+    boostDir dir = normalize $ dir + onSideways (V2 0 0) (V2 0 $ -1) dir
 
 
 defaultJumpHandler :: Double -> Handler (Maybe Piece)
