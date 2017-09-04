@@ -181,7 +181,7 @@ defaultStartBoostHandler = do
 
 runHandlers :: Time -> Controller -> Actor -> State GameState Actor
 runHandlers dt ctrl a = swizzle a
-                      . flip runReaderT (HContext dt ctrl)
+                      . flip runReaderT (HContext dt ctrl $ error "held unimplemented")
                       $ do
   hctxPlayer %= doRecovety dt
   _walkHandler

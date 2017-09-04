@@ -10,12 +10,13 @@ module Types
   , module BasePrelude
   , module Control.Lens
   , asks
+  , gets
   ) where
 
 import           BasePrelude hiding (rotate, group, (&), uncons, index, lazy, throw, Handler, runHandlers)
 import           Control.Lens hiding (Level, levels, Context)
 import           Control.Monad.Reader (asks, ReaderT)
-import           Control.Monad.State (State)
+import           Control.Monad.State (State, gets)
 import qualified Data.Map as M
 import           GHC.TypeLits
 import           Game.Sequoia
@@ -81,6 +82,7 @@ instance Show GraspTarget where
 data HandlerContext = HContext
   { hctxTime       :: Time
   , hctxController :: Controller
+  , hctxHeld       :: Bool
   }
 
 
@@ -120,6 +122,7 @@ data Actor = Actor
   , _internal    :: Internal
   , aRender      :: Actor -> Form
   , aController  :: B Controller
+  , _toRemove    :: Bool
   }
 
 data BoxGeom = BoxGeom

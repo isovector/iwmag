@@ -230,7 +230,5 @@ updateLevel dt ctrls gs
   where
     runOne (idx, a) = Endo $ \gs' ->
       let (a', gs'') = flip runState gs' $ runHandlers dt (ctrls M.! idx) a
-       in gs'' & currentLevel . cloneLens (_self a) ?~ a'
-
-
+       in gs'' & currentLevel . cloneLens (_self a) .~ bool (Just a') Nothing (_toRemove a')
 

@@ -93,6 +93,7 @@ defaultActor = Actor
   , _internal = Internal ()
   , aRender = group . drawActor
   , aController = pure initController
+  , _toRemove = False
   }
 
 playerGeom :: BoxGeom
