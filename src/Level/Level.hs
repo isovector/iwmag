@@ -1,22 +1,35 @@
 {-# LANGUAGE NamedFieldPuns              #-}
 {-# LANGUAGE NoImplicitPrelude           #-}
+{-# LANGUAGE RankNTypes                  #-}
 {-# LANGUAGE RecordWildCards             #-}
 {-# LANGUAGE ViewPatterns                #-}
 {-# OPTIONS_GHC -fno-warn-name-shadowing #-}
 
 module Level.Level where
 
+import Actor.Signal
 import           Actor.Constants
-import qualified Data.Foldable as F
+import           Control.Monad.State (runState)
 import qualified Data.Map as M
 import           Data.Tiled
 import           Game.Sequoia
 import           Game.Sequoia.Color
 import           Linear.Vector
 import           Math
-import           Object
-import qualified Types as T
-import           Types hiding (Object (..))
+import           Types
+
+
+insertUnique
+    :: (Lens' a (M.Map Int b))
+    -> (Lens' b (ALens' a (Maybe b)))
+    -> b
+    -> a
+    -> a
+insertUnique m self b a =
+  let objs = a ^. m
+      idx  = (+ 1) . maximum $ 0 : M.keys objs
+      lo   = m . at idx
+   in a & cloneLens lo ?~ (b & self .~ lo)
 
 isDeath :: Zone -> Bool
 isDeath (Death _) = True
@@ -54,13 +67,13 @@ parseLayers objm size tileset ls =
   let dz =  map (getRect) $ getZones isDeath
       nbz = map (getRect) $ getZones isNoBoost
       doors = getZones isDoor
-   in Level
+   in levelObjects $ Level
       { levelGeometry = parseCollision green $ getLayer "collision"
       , playerSpawn  = spawn
       , deathZones   = dz
       , noBoostZones = nbz
       , targets      = levelHooks
-      , _objects     = M.empty
+      , _actors      = M.empty
       , doors = mapMaybe getDoor doors
       , forms = fmap targetForm levelHooks
              ++ zonesToForm dz  red
@@ -147,23 +160,21 @@ parseHooks layers =
     Nothing -> []
 
 
-parseObjects :: ObjectMap -> Maybe Layer -> M.Map Int T.Object
+parseObjects :: ObjectMap -> Maybe Layer -> Level -> Level
 parseObjects objm layers =
   case layers of
-    Just layer -> M.fromList
-                . fmap makeObject
-                . zip [0..]
+    Just layer -> appEndo
+                . mconcat
+                . fmap (Endo . insertUnique actors self . makeObject)
                 $ layerObjects layer
-    Nothing -> M.empty
+    Nothing -> id
   where
 
-    makeObject (idx, obj@Object {..}) =
-      ( idx
-      , (objm M.! fromJust objectType)
-          (objects . at idx)
-          (getPosOfObj obj)
-          objectProperties
-      )
+    makeObject (obj@Object {..}) =
+      (objm M.! fromJust objectType)
+        (getPosOfObj obj)
+        objectProperties
+
 
 
 parseCollision :: Color -> Maybe Layer -> [Piece]
@@ -208,13 +219,18 @@ parseCollision c layers =
                   ]
 
 
-updateLevel :: Time -> GameState -> (Level, GameState -> GameState)
-updateLevel dt gs =
-  let l     = _currentLevel gs
-      x     = fmap (updateObject dt gs) $ _objects l
-      objs' = fmap fst x
-      f     = appEndo . mconcat . fmap (Endo . snd) $ F.toList x
-   in ( l & objects .~ objs'
-      , f
-      )
+updateLevel :: Time -> M.Map Int Controller -> GameState -> GameState
+updateLevel dt ctrls gs
+    = ($ gs)
+    . appEndo
+    . mconcat
+    . fmap runOne
+    . M.toList
+    $ view (currentLevel . actors) gs
+  where
+    runOne (idx, a) = Endo $ \gs' ->
+      let (a', gs'') = flip runState gs' $ runHandlers dt (ctrls M.! idx) a
+       in gs'' & currentLevel . cloneLens (_self a) ?~ a'
+
+
 

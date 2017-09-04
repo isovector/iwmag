@@ -54,7 +54,7 @@ terminalVelocity :: Double
 terminalVelocity = 2000
 
 firstLevel :: String
-firstLevel = "test1"
+firstLevel = "test3"
 
 importScale :: Double
 importScale = 2.5

@@ -1,16 +1,13 @@
 {-# LANGUAGE NoImplicitPrelude   #-}
 
-module Actor
-  ( Actor
-  , drawActor
-  , drawPlayer
-  , drawWithGeom
-  ) where
+module Actor where
 
-import Actor.Data
+import Actor.Constants
+import Actor.Controller
 import Actor.JumpState
-import BasePrelude
 import Game.Sequoia
+import Game.Sequoia.Color
+import Actor.Signal
 import Linear.Vector
 import Types
 
@@ -65,4 +62,44 @@ getBoostDir p =
   case p ^. jumpData . jumpState of
     Boost dir _ _ _ -> Just dir
     _               -> Nothing
+
+defaultActor :: Actor
+defaultActor = Actor
+  { _aPos        = V2 100 100
+  , _aHealth     = 100
+  , _jumpData = JumpData
+    { _jumpState    = Stand
+    , _jumpsLeft    = jumpCount
+    , _boostsLeft   = boostCount
+    , _recoveryTime = 0
+    }
+  , _attachment  = Unattached
+  , aGeom        = playerGeom
+  , aColor       = white
+  , graspTarget  = Unarmed
+  , _handlers    =
+      Handlers
+      { _walkHandler       = defaultWalkHandler
+      , _standHandler      = defaultStandHandler
+      , _startJumpHandler  = defaultStartJumpHandler
+      , _jumpHandler       = defaultJumpHandler
+      , _startBoostHandler = defaultStartBoostHandler
+      , _boostHandler      = defaultBoostHandler
+      , _collideHandler    = const $ pure ()
+      , _hookHandler       = defaultHookHandler
+      , _updateHandler     = pure ()
+      }
+  , _self = error "uninitialized self"
+  , _internal = Internal ()
+  , aRender = group . drawActor
+  , aController = pure initController
+  }
+
+playerGeom :: BoxGeom
+playerGeom = BoxGeom
+  { topY    = 36
+  , bottomY = 0
+  , leftX   = 12
+  , rightX  = 12
+  }
 

@@ -3,13 +3,14 @@
 
 module GameState where
 
-import           Actor.Data
+import           Actor
 import           Actor.Signal
 import           Control.Monad.State (runState)
+import qualified Data.Map as M
 import           Game.Sequoia
 import           Level.Level
 import           Math
-import           Types hiding (update, to)
+import           Types hiding (to)
 
 
 doorHandler :: GameState -> GameState
@@ -18,19 +19,18 @@ doorHandler s@(GameState {_player = p, _currentLevel = l}) =
       Just (Door _ to) -> setLevel to s
       Nothing          -> s
 
-update :: Time -> Controller -> GameState -> GameState
-update dt ctrl state@(GameState {_player = p, _levelName = name}) =
-    doorHandler $
-      case flip runState state . fmap pure $ runHandlers dt ctrl p of
-        (Just p', gs') ->
-          let (l'', f) = updateLevel dt $ gs' { _player = p' }
-           in f $ gs'
+update :: Time -> Controller -> M.Map Int Controller -> GameState -> GameState
+update dt ctrl ctrls state@(GameState {_player = p, _levelName = name}) =
+  let state' = updateLevel dt ctrls state
+   in doorHandler $
+        case flip runState state' . fmap pure $ runHandlers dt ctrl p of
+          (Just p', gs') ->
+              gs'
               { _player = p'
               , _camera = _aPos p'
-              , _currentLevel  = l''
               , _geometryChanged = False
               }
-        (Nothing, _) -> resetState name state
+          (Nothing, _) -> resetState name state
 
 setLevel :: String -> GameState -> GameState
 setLevel ln s

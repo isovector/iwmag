@@ -5,17 +5,15 @@
 module Actor.Signal where
 
 import           Actor.Constants
-import Control.Monad.Trans.Reader (runReaderT)
 import           Actor.JumpState
 import           Collision
-import           Control.Monad.State (State, modify, get, gets, execState, put)
-import qualified Data.Map as M
+import           Control.Monad.State (State, get, gets, execState, put)
+import           Control.Monad.Trans.Reader (runReaderT)
 import           Game.Sequoia
 import           Linear.Metric
 import           Linear.Vector
 import           Math
-import           Object
-import           Types hiding (grasp)
+import           Types
 
 sweep' :: BoxGeom -> V2 -> [Piece] -> Axis -> Double -> (Maybe Piece, V2)
 sweep' b v = sweep b v pieceLine
@@ -186,30 +184,30 @@ runHandlers dt ctrl a = swizzle a
                       . flip runReaderT (HContext dt ctrl)
                       $ do
   hctxPlayer %= doRecovety dt
-  walkHandler
+  _walkHandler
 
   let doCollide =
         \case
-          Just piece -> collideHandler piece
+          Just piece -> _collideHandler piece
           Nothing    -> pure ()
 
   p <- gets $ view hctxPlayer
   case p ^. attachment of
-    Grasping t dir -> hookHandler t dir
+    Grasping t dir -> _hookHandler t dir
 
     _ ->
       case p ^. jumpData . jumpState of
-        Stand  -> standHandler
-        Jump y -> jumpHandler y >>= doCollide
+        Stand  -> _standHandler
+        Jump y -> _jumpHandler y >>= doCollide
         Boost dir strength time applyPenalty ->
-          boostHandler dir strength time applyPenalty >>= doCollide
+          _boostHandler dir strength time applyPenalty >>= doCollide
 
   numJumps <- gets . view $ hctxPlayer . jumpData . jumpsLeft
   when (wantsJump ctrl && numJumps > 0) $ do
-    startJumpHandler
+    _startJumpHandler
 
   when (isJust (wantsBoost ctrl) && not (isBoosting p) && not (isGrasping p)) $ do
-    startBoostHandler
+    _startBoostHandler
 
   when (wantsGrasp ctrl && not (isGrasping p)) $ do
     l <- gets $ view hctxLevel
@@ -219,8 +217,10 @@ runHandlers dt ctrl a = swizzle a
         hctxPlayer . attachment .= (Grasping t . normalize . set _y 0 $ _aPos p - hookPos t)
       Nothing -> pure ()
 
+  _updateHandler
+
   where
-    Handlers {..} = handlers a
+    Handlers {..} = _handlers a
 
     swizzle :: b -> State (c, b) () -> State c b
     swizzle b s = do
@@ -248,41 +248,6 @@ runHandlers dt ctrl a = swizzle a
 --     k :: Monad m => (a -> b) -> a -> m b
 --     k = (pure .)
 
-
--- actionHandler :: GameState -> Controller -> Actor -> State GameState Actor
--- actionHandler gs ctrl p
---     | not (canAct p) = pure p
---     | shouldBoost    = pure $ setBoosting (fromJust $ wantsBoost ctrl) True boostStrength boostTime p
---     | wantsGrasp ctrl =
---       case (graspTarget p, getNearbyHook l p, graspLevel gs) of
---         (Holding _ throw, _, _) -> do
---           modify $ throw p $ ctrlDir ctrl
---           pure $ p { graspTarget = Unarmed }
---         (_, Just t, _) ->
---           pure $ onLandHandler p
---             { attachment = Grasping t
---                          . normalize
---                          . set _y 0
---                          $ _aPos p - hookPos t
---             }
---         (_, _, Just (lf, grasp)) -> do
---           modify lf
---           pure $ p { graspTarget = grasp }
---         (_, Nothing, Nothing) -> pure p
---     -- | wantsDig ctrl =
---     --   case graspLevel gs of
---     --     (Just (lf, grasp)) -> do
---     --       modify lf
---     --       pure $ p { graspTarget = grasp }
---     --     (Nothing) -> pure p
---     | otherwise       = pure p
---   where
---     l = _currentLevel gs
---     -- TODO(sandy): rename grasp to cling for hooks
---     shouldBoost = isJust (wantsBoost ctrl)
---                && not (isBoosting p)
---                && not (isGrasping p)
---                && canBoost l p
 
 defaultWalkHandler :: Handler ()
 defaultWalkHandler = do
@@ -330,14 +295,14 @@ defaultHookHandler hook dir = do
                              dir'
 
     (False, True) ->
-      hctxPlayer %= setBoosting (boostDir dir) False boostStrength boostTime
+      hctxPlayer %= setBoosting boostDir False boostStrength boostTime
 
-    (True, False) -> do
+    (True, _) -> do
       hctxPlayer %= doJump
       hctxPlayer . jumpData . jumpsLeft .= 0
   where
-    onSideways a b dir = bool a b $ view _x dir /= 0
-    boostDir dir = normalize $ dir + onSideways (V2 0 0) (V2 0 $ -1) dir
+    onSideways a b dir' = bool a b $ view _x dir' /= 0
+    boostDir = normalize $ dir + onSideways (V2 0 0) (V2 0 $ -1) dir
 
 
 defaultJumpHandler :: Double -> Handler (Maybe Piece)

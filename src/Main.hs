@@ -15,8 +15,7 @@ import           KnotTying (initState)
 import           Level.Level
 import           Linear.Vector
 import           Math (clamp')
-import           Object
-import           Types hiding (update, render)
+import           Types
 
 gameWidth :: Int
 gameWidth = 800
@@ -32,11 +31,11 @@ render state = collage gameWidth gameHeight
              . group
              $ fmap drawLine (geometry level)
             ++ forms level
-            ++ fmap renderObject (M.elems $ _objects level)
+            ++ fmap (join aRender) (M.elems $ _actors level)
             ++ drawPlayer (_player state)
     where cam    = clampCamera (levelSize $ _currentLevel state) $ _camera state
           center = V2 (fromIntegral gameWidth) (fromIntegral gameHeight) ^* 0.5
-          level = _currentLevel state
+          level  = _currentLevel state
 
 
 clampCamera :: V2  -- ^ Level size.
@@ -60,10 +59,14 @@ runGame _ = do
   rOldCtrller <- sample $ delayTime (deltaTime clock) [] rController
 
   (gameAndCtrl, _) <- foldmp (initState, initController) $ \(g, ctrl) -> do
-    dt   <- sample $ deltaTime clock
+    dt    <- sample $ deltaTime clock
     rctrl <- sample $ ctrlSignal rOldCtrller rController
+
+    controllers <- traverse (sample . aController)
+                 $ g ^. currentLevel . actors
+
     let ctrl' = foldController dt rctrl ctrl
-    pure $ (update dt ctrl' g, ctrl')
+    pure $ (update dt ctrl' controllers g, ctrl')
 
   return $ do
     (game', _) <- sample gameAndCtrl

@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes    #-}
 {-# LANGUAGE NoImplicitPrelude      #-}
 {-# LANGUAGE TemplateHaskell        #-}
 {-# LANGUAGE TypeFamilyDependencies #-}
@@ -13,7 +14,7 @@ module Types
 
 import           BasePrelude hiding (rotate, group, (&), uncons, index, lazy, throw, Handler, runHandlers)
 import           Control.Lens hiding (Level, levels, Context)
-import           Control.Monad.Reader (Reader, asks, ReaderT)
+import           Control.Monad.Reader (asks, ReaderT)
 import           Control.Monad.State (State)
 import qualified Data.Map as M
 import           GHC.TypeLits
@@ -39,10 +40,10 @@ data Level = Level
   , noBoostZones  :: [Rect]
   , doors         :: [Door]
   , targets       :: [Hook]
-  , _objects      :: M.Map Int Object
+  , _actors       :: M.Map Int Actor
   , levelSize     :: V2
   , _destructableGeometry :: M.Map String [Piece]
-  } deriving Show
+  }
 
 geometry :: Level -> [Piece]
 geometry level = mappend (levelGeometry level)
@@ -86,14 +87,15 @@ data HandlerContext = HContext
 type Handler = ReaderT HandlerContext (State (GameState, Actor))
 
 data Handlers = Handlers
-  { walkHandler       :: Handler ()
-  , standHandler      :: Handler ()
-  , startJumpHandler  :: Handler ()
-  , jumpHandler       :: Double -> Handler (Maybe Piece)
-  , startBoostHandler :: Handler ()
-  , boostHandler      :: V2 -> Double -> Time -> Bool -> Handler (Maybe Piece)
-  , collideHandler    :: Piece -> Handler ()
-  , hookHandler       :: Hook -> V2 -> Handler ()
+  { _walkHandler       :: Handler ()
+  , _standHandler      :: Handler ()
+  , _startJumpHandler  :: Handler ()
+  , _jumpHandler       :: Double -> Handler (Maybe Piece)
+  , _startBoostHandler :: Handler ()
+  , _boostHandler      :: V2 -> Double -> Time -> Bool -> Handler (Maybe Piece)
+  , _collideHandler    :: Piece -> Handler ()
+  , _hookHandler       :: Hook -> V2 -> Handler ()
+  , _updateHandler     :: Handler ()
   }
 
 instance Show Handlers where
@@ -102,16 +104,23 @@ instance Show Handlers where
 instance Eq Handlers where
   (==) _ _ = True
 
+data Internal where
+  Internal :: a -> Internal
+
 data Actor = Actor
   { _aPos        :: !V2
   , _aHealth     :: !Int
   , _jumpData    :: JumpData
-  , _attachment   :: ActorAttachment
+  , _attachment  :: ActorAttachment
   , aGeom        :: BoxGeom
   , aColor       :: Color
   , graspTarget  :: GraspTarget
-  , handlers     :: Handlers
-  } deriving (Show, Eq)
+  , _handlers     :: Handlers
+  , _self        :: ALens' Level (Maybe Actor)
+  , _internal    :: Internal
+  , aRender      :: Actor -> Form
+  , aController  :: B Controller
+  }
 
 data BoxGeom = BoxGeom
   { leftX   :: Double
@@ -136,49 +145,15 @@ data JumpState
 data Line = Line V2 V2 deriving (Show, Eq)
 data Rect = Rect V2 V2 deriving (Show, Eq)
 
-data Object where
-  Object ::
-    { obj       :: a
-    , renderObj :: a -> Form
-    , updateObj :: Time -> a -> Context (a, GameState -> GameState)
-    , graspObj  :: a -> Context (Maybe (a, GraspTarget, GameState -> GameState))
-    , objLens   :: ALens' Level (Maybe Object)
-    , objProps  :: [(String, String)]
-    } -> Object
-
-instance Show Object where
-  show _ = "Object"
-
-data ObjectContext = ObjectContext
-  { ctxLens   :: ALens' Level (Maybe Object)
-  , ctxGameState :: GameState
-  , ctxProps  :: [(String, String)]
-  }
-
-ctxPlayer :: ObjectContext -> Actor
-ctxPlayer = _player . ctxGameState
-
-ctxLevel :: ObjectContext -> Level
-ctxLevel = _currentLevel . ctxGameState
-
-type Context = Reader ObjectContext
 
 class KnownSymbol name => IsObject name where
-  type InternalObj name = r | r -> name
-  spawn :: V2 -> Context (InternalObj name)
-  render :: InternalObj name -> Form
+  spawn :: V2 -> [(String, String)] -> Actor
 
-  update :: Time -> InternalObj name -> Context (InternalObj name, GameState -> GameState)
-  update _  o = pure (o, id)
-
-  grasp  :: InternalObj name -> Context (Maybe (InternalObj name, GraspTarget, GameState -> GameState))
-  grasp = const $ pure Nothing
 
 type ObjectMap = M.Map String
-                       ( ALens' Level (Maybe Object)
-                      -> V2
+                       ( V2
                       -> [(String, String)]
-                      -> Object
+                      -> Actor
                        )
 
 
@@ -215,6 +190,7 @@ makeLenses ''Level
 makeLenses ''Actor
 makeLenses ''GameState
 makeLenses ''JumpData
+makeLenses ''Handlers
 
 
 hctxState :: Lens' (GameState, Actor) GameState
@@ -225,4 +201,8 @@ hctxPlayer = _2
 
 hctxLevel :: Lens' (GameState, Actor) Level
 hctxLevel = _1 . currentLevel
+
+pack :: Iso' Internal a
+pack = iso (\(Internal a) -> unsafeCoerce a)
+           (\a -> Internal a)
 
