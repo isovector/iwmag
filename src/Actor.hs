@@ -76,7 +76,7 @@ defaultActor = Actor
   , _attachment  = Unattached
   , aGeom        = playerGeom
   , aColor       = white
-  , graspTarget  = Unarmed
+  , _grabData    = NotGrabbing
   , _handlers    =
       Handlers
       { _walkHandler       = defaultWalkHandler
@@ -88,12 +88,15 @@ defaultActor = Actor
       , _collideHandler    = const $ pure ()
       , _hookHandler       = defaultHookHandler
       , _updateHandler     = pure ()
+      , _throwHandler      = defaultThrowHandler
+      , _grabHandler       = defaultGrabHandler
       }
   , _self = error "uninitialized self"
   , _internal = Internal ()
   , aRender = group . drawActor
   , aController = pure initController
   , _toRemove = False
+  , _grabType = Ungrabbable
   }
 
 playerGeom :: BoxGeom

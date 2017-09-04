@@ -7,7 +7,7 @@ module Actor.Signal where
 import           Actor.Constants
 import           Actor.JumpState
 import           Collision
-import           Control.Monad.State (State, get, gets, execState, put)
+import           Control.Monad.State (State, get, gets, runState, put)
 import           Control.Monad.Trans.Reader (runReaderT)
 import           Game.Sequoia
 import           Linear.Metric
@@ -66,8 +66,8 @@ isBoosting p =
 --                  Holding _ _ -> True
 --                  _           -> False
 
-isGrasping :: Actor -> Bool
-isGrasping p =
+isHooked :: Actor -> Bool
+isHooked p =
   case _attachment p of
     Grasping _ _ -> True
     _            -> False
@@ -100,6 +100,34 @@ doJump p =
   p & jumpData . jumpState .~ Jump (-jumpStrength)
     & jumpData . jumpsLeft -~ 1
     & attachment .~ Unattached
+
+
+defaultThrowHandler :: V2 -> Handler ()
+defaultThrowHandler dir =
+  hctxPlayer %= setBoosting dir False throwStrength throwTime
+
+
+defaultGrabHandler :: Handler Bool
+defaultGrabHandler = do
+  l <- gets $ view hctxLevel
+  p <- gets $ view hctxPlayer
+
+  let as = l ^. actors ^.. traverse
+      isGrabbable a = and
+                    [ aGeom a /= aGeom p
+                    , actorsIntersect a p
+                    , _grabType a == Carry
+                    ]
+
+  case listToMaybe $ filter isGrabbable as of
+    Just a -> do
+      hctxPlayer . grabData .= Carrying (a ^. self)
+      pure True
+    Nothing -> pure False
+
+
+
+
 
 -- actionHandler :: GameState -> Controller -> Actor -> State GameState Actor
 -- actionHandler gs ctrl p
@@ -179,19 +207,55 @@ defaultStartBoostHandler = do
                               boostTime
 
 
+runHandler :: Time -> Controller -> Actor -> Handler a -> State GameState (Actor, a)
+runHandler dt ctrl a = swizzle a
+                     . flip runReaderT (HContext dt ctrl $ error "held unimplemented")
+  where
+    swizzle :: b -> State (c, b) d -> State c (b, d)
+    swizzle b s = do
+      c <- get
+      let (d, (c', b')) = runState s (c, b)
+      put c'
+      pure (b', d)
+
+
+
+runLocal :: Time -> ALens' Level (Maybe Actor) -> Handler () -> Handler ()
+runLocal dt lo h = do
+  gets (view $ hctxLevel . cloneLens lo) >>= \case
+    Nothing   -> pure ()
+
+    Just whom -> do
+      gs   <- gets $ view hctxState
+      let ((a', ()), gs') = flip runState gs
+                          $ runHandler dt
+                                       (error "no ctrl for local")
+                                       whom
+                                       h
+      hctxState .= gs'
+      hctxLevel . cloneLens lo ?= a'
+
+
 runHandlers :: Time -> Controller -> Actor -> State GameState Actor
-runHandlers dt ctrl a = swizzle a
-                      . flip runReaderT (HContext dt ctrl $ error "held unimplemented")
+runHandlers dt ctrl a = fmap fst
+                      . runHandler dt ctrl a
                       $ do
   hctxPlayer %= doRecovety dt
   _walkHandler
+
+  p <- gets $ view hctxPlayer
+
+  case view grabData p of
+    Carrying whom -> do
+      hctxLevel . cloneLens whom . _Just . aPos .= _aPos p + V2 0 (-30)
+
+    _ -> pure ()
 
   let doCollide =
         \case
           Just piece -> _collideHandler piece
           Nothing    -> pure ()
 
-  p <- gets $ view hctxPlayer
   case p ^. attachment of
     Grasping t dir -> _hookHandler t dir
 
@@ -206,30 +270,34 @@ runHandlers dt ctrl a = swizzle a
   when (wantsJump ctrl && numJumps > 0) $ do
     _startJumpHandler
 
-  when (isJust (wantsBoost ctrl) && not (isBoosting p) && not (isGrasping p)) $ do
+  when (isJust (wantsBoost ctrl) && not (isBoosting p) && not (isHooked p)) $ do
     _startBoostHandler
 
-  when (wantsGrasp ctrl && not (isGrasping p)) $ do
-    l <- gets $ view hctxLevel
-    case getNearbyHook l p of
-      Just t -> do
-        hctxPlayer %= doLand
-        hctxPlayer . attachment .= (Grasping t . normalize . set _y 0 $ _aPos p - hookPos t)
-      Nothing -> pure ()
+  when (wantsGrasp ctrl && not (isHooked p)) $ do
+    case view grabData p of
+      Carrying whom -> do
+        hctxPlayer . grabData .= NotGrabbing
+
+        gets (view $ hctxState . currentLevel . cloneLens whom) >>= \case
+          Nothing -> pure ()
+          Just you ->
+            runLocal dt
+                     whom
+                     (you ^. handlers . throwHandler $ ctrlDir ctrl)
+
+      NotGrabbing -> do
+        l <- gets $ view hctxLevel
+        case getNearbyHook l p of
+          Just t -> do
+            hctxPlayer %= doLand
+            hctxPlayer . attachment .= (Grasping t . normalize . set _y 0 $ _aPos p - hookPos t)
+
+          Nothing -> void _grabHandler
 
   _updateHandler
 
   where
     Handlers {..} = _handlers a
-
-    swizzle :: b -> State (c, b) () -> State c b
-    swizzle b s = do
-      c <- get
-      let (c', b') = execState s (c, b)
-      put c'
-      pure b'
-
-
 
 
 -- -- TODO(sandy): remove the kleisli so each of these gets the level from the monad
@@ -256,7 +324,7 @@ defaultWalkHandler = do
   p    <- gets $ view hctxPlayer
   l    <- gets $ view hctxLevel
 
-  when (not (isGrasping p) && canAct p) $ do
+  when (not (isHooked p) && canAct p) $ do
     let dir  = view _x . ctrlDir $ ctrl
         pos' = snd . collision l
                                AxisX

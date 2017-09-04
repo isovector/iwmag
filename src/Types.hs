@@ -60,24 +60,26 @@ data Zone = Death   Rect
           deriving Show
 data Door = Door Rect String deriving Show
 
+data GrabType
+  = Ungrabbable
+  | Carry
+  deriving (Eq, Show, Ord, Enum, Bounded)
+
 data ActorAttachment
   = Unattached
   | StandingOn Piece
   | Grasping Hook V2
   deriving (Eq, Show)
 
-data GraspTarget
-  = Unarmed
-  | Holding
-    { updateHeld :: Time -> Actor -> GameState -> GameState
-    , onThrow    :: Actor -> V2 -> GameState -> GameState
-    }
+data GrabData
+  = NotGrabbing
+  | Carrying (ALens' Level (Maybe Actor))
 
-instance Eq GraspTarget where
+instance Eq GrabData where
   (==) _ _ = True
 
-instance Show GraspTarget where
-  show _ = "GraspTarget"
+instance Show GrabData where
+  show _ = "GrabData"
 
 data HandlerContext = HContext
   { hctxTime       :: Time
@@ -98,6 +100,8 @@ data Handlers = Handlers
   , _collideHandler    :: Piece -> Handler ()
   , _hookHandler       :: Hook -> V2 -> Handler ()
   , _updateHandler     :: Handler ()
+  , _grabHandler       :: Handler Bool
+  , _throwHandler      :: V2 -> Handler ()
   }
 
 instance Show Handlers where
@@ -116,13 +120,14 @@ data Actor = Actor
   , _attachment  :: ActorAttachment
   , aGeom        :: BoxGeom
   , aColor       :: Color
-  , graspTarget  :: GraspTarget
+  , _grabData  :: GrabData
   , _handlers     :: Handlers
   , _self        :: ALens' Level (Maybe Actor)
   , _internal    :: Internal
   , aRender      :: Actor -> Form
   , aController  :: B Controller
   , _toRemove    :: Bool
+  , _grabType   :: GrabType
   }
 
 data BoxGeom = BoxGeom
