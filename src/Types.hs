@@ -84,7 +84,6 @@ instance Show GrabData where
 data HandlerContext = HContext
   { hctxTime       :: Time
   , hctxController :: Controller
-  , hctxHeld       :: Bool
   }
 
 
@@ -114,19 +113,19 @@ data Internal where
   Internal :: a -> Internal
 
 data Actor = Actor
-  { _aPos        :: !V2
-  , _aHealth     :: !Int
-  , _jumpData    :: JumpData
-  , _attachment  :: ActorAttachment
-  , aGeom        :: BoxGeom
-  , aColor       :: Color
-  , _grabData  :: GrabData
-  , _handlers     :: Handlers
-  , _self        :: ALens' Level (Maybe Actor)
-  , _internal    :: Internal
-  , aRender      :: Actor -> Form
-  , aController  :: B Controller
-  , _toRemove    :: Bool
+  { _aPos       :: !V2
+  , _aHealth    :: !Int
+  , _jumpData   :: JumpData
+  , _attachment :: ActorAttachment
+  , aGeom       :: BoxGeom
+  , aColor      :: Color
+  , _grabData   :: GrabData
+  , _handlers   :: Handlers
+  , _self       :: ALens' Level (Maybe Actor)
+  , _internal   :: Internal
+  , aRender     :: Actor -> Form
+  , aController :: B Controller
+  , _toRemove   :: Bool
   , _grabType   :: GrabType
   }
 
@@ -148,6 +147,7 @@ data JumpState
   = Stand
   | Jump Double
   | Boost V2 Double Time Bool
+  | BeingHeld
   deriving (Show, Eq)
 
 data Line = Line V2 V2 deriving (Show, Eq)

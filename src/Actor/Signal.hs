@@ -121,7 +121,9 @@ defaultGrabHandler = do
 
   case listToMaybe $ filter isGrabbable as of
     Just a -> do
-      hctxPlayer . grabData .= Carrying (a ^. self)
+      let lo = a ^. self
+      hctxPlayer . grabData .= Carrying lo
+      hctxLevel . cloneLens lo . _Just . jumpData . jumpState .= BeingHeld
       pure True
     Nothing -> pure False
 
@@ -209,7 +211,7 @@ defaultStartBoostHandler = do
 
 runHandler :: Time -> Controller -> Actor -> Handler a -> State GameState (Actor, a)
 runHandler dt ctrl a = swizzle a
-                     . flip runReaderT (HContext dt ctrl $ error "held unimplemented")
+                     . flip runReaderT (HContext dt ctrl)
   where
     swizzle :: b -> State (c, b) d -> State c (b, d)
     swizzle b s = do
@@ -265,6 +267,7 @@ runHandlers dt ctrl a = fmap fst
         Jump y -> _jumpHandler y >>= doCollide
         Boost dir strength time applyPenalty ->
           _boostHandler dir strength time applyPenalty >>= doCollide
+        BeingHeld -> pure ()
 
   numJumps <- gets . view $ hctxPlayer . jumpData . jumpsLeft
   when (wantsJump ctrl && numJumps > 0) $ do
