@@ -11,18 +11,10 @@ said:
 
 ## Building
 
-The project is in Haskell, using [Stack][dlstack] for dependency management.
-
-[dlstack]: https://www.stackage.org/install
-
-After you've installed Stack, this might run it for you. Maybe.
-
 ```bash
-sudo apt-get install cabal-install
 git clone https://github.com/isovector/iwmag.git
 cd iwmag
-cabal sandbox init
 stack build
-cabal run
+stack exexc iwmag
 ```
 
