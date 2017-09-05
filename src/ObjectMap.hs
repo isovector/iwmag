@@ -11,8 +11,8 @@ import           GHC.TypeLits
 import           Language.Haskell.Discovery
 import           Objects.Bomb ()
 import           Objects.Disco ()
-import           Objects.Follower ()
-import           Objects.Gem ()
+-- import           Objects.Follower ()
+-- import           Objects.Gem ()
 import           Objects.WinStar ()
 import           Types
 
@@ -20,39 +20,17 @@ import           Types
 allObjects :: [SomeDict1 IsObject]
 allObjects = $(someDicts ''IsObject)
 
-ffmap :: Functor f => f a -> (a -> b) -> f b
-ffmap = flip fmap
-
 theObjectMap
     :: M.Map String
-             ( ALens' Level (Maybe Object)
-            -> V2
+             ( V2
             -> [(String, String)]
-            -> Object
+            -> Actor
              )
 theObjectMap = M.fromList
-             . ffmap allObjects
+             . flip fmap allObjects
              $ withSomeDict1
              $ \(p :: Proxy name) ->
   ( symbolVal p
-  , \lo pos props ->
-      Object (runInitContext lo props $ spawn @name pos)
-             render
-             update
-             grasp
-             lo
-             props
+  , \pos props -> spawn @name pos props
   )
-
-
-runInitContext
-    :: ALens' Level (Maybe Object)
-    -> [(String, String)]
-    -> Context a
-    -> a
-runInitContext lo props
-  = flip runReader
-  $ ObjectContext lo
-                  (error "no gamestate in init")
-                  props
 

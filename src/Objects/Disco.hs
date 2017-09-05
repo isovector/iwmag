@@ -3,32 +3,32 @@
 
 module Objects.Disco () where
 
-import Types
+import Actor
 import Actor.Constants
-
-data Disco = Disco
-  { discoPos :: V2
-  , discoDur :: Time
-  , discoCol :: Color
-  }
+import Types
 
 instance IsObject "disco" where
-  type InternalObj "disco" = Disco
+  spawn pos props =
+    defaultActor
+    { aColor = read . ("Color " ++) . fromJust $ lookup "color" props
+    , _aPos = centerOnSquare 8 pos
+    , _internal = view (from disco) 0
+    , aRender = renderDisco
+    , aGeom = BoxGeom 0 0 0 0
+    } & handlers . updateHandler .~ updateDisco
 
-  spawn pos = do
-    props <- asks ctxProps
-    pure . Disco (centerOnSquare 8 pos) 0
-         . read
-         . ("Color " ++)
-         . fromJust
-         $ lookup "color" props
+updateDisco :: Handler ()
+updateDisco = do
+  dt <- asks hctxTime
+  hctxPlayer . internal . pack += dt * 3
 
-  render Disco {..} = move (discoPos + V2 (cos discoDur) (sin discoDur) ^* 10)
-                    . filled discoCol
-                    $ circle 8
+renderDisco :: Actor -> Form
+renderDisco Actor {..} = move (_aPos + V2 (cos discoDur) (sin discoDur) ^* 10)
+                       . filled aColor
+                       $ circle 8
+  where
+    discoDur = view disco _internal
 
-  update dt t@Disco {..} = pure . (, id) $
-    t { discoDur = discoDur + dt * 3 }
-
-  grasp _ = pure Nothing
+disco :: Iso' Internal Time
+disco = pack
 

@@ -10,7 +10,7 @@ module Actor.Controller
 import Actor.Constants
 import Game.Sequoia.Keyboard
 import Linear.Metric
-import Types hiding (grasp)
+import Types
 
 initController :: Controller
 initController = Controller
