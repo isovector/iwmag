@@ -63,6 +63,7 @@ data Door = Door Rect String deriving Show
 data GrabType
   = Ungrabbable
   | Carry
+  | DoAction
   deriving (Eq, Show, Ord, Enum, Bounded)
 
 data ActorAttachment
@@ -101,6 +102,7 @@ data Handlers = Handlers
   , _updateHandler     :: Handler ()
   , _grabHandler       :: Handler Bool
   , _throwHandler      :: V2 -> Handler ()
+  , _actionGrabHandler :: Handler ()
   }
 
 instance Show Handlers where

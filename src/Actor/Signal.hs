@@ -18,6 +18,7 @@ import           Types
 sweep' :: BoxGeom -> V2 -> [Piece] -> Axis -> Double -> (Maybe Piece, V2)
 sweep' b v = sweep b v pieceLine
 
+
 getNearbyHook :: Level -> Actor -> Maybe Hook
 getNearbyHook l p = getFirst
                   . mconcat
@@ -35,36 +36,16 @@ getNearbyHook l p = getFirst
                                 targetRadius)
       $ hookPos t
 
--- graspLevel :: GameState -> Maybe (GameState -> GameState, GraspTarget)
--- graspLevel gs = getFirst
---               . mconcat
---               . fmap f
---               . M.elems
---               . _objects
---               $ _currentLevel gs
---   where
---     f :: Object -> First (GameState -> GameState, GraspTarget)
---     f obj = First
---           . fmap (\(obj', gt, gs') ->
-
---               ( (currentLevel . cloneLens (objLens obj) ?~ obj') . gs'
---               , gt))
---           $ graspObject gs obj
-
-
 
 isStanding :: Actor -> Bool
 isStanding = isStand . _jumpState . _jumpData
+
 
 isBoosting :: Actor -> Bool
 isBoosting p =
   let state = _jumpState $ _jumpData p
    in isBoost state
 
--- isHolding :: Actor -> Bool
--- isHolding p = case graspTarget p of
---                  Holding _ _ -> True
---                  _           -> False
 
 isHooked :: Actor -> Bool
 isHooked p =
@@ -72,11 +53,14 @@ isHooked p =
     Grasping _ _ -> True
     _            -> False
 
+
 canAct :: Actor -> Bool
 canAct = not . isBoosting
 
+
 collision :: Level -> Axis -> BoxGeom -> V2 -> Double -> (Maybe Piece, V2)
 collision l ax geom pos dx = sweep' geom pos (geometry l) ax dx
+
 
 setBoosting :: V2 -> Bool -> Double -> Time -> Actor -> Actor
 setBoosting dir penalty strength duration p =
@@ -84,16 +68,19 @@ setBoosting dir penalty strength duration p =
     & jumpData . boostsLeft -~ 1
     & attachment .~ Unattached
 
+
 doLand :: Actor -> Actor
 doLand p = p & jumpData . jumpState  .~ Stand
              & jumpData . jumpsLeft  .~ jumpCount
              & jumpData . boostsLeft .~ boostCount
+
 
 canBoost :: Level -> Actor -> Bool
 canBoost (Level{noBoostZones = zs}) p =
   p ^. jumpData . boostsLeft > 0
     && p ^. jumpData . recoveryTime <= 0
     && not (flip any zs $ flip inRect (_aPos p))
+
 
 doJump :: Actor -> Actor
 doJump p =
@@ -116,43 +103,33 @@ defaultGrabHandler = do
       isGrabbable a = and
                     [ aGeom a /= aGeom p
                     , actorsIntersect a p
-                    , _grabType a == Carry
+                    , _grabType a /= Ungrabbable
                     ]
 
   case listToMaybe $ filter isGrabbable as of
     Just a -> do
       let lo = a ^. self
-      hctxPlayer . grabData .= Carrying lo
-      hctxLevel . cloneLens lo . _Just . jumpData . jumpState .= BeingHeld
+      case _grabType a of
+        Ungrabbable ->
+          error "impossible"
+
+        Carry -> do
+          hctxPlayer . grabData .= Carrying lo
+          hctxLevel . cloneLens lo . _Just . jumpData . jumpState .= BeingHeld
+
+        DoAction -> do
+          runLocal (error "no dt for you")
+                   lo
+                   (a ^. handlers . actionGrabHandler)
+
       pure True
     Nothing -> pure False
 
 
-
-
-
--- actionHandler :: GameState -> Controller -> Actor -> State GameState Actor
--- actionHandler gs ctrl p
---     | wantsGrasp ctrl =
---       case (graspTarget p, getNearbyHook l p, graspLevel gs) of
---         (Holding _ throw, _, _) -> do
---           modify $ throw p $ ctrlDir ctrl
---           pure $ p { graspTarget = Unarmed }
---         (_, Just t, _) ->
---           pure $ onLandHandler p
---             { attachment = Grasping t
---                          . normalize
---                          . set _y 0
---                          $ _aPos p - hookPos t
---             }
---         (_, _, Just (lf, grasp)) -> do
---           modify lf
---           pure $ p { graspTarget = grasp }
---         (_, Nothing, Nothing) -> pure p
-
 setFalling :: Actor -> Actor
 setFalling p = p & jumpData . jumpState .~ Jump 0
                  & attachment .~ Unattached
+
 
 stillStanding :: GameState -> Actor -> Bool
 stillStanding gs p =
@@ -167,8 +144,10 @@ stillStanding gs p =
                       1
     Grasping _ _ -> True
 
+
 doRecovety :: Time -> Actor -> Actor
 doRecovety dt = jumpData . recoveryTime -~ dt
+
 
 addRecovery :: Actor -> Actor
 addRecovery p = p & jumpData . recoveryTime .~ recoverTime
@@ -178,14 +157,6 @@ addRecovery p = p & jumpData . recoveryTime .~ recoverTime
 --   if (any (flip inRect (_aPos p)) $ deathZones l) || _aHealth p <= 0
 --      then Nothing
 --                       else Just p
-
--- holdHandler :: Time -> Actor -> State GameState Actor
--- holdHandler dt p = do
---   case graspTarget p of
---     Unarmed     -> pure ()
---     Holding f _ -> modify $ f dt p
---   pure p
-
 
 
 defaultStartJumpHandler :: Handler ()
@@ -219,7 +190,6 @@ runHandler dt ctrl a = swizzle a
       let (d, (c', b')) = runState s (c, b)
       put c'
       pure (b', d)
-
 
 
 runLocal :: Time -> ALens' Level (Maybe Actor) -> Handler () -> Handler ()
@@ -301,23 +271,6 @@ runHandlers dt ctrl a = fmap fst
 
   where
     Handlers {..} = _handlers a
-
-
--- -- TODO(sandy): remove the kleisli so each of these gets the level from the monad
--- playerHandler :: Time -> GameState -> Controller -> Actor -> State GameState (Maybe Actor)
--- playerHandler dt gs ctrl p
---     = k (deathHandler l)
---   =<< holdHandler dt
---   =<< k (fallHandler gs)
---   =<< k (fst <$> jumpHandler dt l ctrl)
---   =<< actionHandler gs ctrl
---   =<< k (graspHandler ctrl)
---   =<< k (doRecovety dt)
---   =<< k (walkHandler dt l ctrl)
---   =<< pure p
---   where
---     k :: Monad m => (a -> b) -> a -> m b
---     k = (pure .)
 
 
 defaultWalkHandler :: Handler ()

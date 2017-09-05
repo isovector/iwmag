@@ -90,6 +90,7 @@ defaultActor = Actor
       , _updateHandler     = pure ()
       , _throwHandler      = defaultThrowHandler
       , _grabHandler       = defaultGrabHandler
+      , _actionGrabHandler = pure ()
       }
   , _self = error "uninitialized self"
   , _internal = Internal ()

@@ -42,8 +42,6 @@
   <object id="55" name="bomb" type="bomb" x="88" y="216" width="12" height="12">
    <ellipse/>
   </object>
- </objectgroup>
- <objectgroup name="badobjects">
   <object id="57" name="win" type="winstar" x="204" y="204" width="16" height="16">
    <properties>
     <property name="destination" value="test1"/>
@@ -51,4 +49,5 @@
    <ellipse/>
   </object>
  </objectgroup>
+ <objectgroup name="badobjects"/>
 </map>
