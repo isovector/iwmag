@@ -9,7 +9,7 @@ module Actor.Signal where
 import           Actor.Constants
 import           Actor.JumpState
 import           Collision
-import           Control.Monad.State (gets, runStateT)
+import           Control.Monad.State (get, gets, runStateT)
 import           Control.Monad.Trans.Reader (runReaderT, local)
 import           Control.Monad.Writer (Writer)
 import           Game.Sequoia
@@ -249,7 +249,7 @@ doActorHandlers = do
       Carrying whom -> do
         ctxSelf . grabData .= NotGrabbing
 
-        gets (view $ ctxState . currentLevel . cloneLens whom) >>= \case
+        gets (view $ currentLevel . cloneLens whom) >>= \case
           Nothing -> pure ()
           Just you ->
             runLocal Nothing
@@ -290,7 +290,7 @@ defaultWalkHandler = do
 defaultStandHandler :: Handler ()
 defaultStandHandler = do
   (cloneLens -> ctxSelf) <- getSelfRef
-  gs <- gets $ view ctxState
+  gs <- get
   p  <- gets $ view ctxSelf
 
   when (not $ stillStanding gs p) $ do

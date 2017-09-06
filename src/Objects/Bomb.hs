@@ -37,7 +37,7 @@ onCollide p = do
   (cloneLens -> ctxSelf) <- getSelfRef
 
   when (g /= "") $ do
-    ctxState . currentLevel . destructableGeometry . at g .= Nothing
-    ctxState . geometryChanged .= True
+    currentLevel . destructableGeometry . at g .= Nothing
+    geometryChanged .= True
     ctxSelf . toRemove .= True
 

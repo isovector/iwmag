@@ -212,10 +212,6 @@ makeLenses ''Handlers
 makeLenses ''HandlerContext
 
 
-ctxState :: Lens' GameState GameState
-ctxState = id
-
-
 getSelfRef :: Handler (ALens' GameState Actor)
 getSelfRef = do
   selfRef <- asks _ctxSelfRef
