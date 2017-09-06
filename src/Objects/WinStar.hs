@@ -38,7 +38,7 @@ instance IsObject "winstar" where
 moveItOrLoseIt :: Handler ()
 moveItOrLoseIt = do
   (cloneLens -> ctxSelf) <- getSelfRef
-  goto <- gets . view $ ctxSelf . internal . dest
+  goto <- use $ ctxSelf . internal . dest
   tell . Endo $ setLevel goto
 
 dest :: Iso' Internal String

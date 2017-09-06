@@ -220,7 +220,7 @@ parseCollision c layers =
 
 updateLevel :: M.Map Int Controller -> Handler ()
 updateLevel ctrls = do
-  as <- gets $ M.toList . view (currentLevel . actors)
+  as <- M.toList <$> use (currentLevel . actors)
   forM_ as $ \(idx, a) ->
     runLocal (Just $ ctrls M.! idx)
              (a ^. self)

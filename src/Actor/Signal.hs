@@ -9,7 +9,7 @@ module Actor.Signal where
 import           Actor.Constants
 import           Actor.JumpState
 import           Collision
-import           Control.Monad.State (get, gets, runStateT)
+import           Control.Monad.State (get, runStateT)
 import           Control.Monad.Trans.Reader (runReaderT, local)
 import           Control.Monad.Writer (Writer)
 import           Game.Sequoia
@@ -101,8 +101,8 @@ defaultThrowHandler dir = do
 defaultGrabHandler :: Handler Bool
 defaultGrabHandler = do
   (cloneLens -> ctxSelf) <- getSelfRef
-  l <- gets $ view ctxLevel
-  p <- gets $ view ctxSelf
+  l <- use ctxLevel
+  p <- use ctxSelf
 
   let as = l ^. actors ^.. traverse
       isGrabbable a = and
@@ -167,7 +167,7 @@ addRecovery p = p & jumpData . recoveryTime .~ recoverTime
 defaultStartJumpHandler :: Handler ()
 defaultStartJumpHandler = do
   (cloneLens -> ctxSelf) <- getSelfRef
-  p <- gets $ view ctxSelf
+  p <- use ctxSelf
 
   when (p ^. jumpData . jumpsLeft > 0) $ do
     ctxSelf %= doJump
@@ -176,9 +176,9 @@ defaultStartJumpHandler = do
 defaultStartBoostHandler :: Handler ()
 defaultStartBoostHandler = do
   (cloneLens -> ctxSelf) <- getSelfRef
-  p    <- gets $ view ctxSelf
-  l    <- gets $ view ctxLevel
-  ctrl <- asks _ctxController
+  p    <- use ctxSelf
+  l    <- use ctxLevel
+  ctrl <- view ctxController
 
   when (canBoost l p) $ do
     ctxSelf %= setBoosting (fromJust $ wantsBoost ctrl)
@@ -206,14 +206,14 @@ runLocal c lo = local $ (ctxSelfRef .~ currentLevel . cloneLens lo)
 doActorHandlers :: Handler ()
 doActorHandlers = do
   (cloneLens -> ctxSelf) <- getSelfRef
-  Handlers {..} <- gets . view $ ctxSelf . handlers
-  ctrl <- asks $ view ctxController
+  Handlers {..} <- use $ ctxSelf . handlers
+  ctrl <- view ctxController
 
-  dt   <- asks $ view ctxTime
+  dt   <- view ctxTime
   ctxSelf %= doRecovety dt
   _walkHandler
 
-  p <- gets $ view ctxSelf
+  p <- use ctxSelf
 
   case view grabData p of
     Carrying whom -> do
@@ -237,7 +237,7 @@ doActorHandlers = do
           _boostHandler dir strength time applyPenalty >>= doCollide
         BeingHeld -> pure ()
 
-  numJumps <- gets . view $ ctxSelf . jumpData . jumpsLeft
+  numJumps <- use $ ctxSelf . jumpData . jumpsLeft
   when (wantsJump ctrl && numJumps > 0) $ do
     _startJumpHandler
 
@@ -249,7 +249,7 @@ doActorHandlers = do
       Carrying whom -> do
         ctxSelf . grabData .= NotGrabbing
 
-        gets (view $ currentLevel . cloneLens whom) >>= \case
+        use (currentLevel . cloneLens whom) >>= \case
           Nothing -> pure ()
           Just you ->
             runLocal Nothing
@@ -257,7 +257,7 @@ doActorHandlers = do
                      (you ^. handlers . throwHandler $ ctrlDir ctrl)
 
       NotGrabbing -> do
-        l <- gets $ view ctxLevel
+        l <- use ctxLevel
         case getNearbyHook l p of
           Just t -> do
             ctxSelf %= doLand
@@ -271,10 +271,10 @@ doActorHandlers = do
 defaultWalkHandler :: Handler ()
 defaultWalkHandler = do
   (cloneLens -> ctxSelf) <- getSelfRef
-  dt   <- asks _ctxTime
-  ctrl <- asks _ctxController
-  p    <- gets $ view ctxSelf
-  l    <- gets $ view ctxLevel
+  dt   <- view ctxTime
+  ctrl <- view ctxController
+  p    <- use ctxSelf
+  l    <- use ctxLevel
 
   when (not (isHooked p) && canAct p) $ do
     let dir  = view _x . ctrlDir $ ctrl
@@ -291,7 +291,7 @@ defaultStandHandler :: Handler ()
 defaultStandHandler = do
   (cloneLens -> ctxSelf) <- getSelfRef
   gs <- get
-  p  <- gets $ view ctxSelf
+  p  <- use ctxSelf
 
   when (not $ stillStanding gs p) $ do
     ctxSelf %= setFalling
@@ -300,8 +300,8 @@ defaultStandHandler = do
 defaultHookHandler :: Hook -> V2 -> Handler ()
 defaultHookHandler hook dir = do
   (cloneLens -> ctxSelf) <- getSelfRef
-  ctrl <- asks _ctxController
-  p    <- gets $ view ctxSelf
+  ctrl <- view ctxController
+  p    <- use ctxSelf
 
   case (wantsJump ctrl, wantsGrasp ctrl) of
     (False, False) -> do
@@ -330,10 +330,10 @@ defaultHookHandler hook dir = do
 defaultJumpHandler :: Double -> Handler (Maybe Piece)
 defaultJumpHandler y = do
   (cloneLens -> ctxSelf) <- getSelfRef
-  dt   <- asks _ctxTime
-  ctrl <- asks _ctxController
-  p    <- gets $ view ctxSelf
-  l    <- gets $ view ctxLevel
+  dt   <- view ctxTime
+  ctrl <- view ctxController
+  p    <- use ctxSelf
+  l    <- use ctxLevel
 
   let gravity' =
         if ctrlJump ctrl && y < 0
@@ -368,9 +368,9 @@ defaultBoostHandler _ _ t _ | t <= 0 = do
 
 defaultBoostHandler dir strength t applyPenalty = do
   (cloneLens -> ctxSelf) <- getSelfRef
-  dt   <- asks _ctxTime
-  p    <- gets $ view ctxSelf
-  l    <- gets $ view ctxLevel
+  dt   <- view ctxTime
+  p    <- use ctxSelf
+  l    <- use ctxLevel
 
   let (wx, x')  = collision l AxisX (aGeom p) (_aPos p) $ view _x boostDt
       (wy, xy') = collision l AxisY (aGeom p) x' $ view _y boostDt

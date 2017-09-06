@@ -10,8 +10,6 @@ module Types
   , module Linear.Vector
   , module BasePrelude
   , module Control.Lens
-  , asks
-  , gets
   , showTrace
   ) where
 
@@ -19,7 +17,7 @@ import           BasePrelude hiding (rotate, group, (&), uncons, index, lazy, th
 import           Control.Lens hiding (Level, levels, Context)
 import           Control.Monad.Reader (asks, ReaderT)
 import           Control.Monad.Writer (Writer)
-import           Control.Monad.State (StateT, gets)
+import           Control.Monad.State (StateT)
 import qualified Data.Map as M
 import           GHC.TypeLits
 import           Game.Sequoia

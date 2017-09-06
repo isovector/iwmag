@@ -45,8 +45,8 @@ instance IsObject "follower" where
 update :: Handler ()
 update = do
   (cloneLens -> ctxSelf) <- getSelfRef
-  dt <- asks _ctxTime
-  me <- gets $ view ctxSelf
+  dt <- view ctxTime
+  me <- use ctxSelf
 
   when (me ^. jumpData . jumpState /= BeingHeld) $ do
     ctxSelf . internal . follower . punchTime -= dt
@@ -55,8 +55,8 @@ update = do
 walk :: Handler ()
 walk = do
   (cloneLens -> ctxSelf) <- getSelfRef
-  me <- gets $ view ctxSelf
-  p  <- gets $ view ctxPlayer
+  me <- use ctxSelf
+  p  <- use ctxPlayer
   local (ctxController .~ makeController p me) defaultWalkHandler
 
 

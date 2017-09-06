@@ -20,7 +20,7 @@ instance IsObject "disco" where
 updateDisco :: Handler ()
 updateDisco = do
   (cloneLens -> ctxSelf) <- getSelfRef
-  dt <- asks _ctxTime
+  dt <- view ctxTime
   ctxSelf . internal . pack += dt * 3
 
 renderDisco :: Actor -> Form
