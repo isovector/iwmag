@@ -19,8 +19,9 @@ instance IsObject "disco" where
 
 updateDisco :: Handler ()
 updateDisco = do
-  dt <- asks hctxTime
-  hctxPlayer . internal . pack += dt * 3
+  (cloneLens -> ctxSelf) <- getSelfRef
+  dt <- asks _ctxTime
+  ctxSelf . internal . pack += dt * 3
 
 renderDisco :: Actor -> Form
 renderDisco Actor {..} = move (_aPos + V2 (cos discoDur) (sin discoDur) ^* 10)

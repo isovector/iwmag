@@ -5,13 +5,12 @@ module ObjectMap
   ( theObjectMap
   ) where
 
-import           Control.Monad.Reader (runReader)
 import qualified Data.Map as M
 import           GHC.TypeLits
 import           Language.Haskell.Discovery
 import           Objects.Bomb ()
 import           Objects.Disco ()
--- import           Objects.Follower ()
+import           Objects.Follower ()
 -- import           Objects.Gem ()
 import           Objects.WinStar ()
 import           Types

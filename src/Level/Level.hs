@@ -7,9 +7,8 @@
 
 module Level.Level where
 
-import Actor.Signal
 import           Actor.Constants
-import           Control.Monad.State (runState)
+import           Actor.Signal
 import qualified Data.Map as M
 import           Data.Tiled
 import           Game.Sequoia
@@ -219,16 +218,11 @@ parseCollision c layers =
                   ]
 
 
-updateLevel :: Time -> M.Map Int Controller -> GameState -> GameState
-updateLevel dt ctrls gs
-    = ($ gs)
-    . appEndo
-    . mconcat
-    . fmap runOne
-    . M.toList
-    $ view (currentLevel . actors) gs
-  where
-    runOne (idx, a) = Endo $ \gs' ->
-      let (a', gs'') = flip runState gs' $ runHandlers dt (ctrls M.! idx) a
-       in gs'' & currentLevel . cloneLens (_self a) .~ bool (Just a') Nothing (_toRemove a')
+updateLevel :: M.Map Int Controller -> Handler ()
+updateLevel ctrls = do
+  as <- gets $ M.toList . view (currentLevel . actors)
+  forM_ as $ \(idx, a) ->
+    runLocal (Just $ ctrls M.! idx)
+             (a ^. self)
+             doActorHandlers
 

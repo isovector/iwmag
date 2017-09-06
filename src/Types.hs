@@ -1,5 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes    #-}
 {-# LANGUAGE NoImplicitPrelude      #-}
+{-# LANGUAGE RankNTypes             #-}
 {-# LANGUAGE TemplateHaskell        #-}
 {-# LANGUAGE TypeFamilyDependencies #-}
 
@@ -11,15 +12,18 @@ module Types
   , module Control.Lens
   , asks
   , gets
+  , showTrace
   ) where
 
 import           BasePrelude hiding (rotate, group, (&), uncons, index, lazy, throw, Handler, runHandlers)
 import           Control.Lens hiding (Level, levels, Context)
 import           Control.Monad.Reader (asks, ReaderT)
-import           Control.Monad.State (State, gets)
+import           Control.Monad.Writer (Writer)
+import           Control.Monad.State (StateT, gets)
 import qualified Data.Map as M
 import           GHC.TypeLits
 import           Game.Sequoia
+import           Game.Sequoia.Utils (showTrace)
 import           Linear.Vector hiding (E (..))
 
 
@@ -83,12 +87,13 @@ instance Show GrabData where
   show _ = "GrabData"
 
 data HandlerContext = HContext
-  { hctxTime       :: Time
-  , hctxController :: Controller
+  { _ctxTime       :: Time
+  , _ctxController :: Controller
+  , _ctxSelfRef    :: ALens' GameState (Maybe Actor)
   }
 
 
-type Handler = ReaderT HandlerContext (State (GameState, Actor))
+type Handler = ReaderT HandlerContext (StateT GameState (Writer (Endo GameState)))
 
 data Handlers = Handlers
   { _walkHandler       :: Handler ()
@@ -130,6 +135,9 @@ data Actor = Actor
   , _toRemove   :: Bool
   , _grabType   :: GrabType
   }
+
+instance Show Actor where
+  show _ = "Actor"
 
 data BoxGeom = BoxGeom
   { leftX   :: Double
@@ -201,16 +209,29 @@ makeLenses ''Actor
 makeLenses ''GameState
 makeLenses ''JumpData
 makeLenses ''Handlers
+makeLenses ''HandlerContext
 
 
-hctxState :: Lens' (GameState, Actor) GameState
-hctxState = _1
+ctxState :: Lens' GameState GameState
+ctxState = id
 
-hctxPlayer :: Lens' (GameState, Actor) Actor
-hctxPlayer = _2
 
-hctxLevel :: Lens' (GameState, Actor) Level
-hctxLevel = _1 . currentLevel
+getSelfRef :: Handler (ALens' GameState Actor)
+getSelfRef = do
+  selfRef <- asks _ctxSelfRef
+  pure $ jankyUnjust $ cloneLens selfRef
+
+  where
+    jankyUnjust :: Lens' a (Maybe b) -> Lens' a b
+    jankyUnjust l = lens (maybe (error "unjust") id . view l)
+                         (\a b -> a & l ?~ b)
+
+
+ctxLevel :: Lens' GameState Level
+ctxLevel = currentLevel
+
+ctxPlayer :: Lens' GameState Actor
+ctxPlayer = player
 
 pack :: Iso' Internal a
 pack = iso (\(Internal a) -> unsafeCoerce a)

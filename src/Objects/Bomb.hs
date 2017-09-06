@@ -6,11 +6,7 @@
 module Objects.Bomb () where
 
 import Actor
-import Actor.Constants
-import Actor.Controller
-import Collision (actorsIntersect)
 import Control.Lens hiding (Level)
-import Control.Monad.State (evalState)
 import Game.Sequoia.Color
 import Types
 
@@ -38,25 +34,10 @@ instance IsObject "bomb" where
 onCollide :: Piece -> Handler ()
 onCollide p = do
   let g = pieceGroup p
+  (cloneLens -> ctxSelf) <- getSelfRef
 
   when (g /= "") $ do
-    hctxState . currentLevel . destructableGeometry . at g .= Nothing
-    hctxState . geometryChanged .= True
-    hctxPlayer . toRemove .= True
-
-
---   grasp (_fActor -> a) = do
---     p  <- asks ctxPlayer
---     lo <- cloneLens <$> asks ctxLens
---     pure $ case actorsIntersect a p of
---       True  -> Just (Bomb True a, hold lo, id)
---       False -> Nothing
---     where
---       hold lo = Holding
---        { updateHeld = \_ p' ->
---            currentLevel . lo . _Just . internalObj . fActor . aPos .~ _aPos p' + V2 0 (-30)
---        , onThrow = \_ dir l ->
---           l & currentLevel . lo . _Just . internalObj . held   .~ False
---             & currentLevel . lo . _Just . internalObj . fActor %~ setBoosting dir False throwStrength throwTime
---        }
+    ctxState . currentLevel . destructableGeometry . at g .= Nothing
+    ctxState . geometryChanged .= True
+    ctxSelf . toRemove .= True
 

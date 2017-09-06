@@ -1,11 +1,12 @@
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE RankNTypes        #-}
 {-# LANGUAGE ViewPatterns      #-}
 
 module GameState where
 
 import           Actor
 import           Actor.Signal
-import           Control.Monad.State (runState)
+import           Control.Monad.Writer (runWriterT)
 import qualified Data.Map as M
 import           Game.Sequoia
 import           Level.Level
@@ -19,18 +20,22 @@ doorHandler s@(GameState {_player = p, _currentLevel = l}) =
       Just (Door _ to) -> setLevel to s
       Nothing          -> s
 
+
+jankyJust :: Lens' a b -> Lens' a (Maybe b)
+jankyJust l = lens (pure . view l) (\a (Just b) -> a & l .~ b)
+
+
 update :: Time -> Controller -> M.Map Int Controller -> GameState -> GameState
-update dt ctrl ctrls state@(GameState {_player = p, _levelName = name}) =
-  let state' = updateLevel dt ctrls state
-   in doorHandler $
-        case flip runState state' . fmap pure $ runHandlers dt ctrl p of
-          (Just p', gs') ->
-              gs'
-              { _player = p'
-              , _camera = _aPos p'
-              , _geometryChanged = False
-              }
-          (Nothing, _) -> resetState name state
+update dt ctrl ctrls gs =
+  let Identity (((), gs'), appEndo -> f)
+        = runWriterT
+        . runHandler dt ctrl (jankyJust player) gs
+        $ do
+          updateLevel ctrls
+          doActorHandlers
+      gs'' = f gs'
+   in gs'' & camera .~ gs'' ^. player . aPos
+
 
 setLevel :: String -> GameState -> GameState
 setLevel ln s

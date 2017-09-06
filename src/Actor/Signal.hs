@@ -1,14 +1,17 @@
 {-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE RankNTypes        #-}
 {-# LANGUAGE TupleSections     #-}
+{-# LANGUAGE ViewPatterns      #-}
 
 module Actor.Signal where
 
 import           Actor.Constants
 import           Actor.JumpState
 import           Collision
-import           Control.Monad.State (State, get, gets, runState, put)
-import           Control.Monad.Trans.Reader (runReaderT)
+import           Control.Monad.State (gets, runStateT)
+import           Control.Monad.Trans.Reader (runReaderT, local)
+import           Control.Monad.Writer (Writer)
 import           Game.Sequoia
 import           Linear.Metric
 import           Linear.Vector
@@ -90,18 +93,20 @@ doJump p =
 
 
 defaultThrowHandler :: V2 -> Handler ()
-defaultThrowHandler dir =
-  hctxPlayer %= setBoosting dir False throwStrength throwTime
+defaultThrowHandler dir = do
+  (cloneLens -> ctxSelf) <- getSelfRef
+  ctxSelf %= setBoosting dir False throwStrength throwTime
 
 
 defaultGrabHandler :: Handler Bool
 defaultGrabHandler = do
-  l <- gets $ view hctxLevel
-  p <- gets $ view hctxPlayer
+  (cloneLens -> ctxSelf) <- getSelfRef
+  l <- gets $ view ctxLevel
+  p <- gets $ view ctxSelf
 
   let as = l ^. actors ^.. traverse
       isGrabbable a = and
-                    [ aGeom a /= aGeom p
+                    [ aGeom a /= aGeom p || _aPos a /= _aPos p
                     , actorsIntersect a p
                     , _grabType a /= Ungrabbable
                     ]
@@ -114,11 +119,11 @@ defaultGrabHandler = do
           error "impossible"
 
         Carry -> do
-          hctxPlayer . grabData .= Carrying lo
-          hctxLevel . cloneLens lo . _Just . jumpData . jumpState .= BeingHeld
+          ctxSelf . grabData .= Carrying lo
+          ctxLevel . cloneLens lo . _Just . jumpData . jumpState .= BeingHeld
 
         DoAction -> do
-          runLocal (error "no dt for you")
+          runLocal Nothing
                    lo
                    (a ^. handlers . actionGrabHandler)
 
@@ -161,65 +166,58 @@ addRecovery p = p & jumpData . recoveryTime .~ recoverTime
 
 defaultStartJumpHandler :: Handler ()
 defaultStartJumpHandler = do
-  p <- gets $ view hctxPlayer
+  (cloneLens -> ctxSelf) <- getSelfRef
+  p <- gets $ view ctxSelf
 
   when (p ^. jumpData . jumpsLeft > 0) $ do
-    hctxPlayer %= doJump
+    ctxSelf %= doJump
 
 
 defaultStartBoostHandler :: Handler ()
 defaultStartBoostHandler = do
-  p    <- gets $ view hctxPlayer
-  l    <- gets $ view hctxLevel
-  ctrl <- asks hctxController
+  (cloneLens -> ctxSelf) <- getSelfRef
+  p    <- gets $ view ctxSelf
+  l    <- gets $ view ctxLevel
+  ctrl <- asks _ctxController
 
   when (canBoost l p) $ do
-    hctxPlayer %= setBoosting (fromJust $ wantsBoost ctrl)
+    ctxSelf %= setBoosting (fromJust $ wantsBoost ctrl)
                               True
                               boostStrength
                               boostTime
 
 
-runHandler :: Time -> Controller -> Actor -> Handler a -> State GameState (Actor, a)
-runHandler dt ctrl a = swizzle a
-                     . flip runReaderT (HContext dt ctrl)
-  where
-    swizzle :: b -> State (c, b) d -> State c (b, d)
-    swizzle b s = do
-      c <- get
-      let (d, (c', b')) = runState s (c, b)
-      put c'
-      pure (b', d)
+runHandler
+    :: Time
+    -> Controller
+    -> (Lens' GameState (Maybe Actor))
+    -> GameState
+    -> Handler a
+    -> Writer (Endo GameState) (a, GameState)
+runHandler dt ctrl a gs = flip runStateT gs
+                        . flip runReaderT (HContext dt ctrl a)
 
 
-runLocal :: Time -> ALens' Level (Maybe Actor) -> Handler () -> Handler ()
-runLocal dt lo h = do
-  gets (view $ hctxLevel . cloneLens lo) >>= \case
-    Nothing   -> pure ()
-
-    Just whom -> do
-      gs   <- gets $ view hctxState
-      let ((a', ()), gs') = flip runState gs
-                          $ runHandler dt
-                                       (error "no ctrl for local")
-                                       whom
-                                       h
-      hctxState .= gs'
-      hctxLevel . cloneLens lo ?= a'
+runLocal :: Maybe Controller -> ALens' Level (Maybe Actor) -> Handler a -> Handler a
+runLocal c lo = local $ (ctxSelfRef .~ currentLevel . cloneLens lo)
+                      . (ctxController .~ maybe (error "no ctrl in local") id c)
 
 
-runHandlers :: Time -> Controller -> Actor -> State GameState Actor
-runHandlers dt ctrl a = fmap fst
-                      . runHandler dt ctrl a
-                      $ do
-  hctxPlayer %= doRecovety dt
+doActorHandlers :: Handler ()
+doActorHandlers = do
+  (cloneLens -> ctxSelf) <- getSelfRef
+  Handlers {..} <- gets . view $ ctxSelf . handlers
+  ctrl <- asks $ view ctxController
+
+  dt   <- asks $ view ctxTime
+  ctxSelf %= doRecovety dt
   _walkHandler
 
-  p <- gets $ view hctxPlayer
+  p <- gets $ view ctxSelf
 
   case view grabData p of
     Carrying whom -> do
-      hctxLevel . cloneLens whom . _Just . aPos .= _aPos p + V2 0 (-30)
+      ctxLevel . cloneLens whom . _Just . aPos .= _aPos p + V2 0 (-30)
 
     _ -> pure ()
 
@@ -239,7 +237,7 @@ runHandlers dt ctrl a = fmap fst
           _boostHandler dir strength time applyPenalty >>= doCollide
         BeingHeld -> pure ()
 
-  numJumps <- gets . view $ hctxPlayer . jumpData . jumpsLeft
+  numJumps <- gets . view $ ctxSelf . jumpData . jumpsLeft
   when (wantsJump ctrl && numJumps > 0) $ do
     _startJumpHandler
 
@@ -249,36 +247,34 @@ runHandlers dt ctrl a = fmap fst
   when (wantsGrasp ctrl && not (isHooked p)) $ do
     case view grabData p of
       Carrying whom -> do
-        hctxPlayer . grabData .= NotGrabbing
+        ctxSelf . grabData .= NotGrabbing
 
-        gets (view $ hctxState . currentLevel . cloneLens whom) >>= \case
+        gets (view $ ctxState . currentLevel . cloneLens whom) >>= \case
           Nothing -> pure ()
           Just you ->
-            runLocal dt
+            runLocal Nothing
                      whom
                      (you ^. handlers . throwHandler $ ctrlDir ctrl)
 
       NotGrabbing -> do
-        l <- gets $ view hctxLevel
+        l <- gets $ view ctxLevel
         case getNearbyHook l p of
           Just t -> do
-            hctxPlayer %= doLand
-            hctxPlayer . attachment .= (Grasping t . normalize . set _y 0 $ _aPos p - hookPos t)
+            ctxSelf %= doLand
+            ctxSelf . attachment .= (Grasping t . normalize . set _y 0 $ _aPos p - hookPos t)
 
           Nothing -> void _grabHandler
 
   _updateHandler
 
-  where
-    Handlers {..} = _handlers a
-
 
 defaultWalkHandler :: Handler ()
 defaultWalkHandler = do
-  dt   <- asks hctxTime
-  ctrl <- asks hctxController
-  p    <- gets $ view hctxPlayer
-  l    <- gets $ view hctxLevel
+  (cloneLens -> ctxSelf) <- getSelfRef
+  dt   <- asks _ctxTime
+  ctrl <- asks _ctxController
+  p    <- gets $ view ctxSelf
+  l    <- gets $ view ctxLevel
 
   when (not (isHooked p) && canAct p) $ do
     let dir  = view _x . ctrlDir $ ctrl
@@ -288,30 +284,32 @@ defaultWalkHandler = do
                                (_aPos p)
                    $ walkSpeed * dt * dir
 
-    hctxPlayer . aPos .= pos'
+    ctxSelf . aPos .= pos'
 
 
 defaultStandHandler :: Handler ()
 defaultStandHandler = do
-  gs <- gets $ view hctxState
-  p  <- gets $ view hctxPlayer
+  (cloneLens -> ctxSelf) <- getSelfRef
+  gs <- gets $ view ctxState
+  p  <- gets $ view ctxSelf
 
   when (not $ stillStanding gs p) $ do
-    hctxPlayer %= setFalling
+    ctxSelf %= setFalling
 
 
 defaultHookHandler :: Hook -> V2 -> Handler ()
 defaultHookHandler hook dir = do
-  ctrl <- asks hctxController
-  p    <- gets $ view hctxPlayer
+  (cloneLens -> ctxSelf) <- getSelfRef
+  ctrl <- asks _ctxController
+  p    <- gets $ view ctxSelf
 
   case (wantsJump ctrl, wantsGrasp ctrl) of
     (False, False) -> do
       let dir' = if ctrlDir ctrl /= V2 0 0
                     then ctrlDir ctrl
                     else dir
-      hctxPlayer . attachment .= Grasping hook dir'
-      hctxPlayer . aPos .= hookPos hook
+      ctxSelf . attachment .= Grasping hook dir'
+      ctxSelf . aPos .= hookPos hook
                          + dir' ^* targetRadius
                          + onSideways
                              (V2 0 0)
@@ -319,11 +317,11 @@ defaultHookHandler hook dir = do
                              dir'
 
     (False, True) ->
-      hctxPlayer %= setBoosting boostDir False boostStrength boostTime
+      ctxSelf %= setBoosting boostDir False boostStrength boostTime
 
     (True, _) -> do
-      hctxPlayer %= doJump
-      hctxPlayer . jumpData . jumpsLeft .= 0
+      ctxSelf %= doJump
+      ctxSelf . jumpData . jumpsLeft .= 0
   where
     onSideways a b dir' = bool a b $ view _x dir' /= 0
     boostDir = normalize $ dir + onSideways (V2 0 0) (V2 0 $ -1) dir
@@ -331,10 +329,11 @@ defaultHookHandler hook dir = do
 
 defaultJumpHandler :: Double -> Handler (Maybe Piece)
 defaultJumpHandler y = do
-  dt   <- asks hctxTime
-  ctrl <- asks hctxController
-  p    <- gets $ view hctxPlayer
-  l    <- gets $ view hctxLevel
+  (cloneLens -> ctxSelf) <- getSelfRef
+  dt   <- asks _ctxTime
+  ctrl <- asks _ctxController
+  p    <- gets $ view ctxSelf
+  l    <- gets $ view ctxLevel
 
   let gravity' =
         if ctrlJump ctrl && y < 0
@@ -346,15 +345,15 @@ defaultJumpHandler y = do
                                    (_aPos p)
                                    (dt * y)
 
-  hctxPlayer . aPos .= pos'
+  ctxSelf . aPos .= pos'
 
   case collided of
     Just line -> do
-      hctxPlayer              %= doLand
-      hctxPlayer . attachment .= StandingOn line
+      ctxSelf              %= doLand
+      ctxSelf . attachment .= StandingOn line
 
     Nothing -> do
-      hctxPlayer . jumpData . jumpState .= Jump (y + (min gravity' terminalVelocity) * dt)
+      ctxSelf . jumpData . jumpState .= Jump (y + (min gravity' terminalVelocity) * dt)
 
   pure collided
 
@@ -362,14 +361,16 @@ defaultJumpHandler y = do
 
 defaultBoostHandler :: V2 -> Double -> Time -> Bool -> Handler (Maybe Piece)
 defaultBoostHandler _ _ t _ | t <= 0 = do
-  hctxPlayer %= setFalling
-  hctxPlayer %= addRecovery
+  (cloneLens -> ctxSelf) <- getSelfRef
+  ctxSelf %= setFalling
+  ctxSelf %= addRecovery
   pure Nothing
 
 defaultBoostHandler dir strength t applyPenalty = do
-  dt   <- asks hctxTime
-  p    <- gets $ view hctxPlayer
-  l    <- gets $ view hctxLevel
+  (cloneLens -> ctxSelf) <- getSelfRef
+  dt   <- asks _ctxTime
+  p    <- gets $ view ctxSelf
+  l    <- gets $ view ctxLevel
 
   let (wx, x')  = collision l AxisX (aGeom p) (_aPos p) $ view _x boostDt
       (wy, xy') = collision l AxisY (aGeom p) x' $ view _y boostDt
@@ -384,12 +385,12 @@ defaultBoostHandler dir strength t applyPenalty = do
                 * bool 0 1 applyPenalty
                 ) *^ V2 0 1
 
-  hctxPlayer . jumpData
+  ctxSelf . jumpData
              . jumpState .= Boost dir
                                   strength
                                   (t - dt)
                                   applyPenalty
-  hctxPlayer . aPos .= xy'
+  ctxSelf . aPos .= xy'
 
   pure wall
 

@@ -30,7 +30,7 @@ instance IsObject "gem" where
                   , V2 0 6
                   ]
   update _ t@Gem {..} = do
-    p  <- asks ctxPlayer
+    p  <- asks ctxSelf
     lo <- cloneLens <$> asks ctxLens
     pure $ case withinRadius (aGeom p) (_aPos p) 4 gemPos of
              True ->  (t, currentLevel . lo .~ Nothing)

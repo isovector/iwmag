@@ -6,8 +6,9 @@ module Objects.WinStar () where
 
 import Actor
 import Actor.Constants
-import GameState (setLevel)
+import Control.Monad.Writer (tell)
 import Game.Sequoia.Color
+import GameState (setLevel)
 import Types hiding (form)
 
 
@@ -36,8 +37,9 @@ instance IsObject "winstar" where
 
 moveItOrLoseIt :: Handler ()
 moveItOrLoseIt = do
-  goto <- gets . view $ hctxPlayer . internal . dest
-  hctxState %= setLevel goto
+  (cloneLens -> ctxSelf) <- getSelfRef
+  goto <- gets . view $ ctxSelf . internal . dest
+  tell . Endo $ setLevel goto
 
 dest :: Iso' Internal String
 dest = pack
