@@ -7,16 +7,17 @@
 
 module Level.Level where
 
-import           Actor.Constants
 -- import           Actor.Signal
+import           Actor.Constants
+import qualified Apecs.Slice   as S
 import qualified Data.Map as M
 import           Data.Tiled
 import           Game.Sequoia
 import           Game.Sequoia.Color
 import           Linear.Vector
 import           Math
+import           ObjectParser
 import           Types
-import qualified Apecs.Slice   as S
 
 
 isDeath :: Zone -> Bool
@@ -72,6 +73,7 @@ parseLayers size tileset ls =
                               . fmap (\x -> (pieceGroup x, pure x))
                               . parseCollision red
                               $ getLayer "destructable"
+      , levelDudes = getDudes $ getLayer "objects"
       }
   where (spawn, zones) = parseMeta    $ getLayer "meta"
         levelHooks     = parseHooks   $ getLayer "targets"
@@ -88,6 +90,11 @@ parseLayers size tileset ls =
                                  . outlined (solid c)
                                  . uncurry rect
                                  $ unpackV2 size
+
+
+getDudes :: Maybe Layer -> [Object]
+getDudes (Just (ObjectLayer {..})) = layerObjects
+getDudes _ = []
 
 
 parseTileset :: Maybe (Tileset, FilePath) -> Maybe Layer -> [Form]
@@ -200,4 +207,6 @@ loadLevel l@Level {..} = do
   for_ (M.toList _destructableGeometry) $ \ps ->
     for_ (snd ps) $ \p ->
       newEntity (Geometry p, Gfx $ drawLine p)
+
+  for_ levelDudes buildObject
 

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.0" orientation="orthogonal" renderorder="right-down" width="30" height="23" tilewidth="16" tileheight="16" nextobjectid="29">
+<map version="1.0" orientation="orthogonal" renderorder="right-down" width="30" height="23" tilewidth="16" tileheight="16" nextobjectid="37">
  <tileset firstgid="1" name="better" tilewidth="16" tileheight="16" tilecount="256" columns="16">
   <image source="assets/better.png" trans="000000" width="256" height="256"/>
  </tileset>
@@ -34,7 +34,7 @@
   </object>
  </objectgroup>
  <objectgroup name="meta">
-  <object id="14" type="spawn" x="48" y="160" width="16" height="16">
+  <object id="14" name="spawn" type="spawn" x="48" y="160" width="16" height="16">
    <ellipse/>
   </object>
   <object id="15" type="death" x="0" y="352" width="480" height="16"/>
@@ -82,4 +82,19 @@
    eJxjYBgFtAQsA+0AOgNc/pUFYnkSzIkF4njKnUNzQIv4nUMDM4kBa5DYoUAcBsTBaGqo7d+ZQLwai3gKle1BBytx2JsIxEEMCH+j+xcWLuFY9OKTA4G5QLwLiHdj0VMExElAXEyE26kNkMMa5l9hCs1MBeI0IE4n0l4YUCJgtyMBe0uBuAyIy/GoKUFiw/yrRITdyEAQTS2ofJNjIK2MQ7YXm93YzFQEYmUS7UAG6P4l1t+U2gsD6PYSsptW/oVhIRwYnzwpeQOXveRgYsKBkH9pZe9A+RcGALjVH3o=
   </data>
  </layer>
+ <objectgroup name="objects">
+  <object id="29" name="anvil" x="192" y="112" width="16" height="16">
+   <properties>
+    <property name="color" value="1 0.8 0"/>
+    <property name="gravity" type="bool" value="true"/>
+   </properties>
+   <ellipse/>
+  </object>
+  <object id="34" name="bullet" x="144" y="80" width="16" height="16">
+   <properties>
+    <property name="vel" value="50 50"/>
+   </properties>
+   <ellipse/>
+  </object>
+ </objectgroup>
 </map>

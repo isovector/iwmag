@@ -21,6 +21,7 @@ import           BasePrelude hiding (rotate, group, (&), uncons, index, lazy, th
 import           Control.Lens hiding (Level, levels, Context, rmap, set, set', without)
 import           Control.Monad.IO.Class (MonadIO (..))
 import qualified Data.Map as M
+import           Data.Tiled.Types (Object ())
 import           Game.Sequoia hiding (render, step)
 import           Game.Sequoia.Utils (showTrace)
 import           Linear.Vector hiding (E (..))
@@ -46,6 +47,7 @@ data Level = Level
   , targets       :: [Hook]
   , levelSize     :: V2
   , _destructableGeometry :: M.Map String [Piece]
+  , levelDudes :: [Object]
   }
 
 geometry :: Level -> [Piece]

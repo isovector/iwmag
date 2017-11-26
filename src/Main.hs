@@ -31,22 +31,16 @@ getNow = liftIO $ realToFrac <$> getPOSIXTime
 initialize :: Sys ()
 initialize = do
   loadLevel . fromJust $ lookup "test1" theLevels
-  void $ newEntity ( Pos $ V2 200 100
-                   , Gfx . group
-                         $ drawPlayer (rgb 1 1 1) playerGeom
-                   , Vel $ V2 30 0
-                   , Gravity
-                   , Collision playerGeom
-                   , Jump 2 0 True
-                   , Player
-                   )
-
-  void $ newEntity ( Pos $ V2 400 100
-                   , Gfx . group
-                         $ drawActor (rgb 1 1 1) playerGeom
-                   , Vel $ V2 (-30) 30
-                   )
-  pure ()
+  void $ newEntity
+       ( Pos $ V2 200 100
+       , Gfx . group
+             $ drawPlayer (rgb 1 1 1) playerGeom
+       , Vel $ V2 30 0
+       , Gravity
+       , Collision playerGeom
+       , Jump 2 0 True
+       , Player
+       )
 
 
 draw :: Sys Element
@@ -113,6 +107,7 @@ dropHandler dt (Pos p, Vel v@(V2 _ y), Collision c) = do
       , Just $ Vel v
       , Nothing
       )
+
 
 jumpHandler :: Sys ()
 jumpHandler = do
