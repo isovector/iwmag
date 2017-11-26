@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module ObjectParser where
@@ -46,18 +47,17 @@ getObjectPos Object{..} = pure
 
 getObjectGeomImpl :: Object -> Maybe Collision
 getObjectGeomImpl Object{..} = do
-  let withGeom = lookup "geom" objectProperties
-  guard $ isNothing withGeom || withGeom == Just "true"
-
   w <- objectWidth
   h <- objectHeight
   pure . Collision $ BoxGeom 0 (w * importScale) 0 (h * importScale)
 
 
 getObjectGeom :: Object -> [SomeComponent]
-getObjectGeom = fmap SomeComponent
-              . maybeToList
-              . getObjectGeomImpl
+getObjectGeom obj@Object{objectProperties} = do
+  let withGeom = lookup "geom" objectProperties
+  guard $ isNothing withGeom || withGeom == Just "true"
+
+  fmap SomeComponent . maybeToList $ getObjectGeomImpl obj
 
 
 getObjectGfx :: Object -> [SomeComponent]
