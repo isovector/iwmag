@@ -9,7 +9,6 @@ import Actor
 import Actor.Controller
 import Actor.Signal
 import Control.Monad.Trans.Reader (local)
-import Collision (actorsIntersect)
 import Control.Lens hiding (Level)
 import Game.Sequoia.Color
 import Linear.Metric
@@ -82,7 +81,7 @@ makeController p a = initController
   { ctrlDir =
       let dir = _aPos p - _aPos a
           dist = norm dir
-       in bool (V2 0 0 ) (set _y 0 $ normalize dir) (dist >= 30)
+       in bool (V2 0 0 ) (normalize dir & _y .~ 0) (dist >= 30)
   , ctrlJump = False
   , wantsJump = False
   }

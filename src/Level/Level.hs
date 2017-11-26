@@ -8,7 +8,7 @@
 module Level.Level where
 
 import           Actor.Constants
-import           Actor.Signal
+-- import           Actor.Signal
 import qualified Data.Map as M
 import           Data.Tiled
 import           Game.Sequoia
@@ -16,19 +16,8 @@ import           Game.Sequoia.Color
 import           Linear.Vector
 import           Math
 import           Types
+import qualified Apecs.Slice   as S
 
-
-insertUnique
-    :: (Lens' a (M.Map Int b))
-    -> (Lens' b (ALens' a (Maybe b)))
-    -> b
-    -> a
-    -> a
-insertUnique m self b a =
-  let objs = a ^. m
-      idx  = (+ 1) . maximum $ 0 : M.keys objs
-      lo   = m . at idx
-   in a & cloneLens lo ?~ (b & self .~ lo)
 
 isDeath :: Zone -> Bool
 isDeath (Death _) = True
@@ -160,20 +149,7 @@ parseHooks layers =
 
 
 parseObjects :: ObjectMap -> Maybe Layer -> Level -> Level
-parseObjects objm layers =
-  case layers of
-    Just layer -> appEndo
-                . mconcat
-                . fmap (Endo . insertUnique actors self . makeObject)
-                $ layerObjects layer
-    Nothing -> id
-  where
-
-    makeObject (obj@Object {..}) =
-      (objm M.! fromJust objectType)
-        (getPosOfObj obj)
-        objectProperties
-
+parseObjects _ _ = id
 
 
 parseCollision :: Color -> Maybe Layer -> [Piece]
@@ -218,11 +194,14 @@ parseCollision c layers =
                   ]
 
 
-updateLevel :: M.Map Int Controller -> Handler ()
-updateLevel ctrls = do
-  as <- M.toList <$> use (currentLevel . actors)
-  forM_ as $ \(idx, a) ->
-    runLocal (Just $ ctrls M.! idx)
-             (a ^. self)
-             doActorHandlers
+loadLevel :: Level -> Sys ()
+loadLevel Level {..} = do
+  owners @_ @Geometry >>= S.mapM_ destroy
+
+  for_ levelGeometry $ \p ->
+    newEntity (Geometry p, Gfx $ drawLine p)
+
+  for_ (M.toList _destructableGeometry) $ \ps ->
+    for_ (snd ps) $ \p ->
+      newEntity (Geometry p, Gfx $ drawLine p)
 

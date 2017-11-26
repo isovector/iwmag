@@ -8,7 +8,6 @@ import ObjectMap
 import Level.Level
 import Data.Tiled
 import Actor.Constants
-import GameState
 
 theLevels :: [(String, Level)]
 theLevels = zip names
@@ -29,11 +28,4 @@ theLevels = zip names
                 , "test4"
                 ]
 {-# NOINLINE theLevels #-}
-
-initState :: GameState
-initState = resetState firstLevel
-          $ GameState
-          { objectMap = theObjectMap
-          , levels    = theLevels
-          }
 

@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes    #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE NoImplicitPrelude      #-}
 {-# LANGUAGE RankNTypes             #-}
 {-# LANGUAGE TemplateHaskell        #-}
@@ -10,17 +11,18 @@ module Types
   , module Linear.Vector
   , module BasePrelude
   , module Control.Lens
+  , module Control.Monad.IO.Class
+  , module Apecs
   , showTrace
   ) where
 
-import           BasePrelude hiding (rotate, group, (&), uncons, index, lazy, throw, Handler, runHandlers)
-import           Control.Lens hiding (Level, levels, Context)
-import           Control.Monad.Reader (asks, ReaderT)
-import           Control.Monad.Writer (Writer)
-import           Control.Monad.State (StateT)
+import           Apecs
+import           BasePrelude hiding (rotate, group, (&), uncons, index, lazy, throw, Handler, runHandlers, Unique, cast, loop)
+import           Control.Lens hiding (Level, levels, Context, rmap, set, set')
+import           Control.Monad.IO.Class (MonadIO (..))
 import qualified Data.Map as M
 import           GHC.TypeLits
-import           Game.Sequoia
+import           Game.Sequoia hiding (render)
 import           Game.Sequoia.Utils (showTrace)
 import           Linear.Vector hiding (E (..))
 
@@ -68,11 +70,11 @@ data GrabType
   | DoAction
   deriving (Eq, Show, Ord, Enum, Bounded)
 
-data ActorAttachment
-  = Unattached
-  | StandingOn Piece
-  | Grasping Hook V2
-  deriving (Eq, Show)
+-- data ActorAttachment
+--   = Unattached
+--   | StandingOn Piece
+--   | Grasping Hook V2
+--   deriving (Eq, Show)
 
 data GrabData
   = NotGrabbing
@@ -84,50 +86,15 @@ instance Eq GrabData where
 instance Show GrabData where
   show _ = "GrabData"
 
-data HandlerContext = HContext
-  { _ctxTime       :: Time
-  , _ctxController :: Controller
-  , _ctxSelfRef    :: ALens' GameState (Maybe Actor)
-  }
-
-
-type Handler = ReaderT HandlerContext (StateT GameState (Writer (Endo GameState)))
-
-data Handlers = Handlers
-  { _walkHandler       :: Handler ()
-  , _standHandler      :: Handler ()
-  , _startJumpHandler  :: Handler ()
-  , _jumpHandler       :: Double -> Handler (Maybe Piece)
-  , _startBoostHandler :: Handler ()
-  , _boostHandler      :: V2 -> Double -> Time -> Bool -> Handler (Maybe Piece)
-  , _collideHandler    :: Piece -> Handler ()
-  , _hookHandler       :: Hook -> V2 -> Handler ()
-  , _updateHandler     :: Handler ()
-  , _grabHandler       :: Handler Bool
-  , _throwHandler      :: V2 -> Handler ()
-  , _actionGrabHandler :: Handler ()
-  }
-
-instance Show Handlers where
-  show _ = "Handlers"
-
-instance Eq Handlers where
-  (==) _ _ = True
-
-data Internal where
-  Internal :: a -> Internal
 
 data Actor = Actor
   { _aPos       :: !V2
   , _aHealth    :: !Int
   , _jumpData   :: JumpData
-  , _attachment :: ActorAttachment
   , aGeom       :: BoxGeom
   , aColor      :: Color
   , _grabData   :: GrabData
-  , _handlers   :: Handlers
-  , _self       :: ALens' Level (Maybe Actor)
-  , _internal   :: Internal
+  -- , _handlers   :: Handlers
   , aRender     :: Actor -> Form
   , aController :: B Controller
   , _toRemove   :: Bool
@@ -172,17 +139,6 @@ type ObjectMap = M.Map String
                       -> Actor
                        )
 
-
-data GameState = GameState
-  { _currentLevel :: Level
-  , _levelName    :: String
-  , _player       :: Actor
-  , _camera       :: V2
-  , _geometryChanged :: Bool
-  , objectMap     :: ObjectMap
-  , levels        :: [(String, Level)]
-  }
-
 data RawController = RawController
   { rctrlDir        :: !V2
   , rctrlJump       :: !Bool
@@ -202,32 +158,60 @@ data Controller = Controller
   , wantsDig    :: !Bool
   } deriving (Show)
 
+data Collision = Collision { getCollision :: BoxGeom }
+instance Component Collision where
+  type Storage Collision = Map Collision
+
+data Geometry = Geometry { getPiece :: Piece }
+instance Component Geometry where
+  type Storage Geometry = Map Geometry
+
+data Pos = Pos { getPos :: V2 } deriving Show
+instance Component Pos where
+  type Storage Pos = Map Pos
+
+data Vel = Vel { getVel :: V2 } deriving Show
+instance Component Vel where
+  type Storage Vel = Map Vel
+
+data Player = Player
+instance Component Player where
+  type Storage Player = Unique Player
+
+data Gfx = Gfx { getGfx :: Form }
+instance Component Gfx where
+  type Storage Gfx = Map Gfx
+
+data Gravity = Gravity
+instance Component Gravity where
+  type Storage Gravity = Set Gravity
+
+instance Flag Gravity where
+  flag = Gravity
+
+data StandContext
+  = StandingOn Piece
+  deriving Show
+  -- | Grasping Hook V2
+instance Component StandContext where
+  type Storage StandContext = Map StandContext
+
+-- destructable flag
+
+makeWorld "World"
+  [ ''Pos
+  , ''Gfx
+  , ''Player
+  , ''Gravity
+  , ''Geometry
+  , ''Collision
+  , ''Vel
+  , ''StandContext
+  ]
+
+type Sys = System World
+
 makeLenses ''Level
 makeLenses ''Actor
-makeLenses ''GameState
 makeLenses ''JumpData
-makeLenses ''Handlers
-makeLenses ''HandlerContext
-
-
-getSelfRef :: Handler (ALens' GameState Actor)
-getSelfRef = do
-  selfRef <- asks _ctxSelfRef
-  pure $ jankyUnjust $ cloneLens selfRef
-
-  where
-    jankyUnjust :: Lens' a (Maybe b) -> Lens' a b
-    jankyUnjust l = lens (maybe (error "unjust") id . view l)
-                         (\a b -> a & l ?~ b)
-
-
-ctxLevel :: Lens' GameState Level
-ctxLevel = currentLevel
-
-ctxPlayer :: Lens' GameState Actor
-ctxPlayer = player
-
-pack :: Iso' Internal a
-pack = iso (\(Internal a) -> unsafeCoerce a)
-           (\a -> Internal a)
 
