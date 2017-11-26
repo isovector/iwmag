@@ -7,7 +7,6 @@
 module Actor.Signal where
 
 import           Actor.Constants
-import           Actor.JumpState
 import           Collision
 import           Control.Lens hiding (Level)
 import           Control.Monad.State (runStateT)

@@ -37,6 +37,7 @@ initialize = do
                    , Vel $ V2 30 0
                    , Gravity
                    , Collision playerGeom
+                   , Jump 2 0 True
                    , Player
                    )
 
@@ -83,9 +84,9 @@ fallHandler (Gravity, Pos p, Vel v, Collision c, StandingOn _) = do
 
 
 moveHandler
-  :: Time
-  -> (Pos, Vel, Collision)
-  -> System World (Pos, Vel)
+    :: Time
+    -> (Pos, Vel, Collision)
+    -> System World (Pos, Vel)
 moveHandler dt (Pos p, Vel v@(V2 x _), Collision c) = do
   (hit, p') <- collision AxisX c p $ x * dt
   pure . (Pos p', ) $ case hit of
@@ -94,9 +95,9 @@ moveHandler dt (Pos p, Vel v@(V2 x _), Collision c) = do
 
 
 dropHandler
-  :: Time
-  -> (Pos, Vel, Collision)
-  -> System World (Safe (Pos, Vel, StandContext))
+    :: Time
+    -> (Pos, Vel, Collision)
+    -> System World (Safe (Pos, Vel, StandContext))
 dropHandler dt (Pos p, Vel v@(V2 _ y), Collision c) = do
   (hit, p') <- collision AxisY c p $ y * dt
   pure . Safe $ case hit of
@@ -113,34 +114,85 @@ dropHandler dt (Pos p, Vel v@(V2 _ y), Collision c) = do
       , Nothing
       )
 
+jumpHandler :: Sys ()
+jumpHandler = do
+  wj <- snd <$> input
+  rmap' $ \Player -> Safe @WantsJump wj
 
-arrows :: Sys V2
-arrows = liftIO $ do
+  rmap $ \(StandingOn _, j@Jump{}) ->
+    j & jJumping .~ False
+      & jCurJumps .~ view jMaxJumps j
+
+  rmap doJumpHandler
+  rmap' $
+    let f (_jJumping -> True, _) = Safe @StandContext Nothing
+        f (_, c)                 = Safe (Just c)
+     in f
+
+  cancelJJumping
+
+
+doJumpHandler
+    :: (Vel, Jump, WantsJump)
+    -> (Vel, Jump)
+doJumpHandler (v, j@(_jCurJumps -> 0), _) =
+  (v, j)
+doJumpHandler (v, j@(_jJumping  -> True), _) =
+  (v, j)
+doJumpHandler (Vel v, j, _) =
+  ( Vel $ v & _y  .~ -jumpStrength
+  , j & jCurJumps -~ 1
+      & jJumping  .~ True
+  )
+
+
+cancelJJumping :: Sys ()
+cancelJJumping = mmap (without @WantsJump) $ \j ->
+  pure $ j & jJumping .~ False
+
+
+gravityHandler :: Time -> Sys ()
+gravityHandler dt = do
+  let gravity' v f = Vel $ v + V2 0 1 ^* (gravity * dt * f)
+
+  mmap (without @WantsJump) $ \(Gravity, Vel v) ->
+    pure $ gravity' v 1
+
+  rmap $ \(Gravity, Vel v, WantsJump) ->
+    gravity' v . bool 1 jumpAttenuation
+               $ view _y v < 0
+
+
+input :: Sys (V2, Bool)
+input = liftIO $ do
   keys <- fmap toEnum <$> getKeyState
   let isDown = flip elem keys
       l = isDown LeftKey
       r = isDown RightKey
       u = isDown UpKey
       d = isDown DownKey
+      j = isDown LeftShiftKey
 
-  pure $ uncurry V2
-        ( fromIntegral $ -1 * fromEnum l + 1 * fromEnum r
-        , fromIntegral $ -1 * fromEnum u + 1 * fromEnum d
-        )
+  pure
+    ( uncurry V2
+      ( fromIntegral $ -1 * fromEnum l + 1 * fromEnum r
+      , fromIntegral $ -1 * fromEnum u + 1 * fromEnum d
+      )
+    , j
+    )
+
 
 
 step :: Time -> Sys ()
 step dt = do
-  arrs <- (^* walkSpeed) <$> arrows
+  arrs <- (^* walkSpeed) . fst <$> input
   rmap $ \(Player, Vel (V2 _ y)) ->
     Vel $ arrs & _y .~ y
 
 
   mwmap all fallHandler
-
-  cimapM_ $ \(e, (Gravity, Vel v)) -> do
-    set (cast e) $
-      Vel $ v + V2 0 1 ^* (gravity * dt)
+  gravityHandler dt
+  jumpHandler
 
   -- no collision, so do stupid velocity transfer
   mmap (without @Collision) $ \(Pos p, Vel v) ->

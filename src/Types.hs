@@ -81,20 +81,6 @@ data BoxGeom = BoxGeom
   , bottomY :: Double
   } deriving (Show, Eq)
 
-data JumpData = JumpData
-  { _jumpState    :: !JumpState
-  , _jumpsLeft    :: !Int
-  , _boostsLeft   :: !Int
-  , _recoveryTime :: !Time
-  } deriving (Show, Eq)
-
-data JumpState
-  = Stand
-  | Jump Double
-  | Boost V2 Double Time Bool
-  | BeingHeld
-  deriving (Show, Eq)
-
 data Line = Line V2 V2 deriving (Show, Eq)
 data Rect = Rect V2 V2 deriving (Show, Eq)
 
@@ -143,9 +129,25 @@ data Gfx = Gfx { getGfx :: Form }
 instance Component Gfx where
   type Storage Gfx = Map Gfx
 
+data Jump = Jump
+  { _jMaxJumps :: Int
+  , _jCurJumps :: Int
+  , _jJumping  :: Bool
+  } deriving (Show)
+instance Component Jump where
+  type Storage Jump = Map Jump
+
 data Gravity = Gravity
 instance Component Gravity where
   type Storage Gravity = Set Gravity
+instance Flag Gravity where
+  flag = Gravity
+
+data WantsJump = WantsJump
+instance Component WantsJump where
+  type Storage WantsJump = Set WantsJump
+instance Flag WantsJump where
+  flag = WantsJump
 
 data CurLevel = CurLevel Level
 instance Component CurLevel where
@@ -153,9 +155,6 @@ instance Component CurLevel where
 instance Monoid CurLevel where
   mempty = error "you gotta set the level dingus"
   mappend = error "this is a dumb interface"
-
-instance Flag Gravity where
-  flag = Gravity
 
 data StandContext
   = StandingOn Piece
@@ -177,10 +176,12 @@ makeWorld "World"
   , ''Vel
   , ''StandContext
   , ''CurLevel
+  , ''Jump
+  , ''WantsJump
   ]
 
 type Sys = System World
 
 makeLenses ''Level
-makeLenses ''JumpData
+makeLenses ''Jump
 

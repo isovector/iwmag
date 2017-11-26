@@ -12,8 +12,8 @@ packages:
       commit: bb18e7dd85b3f1fe8f9e339f8e6b8ea942bbe361
   - extra-dep: true
     location:
-      git: https://github.com/jonascarpay/apecs.git
-      commit: 7ee9c5dc415fe1d7e9eb32c5673f95a8c36aa9aa
+      git: https://github.com/isovector/apecs.git
+      commit: d78f0600982e8e8f626ad32193f812783a12e1e6
 
 extra-deps:
   - sdl2-2.3.0
