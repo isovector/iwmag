@@ -57,10 +57,6 @@ boxesIntersect :: BoxGeom -> V2 -> BoxGeom -> V2 -> Bool
 boxesIntersect b1 v1 b2 v2 =
   or . fmap (withinBox b2 v2) $ corners b1 v1 ^.. each
 
-actorsIntersect :: Actor -> Actor -> Bool
-actorsIntersect a1 a2 =
-  boxesIntersect (aGeom a1) (_aPos a1) (aGeom a2) (_aPos a2)
-
 
 sweep :: BoxGeom -> V2 -> (a -> Line) -> [a] -> Axis -> Double -> (Maybe a, V2)
 sweep bg pos f ls ax dx

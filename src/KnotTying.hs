@@ -4,7 +4,6 @@
 module KnotTying where
 
 import Types
-import ObjectMap
 import Level.Level
 import Data.Tiled
 import Actor.Constants
@@ -12,8 +11,7 @@ import Actor.Constants
 theLevels :: [(String, Level)]
 theLevels = zip names
           $ map (\x ->
-              parseLayers theObjectMap
-                          (importScale *^ V2 (fromIntegral $ mapWidth x * mapTileWidth x)
+              parseLayers (importScale *^ V2 (fromIntegral $ mapWidth x * mapTileWidth x)
                                              (fromIntegral $ mapHeight x * mapTileHeight x))
                           (fmap getTileset . listToMaybe $ mapTilesets x)
                           (mapLayers x)

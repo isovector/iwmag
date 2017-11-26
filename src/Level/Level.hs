@@ -50,18 +50,17 @@ drawLine (Wall (Line pos size) c _)
 getTileset :: Tileset -> (Tileset, FilePath)
 getTileset x = (x, ("level/" ++) . iSource . head $ tsImages x)
 
-parseLayers :: ObjectMap -> V2 -> Maybe (Tileset, FilePath) -> [Layer] -> Level
-parseLayers objm size tileset ls =
+parseLayers :: V2 -> Maybe (Tileset, FilePath) -> [Layer] -> Level
+parseLayers size tileset ls =
   let dz =  map (getRect) $ getZones isDeath
       nbz = map (getRect) $ getZones isNoBoost
       doors = getZones isDoor
-   in levelObjects $ Level
+   in Level
       { levelGeometry = parseCollision green $ getLayer "collision"
       , playerSpawn  = spawn
       , deathZones   = dz
       , noBoostZones = nbz
       , targets      = levelHooks
-      , _actors      = M.empty
       , doors = mapMaybe getDoor doors
       , forms = fmap targetForm levelHooks
              ++ zonesToForm dz  red
@@ -76,7 +75,6 @@ parseLayers objm size tileset ls =
       }
   where (spawn, zones) = parseMeta    $ getLayer "meta"
         levelHooks     = parseHooks   $ getLayer "targets"
-        levelObjects   = parseObjects objm $ getLayer "objects"
         tiledata       = parseTileset tileset $ getLayer "tiles"
         getLayer name  = listToMaybe $ filter ((== name) . layerName) ls
         getZones f = filter f zones
@@ -148,10 +146,6 @@ parseHooks layers =
     Nothing -> []
 
 
-parseObjects :: ObjectMap -> Maybe Layer -> Level -> Level
-parseObjects _ _ = id
-
-
 parseCollision :: Color -> Maybe Layer -> [Piece]
 parseCollision c layers =
     case layers of
@@ -195,8 +189,10 @@ parseCollision c layers =
 
 
 loadLevel :: Level -> Sys ()
-loadLevel Level {..} = do
+loadLevel l@Level {..} = do
   owners @_ @Geometry >>= S.mapM_ destroy
+
+  setGlobal $ CurLevel l
 
   for_ levelGeometry $ \p ->
     newEntity (Geometry p, Gfx $ drawLine p)

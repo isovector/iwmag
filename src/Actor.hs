@@ -11,18 +11,6 @@ import Actor.Signal
 import Linear.Vector
 import Types
 
-drawWithGeom :: Actor -> (Color -> V2 -> Form) -> Form
-drawWithGeom a f = move pos
-                 . move (V2 ((r - l) / 2) $ (b - t) / 2)
-                 . f (aColor a)
-                 $ V2 (r + l) (b + t)
-  where
-    pos    = _aPos a
-    l      = leftX   $ aGeom a
-    r      = rightX  $ aGeom a
-    t      = topY    $ aGeom a
-    b      = bottomY $ aGeom a
-
 drawPlayer :: Color -> BoxGeom -> [Form]
 drawPlayer c p = drawActor c p
             ++ [ move (V2 (-18) (-25))
@@ -54,12 +42,6 @@ drawActor c p =
     b      = bottomY p
     width  = l + r
     height = t + b
-
-getBoostDir :: Actor -> Maybe V2
-getBoostDir p =
-  case p ^. jumpData . jumpState of
-    Boost dir _ _ _ -> Just dir
-    _               -> Nothing
 
 playerGeom :: BoxGeom
 playerGeom = BoxGeom

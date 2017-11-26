@@ -7,106 +7,62 @@
 
 module Main where
 
-import           Game.Sequoia.Keyboard hiding (isDown, arrows)
-import Actor
-import Collision (Axis (..))
 -- import           Actor
 -- import           Actor.Controller
-import           Apecs
-import Actor.Constants
+-- import           Game.Sequoia.Keyboard
+import           Actor
+import           Actor.Constants
+import           Actor.Signal (collision)
+import           Collision (Axis (..))
 import           Data.Time.Clock.POSIX (getPOSIXTime)
 import           Game.Sequoia (startup, render, EngineConfig (..))
--- import           Game.Sequoia.Keyboard
+import           Game.Sequoia.Keyboard hiding (isDown, arrows)
 import           KnotTying (theLevels)
 import           Level.Level
 import           Math (clamp')
+import           Prologue hiding (last)
 import qualified SDL.Raw as SDL
-import           Types hiding (step, last)
-import qualified Apecs.Slice as S
-import Actor.Signal (collision)
+
 
 getNow :: MonadIO m => m Double
 getNow = liftIO $ realToFrac <$> getPOSIXTime
+
 
 initialize :: Sys ()
 initialize = do
   loadLevel . fromJust $ lookup "test1" theLevels
   void $ newEntity ( Pos $ V2 200 100
                    , Gfx . group
-                         $ drawActor (rgb 1 1 1) playerGeom
+                         $ drawPlayer (rgb 1 1 1) playerGeom
                    , Vel $ V2 30 0
                    , Gravity
                    , Collision playerGeom
                    , Player
                    )
+
+  void $ newEntity ( Pos $ V2 400 100
+                   , Gfx . group
+                         $ drawActor (rgb 1 1 1) playerGeom
+                   , Vel $ V2 (-30) 30
+                   )
   pure ()
 
 
-gameWidth :: Int
-gameWidth = 800
-
-gameHeight :: Int
-gameHeight = 600
-
-getPlayer :: Sys (Entity Player)
-getPlayer = do
-  x <- owners @_ @Player
-  pure $ head $ S.toList x
-
 draw :: Sys Element
-draw = collage gameWidth gameHeight <$> do
+draw = do
+  ppos <- fmap head . cmapM $ \(Player, Pos p) -> pure p
+  CurLevel l <- getGlobal
+
+  let cam    = clampCamera (levelSize l) ppos
+      center = V2 (fromIntegral gameWidth) (fromIntegral gameHeight) ^* 0.5
+
   geom <- cmapM $ \(Geometry _, Gfx g) -> pure g
   gfx  <- cmapM $ \(Pos p, Gfx g) -> pure $ move p g
-  pure $ geom ++ gfx
-
-check
-    :: forall c e
-     . Has World c
-    => Entity e
-    -> Sys (Safe c)
-check e = get $ cast e @c
-
-mrwmap
-    :: forall world r w
-     . ( Has world w
-       , Has world r
-       )
-    => (Safe r -> System world (Safe w))
-    -> System world ()
-mrwmap f = do
-  them <- owners @_ @r
-  S.forM_ them $ \who -> do
-    me <- get who
-    x <- f me
-    set' (cast who :: Entity w) x
-
-miwmap
-    :: forall world r w
-     . ( Has world w
-       , Has world r
-       )
-    => (Entity r -> r -> System world (Safe w))
-    -> System world ()
-miwmap f = do
-  them <- owners @_ @r
-  S.forM_ them $ \who -> do
-    me <- getUnsafe who
-    x <- f who me
-    set' (cast who :: Entity w) x
-
-mimap
-    :: forall world r w
-     . ( Has world w
-       , Has world r
-       )
-    => (Entity r -> r -> System world w)
-    -> System world ()
-mimap f = do
-  them <- owners @_ @r
-  S.forM_ them $ \who -> do
-    me <- getUnsafe who
-    x <- f who me
-    set (cast who :: Entity w) x
+  pure . collage gameWidth gameHeight
+       . pure
+       . move (center - cam)
+       . group
+       $ geom ++ gfx
 
 
 fallHandler
@@ -139,34 +95,23 @@ moveHandler dt (Pos p, Vel v@(V2 x _), Collision c) = do
 
 dropHandler
   :: Time
-  -> Entity (Pos, Vel, Collision)
   -> (Pos, Vel, Collision)
   -> System World (Safe (Pos, Vel, StandContext))
-dropHandler dt e (Pos p, Vel v@(V2 _ y), Collision c) = do
-  Safe isStanding <- check @StandContext e
-  case isStanding of
-
-    Just s -> pure . Safe
-            $ ( Just $ Pos p
-              , Just $ Vel v
-              , Just s
-              )
-
-    Nothing -> do
-      (hit, p') <- collision AxisY c p $ y * dt
-      pure . Safe $ case hit of
-        Just l  ->
-          ( Just $ Pos p'
-          , Just . Vel $ v & _y .~ 0
-          , if y >= 0
-              then Just $ StandingOn l
-              else Nothing
-          )
-        Nothing ->
-          ( Just $ Pos p'
-          , Just $ Vel v
-          , Nothing
-          )
+dropHandler dt (Pos p, Vel v@(V2 _ y), Collision c) = do
+  (hit, p') <- collision AxisY c p $ y * dt
+  pure . Safe $ case hit of
+    Just l  ->
+      ( Just $ Pos p'
+      , Just . Vel $ v & _y .~ 0
+      , if y >= 0
+          then Just $ StandingOn l
+          else Nothing
+      )
+    Nothing ->
+      ( Just $ Pos p'
+      , Just $ Vel v
+      , Nothing
+      )
 
 
 arrows :: Sys V2
@@ -191,38 +136,24 @@ step dt = do
     Vel $ arrs & _y .~ y
 
 
-  miwmap $ const fallHandler
+  mwmap all fallHandler
 
   cimapM_ $ \(e, (Gravity, Vel v)) -> do
     set (cast e) $
       Vel $ v + V2 0 1 ^* (gravity * dt)
 
-  -- TODO(sandy): need to do a dumb velocity transfer if there is
-  -- no collision
-  --
-  -- rmap $ \(Pos p, Vel v) ->
-  --   Pos $ p + v ^* dt
-  mimap . const $ moveHandler dt
-  miwmap $ dropHandler dt
+  -- no collision, so do stupid velocity transfer
+  mmap (without @Collision) $ \(Pos p, Vel v) ->
+    pure . Pos $ p + v ^* dt
+
+  mmap all $ moveHandler dt
+  mwmap (without @StandContext) $ dropHandler dt
 
   pure ()
 
 
 
 
-
--- myRender :: GameState -> Element
--- myRender state = collage gameWidth gameHeight
---              . pure
---              . move (center - cam)
---              . group
---              $ fmap drawLine (geometry level)
---             ++ forms level
---             ++ fmap (join aRender) (M.elems $ _actors level)
---             ++ drawPlayer (_player state)
---     where cam    = clampCamera (levelSize $ _currentLevel state) $ _camera state
---           center = V2 (fromIntegral gameWidth) (fromIntegral gameHeight) ^* 0.5
---           level  = _currentLevel state
 
 
 clampCamera :: V2  -- ^ Level size.

@@ -5,6 +5,12 @@ module Actor.Constants where
 import BasePrelude
 import Types
 
+gameWidth :: Int
+gameWidth = 800
+
+gameHeight :: Int
+gameHeight = 600
+
 targetRadius :: Double
 targetRadius = 16
 

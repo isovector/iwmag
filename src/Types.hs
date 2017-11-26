@@ -18,11 +18,10 @@ module Types
 
 import           Apecs
 import           BasePrelude hiding (rotate, group, (&), uncons, index, lazy, throw, Handler, runHandlers, Unique, cast, loop)
-import           Control.Lens hiding (Level, levels, Context, rmap, set, set')
+import           Control.Lens hiding (Level, levels, Context, rmap, set, set', without)
 import           Control.Monad.IO.Class (MonadIO (..))
 import qualified Data.Map as M
-import           GHC.TypeLits
-import           Game.Sequoia hiding (render)
+import           Game.Sequoia hiding (render, step)
 import           Game.Sequoia.Utils (showTrace)
 import           Linear.Vector hiding (E (..))
 
@@ -45,7 +44,6 @@ data Level = Level
   , noBoostZones  :: [Rect]
   , doors         :: [Door]
   , targets       :: [Hook]
-  , _actors       :: M.Map Int Actor
   , levelSize     :: V2
   , _destructableGeometry :: M.Map String [Piece]
   }
@@ -76,34 +74,6 @@ data GrabType
 --   | Grasping Hook V2
 --   deriving (Eq, Show)
 
-data GrabData
-  = NotGrabbing
-  | Carrying (ALens' Level (Maybe Actor))
-
-instance Eq GrabData where
-  (==) _ _ = True
-
-instance Show GrabData where
-  show _ = "GrabData"
-
-
-data Actor = Actor
-  { _aPos       :: !V2
-  , _aHealth    :: !Int
-  , _jumpData   :: JumpData
-  , aGeom       :: BoxGeom
-  , aColor      :: Color
-  , _grabData   :: GrabData
-  -- , _handlers   :: Handlers
-  , aRender     :: Actor -> Form
-  , aController :: B Controller
-  , _toRemove   :: Bool
-  , _grabType   :: GrabType
-  }
-
-instance Show Actor where
-  show _ = "Actor"
-
 data BoxGeom = BoxGeom
   { leftX   :: Double
   , rightX  :: Double
@@ -129,16 +99,6 @@ data Line = Line V2 V2 deriving (Show, Eq)
 data Rect = Rect V2 V2 deriving (Show, Eq)
 
 
-class KnownSymbol name => IsObject name where
-  spawn :: V2 -> [(String, String)] -> Actor
-
-
-type ObjectMap = M.Map String
-                       ( V2
-                      -> [(String, String)]
-                      -> Actor
-                       )
-
 data RawController = RawController
   { rctrlDir        :: !V2
   , rctrlJump       :: !Bool
@@ -157,6 +117,7 @@ data Controller = Controller
   , wantsGrasp  :: !Bool
   , wantsDig    :: !Bool
   } deriving (Show)
+
 
 data Collision = Collision { getCollision :: BoxGeom }
 instance Component Collision where
@@ -186,6 +147,13 @@ data Gravity = Gravity
 instance Component Gravity where
   type Storage Gravity = Set Gravity
 
+data CurLevel = CurLevel Level
+instance Component CurLevel where
+  type Storage CurLevel = Global CurLevel
+instance Monoid CurLevel where
+  mempty = error "you gotta set the level dingus"
+  mappend = error "this is a dumb interface"
+
 instance Flag Gravity where
   flag = Gravity
 
@@ -195,6 +163,7 @@ data StandContext
   -- | Grasping Hook V2
 instance Component StandContext where
   type Storage StandContext = Map StandContext
+
 
 -- destructable flag
 
@@ -207,11 +176,11 @@ makeWorld "World"
   , ''Collision
   , ''Vel
   , ''StandContext
+  , ''CurLevel
   ]
 
 type Sys = System World
 
 makeLenses ''Level
-makeLenses ''Actor
 makeLenses ''JumpData
 
