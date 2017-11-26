@@ -116,39 +116,35 @@ dropHandler dt (Pos p, Vel v@(V2 _ y), Collision c) = do
 
 jumpHandler :: Sys ()
 jumpHandler = do
+  -- set wantsjump for the player
   wj <- snd <$> input
   rmap' $ \Player -> Safe @WantsJump wj
 
-  rmap $ \(StandingOn _, j@Jump{}) ->
-    j & jJumping .~ False
-      & jCurJumps .~ view jMaxJumps j
-
   rmap doJumpHandler
+
+  -- clear standing context if jumping
   rmap' $
     let f (_jJumping -> True, _) = Safe @StandContext Nothing
         f (_, c)                 = Safe (Just c)
      in f
 
-  cancelJJumping
+  -- cancel jJumping if WantsJump isn't set
+  mmap (without @WantsJump) $ \j ->
+    pure $ j & jJumping .~ False
 
+  -- reset jumpdata if on ground
+  rmap $ \(StandingOn _, j@Jump{}) ->
+    j & jJumping .~ False
+      & jCurJumps .~ view jMaxJumps j
 
-doJumpHandler
-    :: (Vel, Jump, WantsJump)
-    -> (Vel, Jump)
-doJumpHandler (v, j@(_jCurJumps -> 0), _) =
-  (v, j)
-doJumpHandler (v, j@(_jJumping  -> True), _) =
-  (v, j)
-doJumpHandler (Vel v, j, _) =
-  ( Vel $ v & _y  .~ -jumpStrength
-  , j & jCurJumps -~ 1
-      & jJumping  .~ True
-  )
-
-
-cancelJJumping :: Sys ()
-cancelJJumping = mmap (without @WantsJump) $ \j ->
-  pure $ j & jJumping .~ False
+ where
+  doJumpHandler (v, j@(_jCurJumps -> 0), _)    = (v, j)
+  doJumpHandler (v, j@(_jJumping  -> True), _) = (v, j)
+  doJumpHandler (Vel v, j, WantsJump) =
+    ( Vel $ v & _y  .~ -jumpStrength
+    , j & jCurJumps -~ 1
+        & jJumping  .~ True
+    )
 
 
 gravityHandler :: Time -> Sys ()
