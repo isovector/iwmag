@@ -83,7 +83,7 @@
   </data>
  </layer>
  <objectgroup name="objects">
-  <object id="29" name="anvil" x="192" y="112" width="16" height="16">
+  <object id="29" name="anvil" x="193" y="112" width="10" height="10">
    <properties>
     <property name="color" value="1 0.8 0"/>
     <property name="gravity" type="bool" value="true"/>

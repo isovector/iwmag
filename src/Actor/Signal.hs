@@ -45,22 +45,11 @@ sweep' b v = sweep b v pieceLine
 -- isStanding :: Actor -> Bool
 -- isStanding = isStand . _jumpState . _jumpData
 
-
--- isBoosting :: Actor -> Bool
--- isBoosting p =
---   let state = _jumpState $ _jumpData p
---    in isBoost state
-
-
 -- -- isHooked :: Actor -> Bool
 -- -- isHooked p =
 -- --   case _attachment p of
 -- --     Grasping _ _ -> True
 -- --     _            -> False
-
-
--- canAct :: Actor -> Bool
--- canAct = not . isBoosting
 
 
 collision
@@ -75,26 +64,10 @@ collision ax geom pos dx = do
 
   pure $ sweep' geom pos (fmap getPiece ps) ax dx
 
-
--- setBoosting :: V2 -> Bool -> Double -> Time -> Actor -> Actor
--- setBoosting dir penalty strength duration p =
---   p & jumpData . jumpState  .~ Boost dir strength duration penalty
---     & jumpData . boostsLeft -~ 1
---     & attachment .~ Unattached
-
-
 -- doLand :: Actor -> Actor
 -- doLand p = p & jumpData . jumpState  .~ Stand
 --              & jumpData . jumpsLeft  .~ jumpCount
 --              & jumpData . boostsLeft .~ boostCount
-
-
--- canBoost :: Level -> Actor -> Bool
--- canBoost (Level{noBoostZones = zs}) p =
---   p ^. jumpData . boostsLeft > 0
---     && p ^. jumpData . recoveryTime <= 0
---     && not (flip any zs $ flip inRect (_aPos p))
-
 
 -- doJump :: Actor -> Actor
 -- doJump p =
@@ -167,20 +140,6 @@ collision ax geom pos dx = do
 --   --   ctxSelf %= doJump
 
 
--- -- defaultStartBoostHandler :: Handler ()
--- -- defaultStartBoostHandler = do
---   -- (cloneLens -> ctxSelf) <- getSelfRef
---   -- p    <- use ctxSelf
---   -- l    <- use ctxLevel
---   -- ctrl <- view ctxController
-
---   -- when (canBoost l p) $ do
---   --   ctxSelf %= setBoosting (fromJust $ wantsBoost ctrl)
---   --                             True
---   --                             boostStrength
---   --                             boostTime
-
-
 
 -- -- doActorHandlers :: Handler ()
 -- -- doActorHandlers = do
@@ -219,9 +178,6 @@ collision ax geom pos dx = do
 --   -- numJumps <- use $ ctxSelf . jumpData . jumpsLeft
 --   -- when (wantsJump ctrl && numJumps > 0) $ do
 --   --   _startJumpHandler
-
---   -- when (isJust (wantsBoost ctrl) && not (isBoosting p) && not (isHooked p)) $ do
---   --   _startBoostHandler
 
 --   -- when (wantsGrasp ctrl && not (isHooked p)) $ do
 --   --   case view grabData p of
@@ -306,41 +262,4 @@ collision ax geom pos dx = do
 --   --     ctxSelf . jumpData . jumpState .= Jump (y + (min gravity' terminalVelocity) * dt)
 
 --   -- pure collided
-
-
-
--- -- defaultBoostHandler :: V2 -> Double -> Time -> Bool -> Handler (Maybe Piece)
--- -- defaultBoostHandler _ _ t _ | t <= 0 = do
---   -- (cloneLens -> ctxSelf) <- getSelfRef
---   -- ctxSelf %= setFalling
---   -- ctxSelf %= addRecovery
---   -- pure Nothing
-
--- -- defaultBoostHandler dir strength t applyPenalty = do
---   -- (cloneLens -> ctxSelf) <- getSelfRef
---   -- dt   <- view ctxTime
---   -- p    <- use ctxSelf
---   -- l    <- use ctxLevel
-
---   -- let (wx, x')  = collision l AxisX (aGeom p) (_aPos p) $ view _x boostDt
---   --     (wy, xy') = collision l AxisY (aGeom p) x' $ view _y boostDt
---   --     wall = wx <|> wy
---   --     boostDt = (^* dt)
---   --             $ strength *^ dir
---   --             + ( gravity
---   --               * boostAttenuation
---   --               * bool 1
---   --                      boostUpPenalty
---   --                      (dir == V2 0 (-1))
---   --               * bool 0 1 applyPenalty
---   --               ) *^ V2 0 1
-
---   -- ctxSelf . jumpData
---   --            . jumpState .= Boost dir
---   --                                 strength
---   --                                 (t - dt)
---   --                                 applyPenalty
---   -- ctxSelf . aPos .= xy'
-
---   -- pure wall
 

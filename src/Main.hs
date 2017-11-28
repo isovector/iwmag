@@ -209,16 +209,15 @@ input = liftIO $ do
 
 step :: Time -> Sys ()
 step dt = do
-  arrs <- fst <$> input
+  -- arrs <- fst <$> input
+  -- rmap' $ \Player -> Safe @WantsBoost
+  --                  . bool Nothing
+  --                         (Just $ WantsBoost $ normalize arrs)
+  --                  $ arrs /= V2 0 0
 
-  rmap' $ \Player -> Safe @WantsBoost
-                   . bool Nothing
-                          (Just $ WantsBoost $ normalize arrs)
-                   $ arrs /= V2 0 0
-
-  -- arrs <- (^* walkSpeed) . fst <$> input
-  -- mmap (without @Boosting) $ \(Player, Vel (V2 _ y)) ->
-  --   pure . Vel $ arrs & _y .~ y
+  arrs <- (^* walkSpeed) . fst <$> input
+  mmap (without @Boosting) $ \(Player, Vel (V2 _ y)) ->
+    pure . Vel $ arrs & _y .~ y
 
 
   mwmap all fallHandler
