@@ -139,6 +139,20 @@ data Jump = Jump
 instance Component Jump where
   type Storage Jump = Map Jump
 
+data CanBoost = CanBoost
+  { _cbMaxBoosts :: Int
+  , _cbCurBoosts :: Int
+  } deriving (Show)
+instance Component CanBoost where
+  type Storage CanBoost = Map CanBoost
+
+data Boosting = Boosting
+  { _bBoostVel  :: V2
+  , _bBoostTime :: Time
+  } deriving (Show)
+instance Component Boosting where
+  type Storage Boosting = Map Boosting
+
 data Gravity = Gravity
 instance Component Gravity where
   type Storage Gravity = Set Gravity
@@ -150,6 +164,10 @@ instance Component WantsJump where
   type Storage WantsJump = Set WantsJump
 instance Flag WantsJump where
   flag = WantsJump
+
+data WantsBoost = WantsBoost { getBoostDir :: V2 } deriving Show
+instance Component WantsBoost where
+  type Storage WantsBoost = Map WantsBoost
 
 data CurLevel = CurLevel Level
 instance Component CurLevel where
@@ -180,10 +198,15 @@ makeWorld "World"
   , ''CurLevel
   , ''Jump
   , ''WantsJump
+  , ''CanBoost
+  , ''WantsBoost
+  , ''Boosting
   ]
 
 type Sys = System World
 
 makeLenses ''Level
 makeLenses ''Jump
+makeLenses ''CanBoost
+makeLenses ''Boosting
 

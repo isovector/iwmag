@@ -35,10 +35,11 @@ initialize = do
        ( Pos $ V2 200 100
        , Gfx . group
              $ drawPlayer (rgb 1 1 1) playerGeom
-       , Vel $ V2 30 0
+       , Vel $ V2 0 0
        , Gravity
        , Collision playerGeom
        , Jump 2 0 True
+       , CanBoost 2 0
        , Player
        )
 
@@ -142,6 +143,38 @@ jumpHandler = do
     )
 
 
+boostHandler :: Time -> Sys ()
+boostHandler dt = do
+  rmap' $ \b@Boosting{} ->
+    Safe @(Vel, Boosting)
+         ( Just . Vel $ b ^. bBoostVel
+         , bool Nothing
+                (Just $ b & bBoostTime -~ dt)
+                $ b ^. bBoostTime > 0
+         )
+
+  mwmap (without @Boosting) $ pure . doBoostHandler
+
+  -- clear standing context if boosting
+  rmap' $ \(Boosting{}) ->
+    Safe @StandContext Nothing
+
+  -- reset boostdata if on ground
+  rmap $ \(StandingOn _, b@CanBoost{}) ->
+    b & cbCurBoosts .~ view cbMaxBoosts b
+
+ where
+  doBoostHandler (cb@(_cbCurBoosts -> 0), _) =
+    Safe (Just cb, Nothing, Nothing)
+  doBoostHandler (cb, WantsBoost dir) =
+    Safe @(CanBoost, WantsBoost, Boosting)
+         ( Just $ cb & cbCurBoosts -~ 1
+         , Nothing
+         , Just $ Boosting (dir ^* boostStrength) boostTime
+         )
+
+
+
 gravityHandler :: Time -> Sys ()
 gravityHandler dt = do
   let gravity' v f = Vel $ v + V2 0 1 ^* (gravity * dt * f)
@@ -176,13 +209,21 @@ input = liftIO $ do
 
 step :: Time -> Sys ()
 step dt = do
-  arrs <- (^* walkSpeed) . fst <$> input
-  rmap $ \(Player, Vel (V2 _ y)) ->
-    Vel $ arrs & _y .~ y
+  arrs <- fst <$> input
+
+  rmap' $ \Player -> Safe @WantsBoost
+                   . bool Nothing
+                          (Just $ WantsBoost $ normalize arrs)
+                   $ arrs /= V2 0 0
+
+  -- arrs <- (^* walkSpeed) . fst <$> input
+  -- mmap (without @Boosting) $ \(Player, Vel (V2 _ y)) ->
+  --   pure . Vel $ arrs & _y .~ y
 
 
   mwmap all fallHandler
   gravityHandler dt
+  boostHandler dt
   jumpHandler
 
   -- no collision, so do stupid velocity transfer

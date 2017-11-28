@@ -5,10 +5,12 @@
 module Prologue
   ( module Prologue
   , module Types
+  , normalize
   ) where
 
 import Types hiding (all)
 import qualified Apecs.Slice as S
+import Linear.Metric (normalize)
 
 
 check
