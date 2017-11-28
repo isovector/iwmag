@@ -42,7 +42,7 @@ getDoor (DoorZ door) = Just door
 getDoor _ = Nothing
 
 drawLine :: Piece -> Form
-drawLine (Wall (Line pos size) c _)
+drawLine (Wall (Line pos size) c _ _)
   = move pos
   . traced (solid c)
   . segment (0,0)
@@ -167,6 +167,7 @@ parseCollision c layers =
                 , objectHeight = h'
                 , objectPolyline = l
                 , objectName = maybe "" id -> name
+                , objectProperties = props
                 })
           | isJust l =
               let (Polyline pl) = fromJust l
@@ -180,6 +181,7 @@ parseCollision c layers =
                                (V2 (x + bx * importScale) (y + by * importScale)))
                                c
                                name
+                               friction
                       | otherwise = error "level contains slopes"
                in map fromPair ls
 
@@ -188,11 +190,13 @@ parseCollision c layers =
                   y = importScale * y'
                   w = importScale * fromJust w'
                   h = importScale * fromJust h'
-               in [ Wall (lineRel (V2 x y)       (V2 w 0)) c name
-                  , Wall (lineRel (V2 x (y + h)) (V2 w 0)) c name
-                  , Wall (lineRel (V2 x y)       (V2 0 h)) c name
-                  , Wall (lineRel (V2 (x + w) y) (V2 0 h)) c name
+               in [ Wall (lineRel (V2 x y)       (V2 w 0)) c name friction
+                  , Wall (lineRel (V2 x (y + h)) (V2 w 0)) c name friction
+                  , Wall (lineRel (V2 x y)       (V2 0 h)) c name friction
+                  , Wall (lineRel (V2 (x + w) y) (V2 0 h)) c name friction
                   ]
+          where
+            friction = maybe groundFriction read $ lookup "friction" props
 
 
 loadLevel :: Level -> Sys ()

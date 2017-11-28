@@ -28,9 +28,10 @@ import           Linear.Vector hiding (E (..))
 
 
 data Piece = Wall
-  { pieceLine  :: Line
-  , pieceColor :: Color
-  , pieceGroup :: String
+  { pieceLine     :: Line
+  , pieceColor    :: Color
+  , pieceGroup    :: String
+  , pieceFriction :: Double
   }
   deriving (Eq, Show)
 

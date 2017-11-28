@@ -68,3 +68,6 @@ importScale = 2.5
 centerOnSquare :: Double -> V2 -> V2
 centerOnSquare n pos = pos + V2 1 1 ^* (importScale * n)
 
+groundFriction :: Double
+groundFriction = 5
+
