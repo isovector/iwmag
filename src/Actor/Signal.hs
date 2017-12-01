@@ -109,27 +109,12 @@ collision ax geom pos dx = do
 
 
 
--- doRecovety :: Time -> Actor -> Actor
--- doRecovety dt = jumpData . recoveryTime -~ dt
-
-
--- addRecovery :: Actor -> Actor
--- addRecovery p = p & jumpData . recoveryTime .~ recoverTime
-
 -- -- deathHandler :: Level -> Actor -> Maybe Actor
 -- -- deathHandler l p =
 -- --   if (any (flip inRect (_aPos p)) $ deathZones l) || _aHealth p <= 0
 -- --      then Nothing
 -- --                       else Just p
 
-
--- -- defaultStartJumpHandler :: Handler ()
--- -- defaultStartJumpHandler = do
---   -- (cloneLens -> ctxSelf) <- getSelfRef
---   -- p <- use ctxSelf
-
---   -- when (p ^. jumpData . jumpsLeft > 0) $ do
---   --   ctxSelf %= doJump
 
 
 
@@ -138,12 +123,6 @@ collision ax geom pos dx = do
 --   -- (cloneLens -> ctxSelf) <- getSelfRef
 --   -- Handlers {..} <- use $ ctxSelf . handlers
 --   -- ctrl <- view ctxController
-
---   -- dt   <- view ctxTime
---   -- ctxSelf %= doRecovety dt
---   -- _walkHandler
-
---   -- p <- use ctxSelf
 
 --   -- case view grabData p of
 --   --   Carrying whom -> do
@@ -223,35 +202,4 @@ collision ax geom pos dx = do
 --   -- where
 --   --   onSideways a b dir' = bool a b $ view _x dir' /= 0
 --   --   boostDir = normalize $ dir + onSideways (V2 0 0) (V2 0 $ -1) dir
-
-
--- -- defaultJumpHandler :: Double -> Handler (Maybe Piece)
--- -- defaultJumpHandler y = do
---   -- (cloneLens -> ctxSelf) <- getSelfRef
---   -- dt   <- view ctxTime
---   -- ctrl <- view ctxController
---   -- p    <- use ctxSelf
---   -- l    <- use ctxLevel
-
---   -- let gravity' =
---   --       if ctrlJump ctrl && y < 0
---   --          then gravity * jumpAttenuation
---   --          else gravity
---   --     (collided, pos') = collision l
---   --                                  AxisY
---   --                                  (aGeom p)
---   --                                  (_aPos p)
---   --                                  (dt * y)
-
---   -- ctxSelf . aPos .= pos'
-
---   -- case collided of
---   --   Just line -> do
---   --     ctxSelf              %= doLand
---   --     ctxSelf . attachment .= StandingOn line
-
---   --   Nothing -> do
---   --     ctxSelf . jumpData . jumpState .= Jump (y + (min gravity' terminalVelocity) * dt)
-
---   -- pure collided
 
