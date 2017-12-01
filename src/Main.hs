@@ -38,8 +38,8 @@ initialize = do
        , Vel $ V2 0 0
        , Gravity
        , Collision playerGeom
-       , Jump 2 0 True
-       , CanBoost 2 0
+       , Jump     jumpCount  0 True
+       , CanBoost boostCount 0
        , Player [] (V2 0 0) 10
        )
 
@@ -174,7 +174,6 @@ boostHandler dt = do
          )
 
 
-
 gravityHandler :: Time -> Sys ()
 gravityHandler dt = do
   let gravity' v f = Vel $ v + V2 0 1 ^* (gravity * dt * f)
@@ -242,7 +241,15 @@ playerHandler dt = do
                                  oldArrs
                                  $ isIdle && not wasIdle)
                   $ bool 0 (timeIdle + dt) isIdle
-           , bool Nothing (Just $ WantsBoost arrs) shouldBoost
+           , bool Nothing
+                  (Just . WantsBoost
+                        $ normalize arrs
+                        & _y %~ \y ->
+                            y * bool 1
+                                     boostUpPenalty
+                                     (y < 0)
+                  )
+                  shouldBoost
            )
 
 

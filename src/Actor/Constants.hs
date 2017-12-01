@@ -5,6 +5,7 @@ module Actor.Constants where
 import BasePrelude
 import Types
 
+
 gameWidth :: Int
 gameWidth = 800
 
@@ -24,28 +25,19 @@ jumpStrength :: Double
 jumpStrength = 200
 
 jumpCount :: Int
-jumpCount = 1
+jumpCount = 2
 
 boostCount :: Int
-boostCount = 100
+boostCount = 1
 
 boostTime :: Double
 boostTime = 0.10
 
 boostStrength :: Double
-boostStrength = 40 / boostTime
-
-throwStrength :: Double
-throwStrength = 130 / throwTime
-
-throwTime :: Double
-throwTime = 0.4
+boostStrength = 30 / boostTime
 
 boostUpPenalty :: Double
-boostUpPenalty = 2.5
-
-boostAttenuation :: Double
-boostAttenuation = 0.2
+boostUpPenalty = 0.4
 
 recoverTime :: Double
 recoverTime = 0
@@ -69,5 +61,5 @@ centerOnSquare :: Double -> V2 -> V2
 centerOnSquare n pos = pos + V2 1 1 ^* (importScale * n)
 
 groundFriction :: Double
-groundFriction = 5
+groundFriction = 10
 
