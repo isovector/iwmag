@@ -23,6 +23,7 @@ import           Control.Monad.IO.Class (MonadIO (..))
 import qualified Data.Map as M
 import           Data.Tiled.Types (Object ())
 import           Game.Sequoia hiding (render, step)
+import           Game.Sequoia.Keyboard (Key (..))
 import           Game.Sequoia.Utils (showTrace)
 import           Linear.Vector hiding (E (..))
 
@@ -125,6 +126,10 @@ instance Component Vel where
   type Storage Vel = Map Vel
 
 data Player = Player
+  { _pLastInput :: [Key]
+  , _pLastDir   :: V2
+  , _pIdleTime  :: Time
+  }
 instance Component Player where
   type Storage Player = Unique Player
 
@@ -210,4 +215,5 @@ makeLenses ''Level
 makeLenses ''Jump
 makeLenses ''CanBoost
 makeLenses ''Boosting
+makeLenses ''Player
 

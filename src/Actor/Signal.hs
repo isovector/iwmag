@@ -6,17 +6,9 @@
 
 module Actor.Signal where
 
-import           Actor.Constants
 import           Collision
 import           Control.Lens hiding (Level)
-import           Control.Monad.State (runStateT)
-import qualified Control.Monad.State as S
-import           Control.Monad.Trans.Reader (runReaderT, local)
-import           Control.Monad.Writer (Writer)
 import           Game.Sequoia
-import           Linear.Metric
-import           Linear.Vector
-import           Math
 import           Types hiding (set)
 import qualified Apecs.Slice as S
 

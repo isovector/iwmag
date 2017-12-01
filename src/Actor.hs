@@ -2,12 +2,7 @@
 
 module Actor where
 
-import Actor.Constants
-import Actor.Controller
 import Game.Sequoia
-import Game.Sequoia.Color
-import Actor.Signal
-import Linear.Vector
 import Types
 
 drawPlayer :: Color -> BoxGeom -> [Form]

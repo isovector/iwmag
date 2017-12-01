@@ -40,13 +40,13 @@ initialize = do
        , Collision playerGeom
        , Jump 2 0 True
        , CanBoost 2 0
-       , Player
+       , Player [] (V2 0 0) 10
        )
 
 
 draw :: Sys Element
 draw = do
-  ppos <- fmap head . cmapM $ \(Player, Pos p) -> pure p
+  ppos <- fmap head . cmapM $ \(Player{}, Pos p) -> pure p
   CurLevel l <- getGlobal
 
   let cam    = clampCamera (levelSize l) ppos
@@ -113,8 +113,8 @@ dropHandler dt (Pos p, Vel v@(V2 _ y), Collision c) = do
 jumpHandler :: Sys ()
 jumpHandler = do
   -- set wantsjump for the player
-  wj <- snd <$> input
-  rmap' $ \Player -> Safe @WantsJump wj
+  wj <- snd . input <$> getKeys
+  rmap' $ \Player{} -> Safe @WantsJump wj
 
   rmap doJumpHandler
 
@@ -187,17 +187,18 @@ gravityHandler dt = do
                $ view _y v < 0
 
 
-input :: Sys (V2, Bool)
-input = liftIO $ do
-  keys <- fmap toEnum <$> getKeyState
+getKeys :: Sys [Key]
+getKeys = liftIO $ fmap toEnum <$> getKeyState
+
+input :: [Key] -> (V2, Bool)
+input keys =
   let isDown = flip elem keys
       l = isDown LeftKey
       r = isDown RightKey
       u = isDown UpKey
       d = isDown DownKey
       j = isDown LeftShiftKey
-
-  pure
+   in
     ( uncurry V2
       ( fromIntegral $ -1 * fromEnum l + 1 * fromEnum r
       , fromIntegral $ -1 * fromEnum u + 1 * fromEnum d
@@ -206,24 +207,58 @@ input = liftIO $ do
     )
 
 
+playerHandler :: Time -> Sys ()
+playerHandler dt = do
+  keys <- getKeys
+  let arrsOf = fst . input
+      idling = (== V2 0 0)
+
+  mwmap (without @Boosting) $
+    \(pl@Player{}, Vel v) -> do
+      let oldKeys  = pl ^. pLastInput
+          arrs     = arrsOf keys
+          oldArrs  = arrsOf oldKeys
+          isIdle   = idling arrs
+          wasIdle  = idling oldArrs
+          timeIdle = pl ^. pIdleTime
+          lastDir  = pl ^. pLastDir
+          -- TODO(sandy): do something clever here so stopping walking
+          -- doesnt have slide
+          newVel   = v & _x .~ view _x arrs * walkSpeed
+
+          shouldBoost =
+            and [ not isIdle
+                , wasIdle
+                , arrs == lastDir
+                , timeIdle <= doubleTapTime
+                ]
+
+      pure $ Safe @(Vel, Player, WantsBoost)
+           ( Just . Vel
+                  . bool v newVel
+                  $ not isIdle
+           , Just . Player keys
+                           (bool lastDir
+                                 oldArrs
+                                 $ isIdle && not wasIdle)
+                  $ bool 0 (timeIdle + dt) isIdle
+           , bool Nothing (Just $ WantsBoost arrs) shouldBoost
+           )
+
 
 step :: Time -> Sys ()
 step dt = do
-  arrs <- fst <$> input
-  rmap' $ \Player -> Safe @WantsBoost
-                   . bool Nothing
-                          (Just $ WantsBoost $ normalize arrs)
-                   $ arrs /= V2 0 0
+  -- arrs <- fst <$> input
+  -- rmap' $ \Player{} -> Safe @WantsBoost
+  --                  . bool Nothing
+  --                         (Just $ WantsBoost $ normalize arrs)
+  --                  $ arrs /= V2 0 0
 
   rmap $ \(StandingOn l, Vel v) ->
     Vel $ v ^* (1 - dt * pieceFriction l)
 
 
--- v(t+dt) = v(t) * (1 - dt * groundFriction)
---   arrs <- (^* walkSpeed) . fst <$> input
---   mmap (without @Boosting) $ \(Player, Vel (V2 _ y)) ->
---     pure . Vel $ arrs & _y .~ y
-
+  playerHandler dt
 
   mwmap all fallHandler
   gravityHandler dt
