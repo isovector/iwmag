@@ -189,6 +189,7 @@ gravityHandler dt = do
 getKeys :: Sys [Key]
 getKeys = liftIO $ fmap toEnum <$> getKeyState
 
+
 input :: [Key] -> (V2, Bool)
 input keys =
   let isDown = flip elem keys
@@ -255,15 +256,8 @@ playerHandler dt = do
 
 step :: Time -> Sys ()
 step dt = do
-  -- arrs <- fst <$> input
-  -- rmap' $ \Player{} -> Safe @WantsBoost
-  --                  . bool Nothing
-  --                         (Just $ WantsBoost $ normalize arrs)
-  --                  $ arrs /= V2 0 0
-
   rmap $ \(StandingOn l, Vel v) ->
     Vel $ v ^* (1 - dt * pieceFriction l)
-
 
   playerHandler dt
 
@@ -282,10 +276,6 @@ step dt = do
   pure ()
 
 
-
-
-
-
 clampCamera :: V2  -- ^ Level size.
             -> V2  -- ^ Focal point.
             -> V2
@@ -298,23 +288,6 @@ clampCamera (V2 rx ry)
     h = sy / 2
     result = V2 (clamp' w (rx - w) x) (clamp' h (ry - h) y)
 
-
-
--- runGame :: Engine -> N (B Element)
--- runGame _ = do
---   rController <- getKeyboard
---   rOldCtrller <- sample $ delayTime (deltaTime clock) [] rController
-
---   (gameAndCtrl, _) <- foldmp (initState, initController) $ \(g, ctrl) -> do
---     controllers <- traverse (sample . aController)
---                  $ g ^. currentLevel . actors
-
---     let ctrl' = foldController dt rctrl ctrl
---     pure $ (update dt ctrl' controllers g, ctrl')
-
---   return $ do
---     (game', _) <- sample gameAndCtrl
---     pure $ render game'
 
 main :: IO ()
 main = do
