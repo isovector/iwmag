@@ -13,13 +13,23 @@ import Linear.Metric (normalize)
 
 
 owners
-    :: (World EntWorld, Monad m)
+    :: ( World EntWorld
+       , Monad m
+       )
     => (Entity -> Maybe a)
-    -> SystemT EntWorld m [Entity]
+    -> SystemT EntWorld m [(Ent, Entity)]
 owners f = do
   ents <- efor $ \e -> do
     with f
     pure e
-  traverse getEntity ents
+  traverse (fmap <$> (,) <*> getEntity) ents
 
+
+destroy
+    :: ( World EntWorld
+       , Monad m
+       )
+    => Ent
+    -> SystemT EntWorld m ()
+destroy = flip setEntity (convertSetter defEntity)
 

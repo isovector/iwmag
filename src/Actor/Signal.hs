@@ -43,7 +43,7 @@ collision
     -> Sys (Maybe Piece, V2)
 collision ax geom pos dx = do
   pes <- owners geometry
-  let ps = mapMaybe geometry pes
+  let ps = mapMaybe (geometry . snd) pes
 
   pure $ sweep' geom pos ps ax dx
 
