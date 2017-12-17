@@ -9,7 +9,6 @@ module Level.Level where
 
 -- import           Actor.Signal
 import           Actor.Constants
-import qualified Apecs.Slice   as S
 import qualified Data.Map as M
 import           Data.Tiled
 import           Game.Sequoia
@@ -201,7 +200,7 @@ parseCollision c layers =
 
 loadLevel :: Level -> Sys ()
 loadLevel l@Level {..} = do
-  owners @_ @Geometry >>= S.mapM_ destroy
+  owners geometry >>= S.mapM_ destroy
 
   setGlobal $ CurLevel l
 
