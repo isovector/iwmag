@@ -41,7 +41,7 @@ executable iwmag
                , containers
                , mtl
                , transformers
-               , apecs
+               , ecstasy
                , time
                , sdl2
   hs-source-dirs:      src
