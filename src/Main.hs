@@ -201,14 +201,12 @@ gravityHandler dt = do
   let gravity' v f = v + V2 0 1 ^* (gravityStrength * dt * f)
 
   emap $ do
-    without standContext
     without wantsJump
     with gravity
     v <- get vel
     pure $ defEntity' { vel = Set $ gravity' v 1 }
 
   emap $ do
-    without standContext
     with gravity
     with wantsJump
     v <- get vel
@@ -309,6 +307,7 @@ step dt = do
 
   -- no collision, so do stupid velocity transfer
   emap $ do
+    without collision
     p <- get pos
     v <- get vel
     pure $ defEntity' { pos = Set $ p + v ^* dt }
@@ -334,15 +333,14 @@ clampCamera (V2 rx ry)
 
 main :: IO ()
 main = do
-  let w = defWorld
   engine <- startup config
   start  <- realToFrac <$> getPOSIXTime
 
-  flip runSystemT w (Globals $ error "no level loaded") $ do
+  flip runSystemT defWorld (Globals $ error "no level loaded") $ do
     initialize
     flip fix start $ \loop last -> do
       now <- getNow
-      step $ showTrace $ now - last
+      step $ now - last
 
       scene <- draw
       liftIO $ render engine scene (gameWidth, gameHeight)
