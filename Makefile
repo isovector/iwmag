@@ -1,5 +1,6 @@
 all:
-	cabal run
+	stack build
+	stack exec iwmag
 
 .PHONY: all
 

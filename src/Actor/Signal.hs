@@ -1,171 +1,249 @@
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE LambdaCase        #-}
 {-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE RankNTypes        #-}
 {-# LANGUAGE TupleSections     #-}
 {-# LANGUAGE ViewPatterns      #-}
 
 module Actor.Signal where
 
-import           Prologue
-import           Collision
+import Actor.Constants
+import Collision
+import Input (input, getKeys)
+import Prologue
 
-sweep' :: BoxGeom -> V2 -> [Piece] -> Axis -> Double -> (Maybe Piece, V2)
+
+sweep'
+    :: BoxGeom
+    -> V2
+    -> [Piece]
+    -> Axis
+    -> Double
+    -> (Maybe Piece, V2)
 sweep' b v = sweep b v pieceLine
 
 
--- getNearbyHook :: Level -> Actor -> Maybe Hook
--- getNearbyHook l p = getFirst
---                   . mconcat
---                   . fmap intersectsWithActor
---                   $ targets l
---   where
---     intersectsWithActor t
---       = First
---       . bool Nothing (Just t)
---       . boxesIntersect (aGeom p)
---                        (_aPos p)
---                        (BoxGeom targetRadius
---                                 targetRadius
---                                 targetRadius
---                                 targetRadius)
---       $ hookPos t
+fallHandler
+    :: [Piece] -> ECSF
+fallHandler ps = do
+  with gravity
+  p <- get pos
+  v <- get vel
+  c <- get collision
+  StandingOn _ <- get standContext
+
+  let (mp, _) = sweep' c p ps AxisY 1
+
+  pure $ case mp of
+    Just l -> defEntity'
+      { standContext = Set $ StandingOn l
+      }
+    Nothing -> defEntity'
+      { standContext = Unset
+      , vel = Set $ v & _y .~ 0
+      }
 
 
+moveHandler
+    :: Time
+    -> [Piece]
+    -> ECSF
+moveHandler dt ps = do
+  p <- get pos
+  v <- get vel
+  c <- get collision
 
--- defaultThrowHandler :: V2 -> Handler ()
--- defaultThrowHandler dir = do
---   (cloneLens -> ctxSelf) <- getSelfRef
---   ctxSelf %= setBoosting dir False throwStrength throwTime
-
-
--- defaultGrabHandler :: Handler Bool
--- defaultGrabHandler = do
-  -- (cloneLens -> ctxSelf) <- getSelfRef
-  -- (cloneLens -> ctxSelf) <- getSelfRef
-  -- l <- use ctxLevel
-  -- p <- use ctxSelf
-
-  -- let as = l ^. actors ^.. traverse
-  --     isGrabbable a = and
-  --                   [ aGeom a /= aGeom p || _aPos a /= _aPos p
-  --                   , actorsIntersect a p
-  --                   , _grabType a /= Ungrabbable
-  --                   ]
-
-  -- case listToMaybe $ filter isGrabbable as of
-  --   Just a -> do
-  --     let lo = a ^. self
-  --     case _grabType a of
-  --       Ungrabbable ->
-  --         error "impossible"
-
-  --       Carry -> do
-  --         ctxSelf . grabData .= Carrying lo
-  --         ctxLevel . cloneLens lo . _Just . jumpData . jumpState .= BeingHeld
-
-  --       DoAction -> do
-  --         runLocal Nothing
-  --                  lo
-  --                  (a ^. handlers . actionGrabHandler)
-
-  --     pure True
-  --   Nothing -> pure False
+  let x         = view _x v
+      (hit, p') = sweep' c p ps AxisX $ x * dt
+  pure $ defEntity'
+    { pos = Set p'
+    , vel = case hit of
+              Just _ -> Set $ v & _x .~ 0
+              Nothing -> Keep
+    }
 
 
+dropHandler
+    :: Time
+    -> [Piece]
+    -> ECSF
+dropHandler dt ps = do
+  without standContext
+  p <- get pos
+  v <- get vel
+  c <- get collision
 
--- deathHandler :: Level -> Actor -> Maybe Actor
--- deathHandler l p =
---   if (any (flip inRect (_aPos p)) $ deathZones l) || _aHealth p <= 0
---      then Nothing
---                       else Just p
-
-
-
-
--- doActorHandlers :: Handler ()
--- doActorHandlers = do
-  -- (cloneLens -> ctxSelf) <- getSelfRef
-  -- Handlers {..} <- use $ ctxSelf . handlers
-  -- ctrl <- view ctxController
-
-  -- case view grabData p of
-  --   Carrying whom -> do
-  --     ctxLevel . cloneLens whom . _Just . aPos .= _aPos p + V2 0 (-30)
-
-  --   _ -> pure ()
-
-  -- let doCollide =
-  --       \case
-  --         Just piece -> _collideHandler piece
-  --         Nothing    -> pure ()
-
-  -- case p ^. attachment of
-  --   Grasping t dir -> _hookHandler t dir
-
-  --   _ ->
-  --     case p ^. jumpData . jumpState of
-  --       Stand  -> _standHandler
-  --       Jump y -> _jumpHandler y >>= doCollide
-  --       Boost dir strength time applyPenalty ->
-  --         _boostHandler dir strength time applyPenalty >>= doCollide
-  --       BeingHeld -> pure ()
-
-  -- numJumps <- use $ ctxSelf . jumpData . jumpsLeft
-  -- when (wantsJump ctrl && numJumps > 0) $ do
-  --   _startJumpHandler
-
-  -- when (wantsGrasp ctrl && not (isHooked p)) $ do
-  --   case view grabData p of
-  --     Carrying whom -> do
-  --       ctxSelf . grabData .= NotGrabbing
-
-  --       use (currentLevel . cloneLens whom) >>= \case
-  --         Nothing -> pure ()
-  --         Just you ->
-  --           runLocal Nothing
-  --                    whom
-  --                    (you ^. handlers . throwHandler $ ctrlDir ctrl)
-
-  --     NotGrabbing -> do
-  --       l <- use ctxLevel
-  --       case getNearbyHook l p of
-  --         Just t -> do
-  --           ctxSelf %= doLand
-  --           ctxSelf . attachment .= (Grasping t . normalize . set _y 0 $ _aPos p - hookPos t)
-
-  --         Nothing -> void _grabHandler
-
-  -- _updateHandler
+  let y         = view _y v
+      (hit, p') = sweep' c p ps AxisY $ y * dt
+  pure $ defEntity'
+    { pos = Set p'
+    , vel = maybe Keep (const . Set $ v & _y .~ 0) hit
+    , standContext = maybe Unset
+                           (\l -> bool Unset
+                                       (Set $ StandingOn l)
+                                     $ y >= 0)
+                           hit
+    }
 
 
--- defaultHookHandler :: Hook -> V2 -> Handler ()
--- defaultHookHandler hook dir = do
-  -- (cloneLens -> ctxSelf) <- getSelfRef
-  -- ctrl <- view ctxController
-  -- p    <- use ctxSelf
+jumpHandler :: Sys ()
+jumpHandler = do
+  -- set wantsjump for the player
+  wj <- snd . input <$> getKeys
+  emap $ do
+    with player
+    pure $ defEntity'
+      { wantsJump = bool Unset (Set ()) wj
+      }
 
-  -- case (wantsJump ctrl, wantsGrasp ctrl) of
-  --   (False, False) -> do
-  --     let dir' = if ctrlDir ctrl /= V2 0 0
-  --                   then ctrlDir ctrl
-  --                   else dir
-  --     ctxSelf . attachment .= Grasping hook dir'
-  --     ctxSelf . aPos .= hookPos hook
-  --                        + dir' ^* targetRadius
-  --                        + onSideways
-  --                            (V2 0 0)
-  --                            ((V2 0 0.5) ^* topY (aGeom p))
-  --                            dir'
+  emap $ do
+    v <- get vel
+    j <- get jump
+    with wantsJump
+    guard $ _jCurJumps j /= 0
+    guard $ _jJumping  j /= True
 
-  --   (False, True) ->
-  --     ctxSelf %= setBoosting boostDir False boostStrength boostTime
+    pure $ defEntity'
+      { vel = Set $ v & _y .~ -jumpStrength
+      , jump = Set $ j & jCurJumps -~ 1
+                       & jJumping .~ True
+      }
 
-  --   (True, _) -> do
-  --     ctxSelf %= doJump
-  --     ctxSelf . jumpData . jumpsLeft .= 0
-  -- where
-  --   onSideways a b dir' = bool a b $ view _x dir' /= 0
-  --   boostDir = normalize $ dir + onSideways (V2 0 0) (V2 0 $ -1) dir
+  -- clear standing context if jumping
+  emap $ do
+    j <- get jump
+    guard $ _jJumping j
+    pure $ defEntity'
+      { standContext = Unset
+      }
+
+
+  -- cancel jJumping if WantsJump isn't set
+  emap $ do
+    without wantsJump
+    j <- get jump
+    pure $ defEntity'
+      { jump = Set $ j & jJumping .~ False
+      }
+
+  -- reset jumpdata if on ground
+  emap $ do
+    j <- get jump
+    StandingOn _ <- get standContext
+    pure $ defEntity'
+      { jump = Set $ j & jJumping .~ False
+                       & jCurJumps .~ view jMaxJumps j
+      }
+
+
+boostHandler :: Time -> Sys ()
+boostHandler dt = do
+  emap $ do
+    b <- get boosting
+    pure $ defEntity'
+      { vel = Set $ b ^. bBoostVel
+      , boosting =
+          bool Unset
+               (Set $ b & bBoostTime -~ dt)
+             $ b ^. bBoostTime > 0
+
+      }
+
+  emap $ do
+    without boosting
+    cb  <- get canBoost
+    dir <- get wantsBoost
+    guard $ _cbCurBoosts cb /= 0
+
+    pure $ defEntity'
+      { canBoost   = Set $ cb & cbCurBoosts -~ 1
+      , wantsBoost = Unset
+      , boosting = Set $ Boosting (dir ^* boostStrength) boostTime
+      }
+
+  -- clear standing context if boosting
+  emap $ do
+    with boosting
+    pure $ defEntity'
+      { standContext = Unset
+      }
+
+  -- reset boostdata if on ground
+  emap $ do
+    StandingOn _ <- get standContext
+    b <- get canBoost
+    pure $ defEntity'
+      { canBoost = Set $ b & cbCurBoosts .~ view cbMaxBoosts b
+      }
+
+
+gravityHandler :: Time -> Sys ()
+gravityHandler dt = do
+  let gravity' v f = v + V2 0 1 ^* (gravityStrength * dt * f)
+
+  emap $ do
+    without wantsJump
+    with gravity
+    v <- get vel
+    pure $ defEntity' { vel = Set $ gravity' v 1 }
+
+  emap $ do
+    with gravity
+    with wantsJump
+    v <- get vel
+    pure $ defEntity'
+      { vel = Set
+            . gravity' v
+            . bool 1 jumpAttenuation
+            $ view _y v < 0
+      }
+
+
+playerHandler :: Time -> Sys ()
+playerHandler dt = do
+  keys <- getKeys
+  let arrsOf = fst . input
+      idling = (== V2 0 0)
+
+  emap $ do
+    without boosting
+    pl <- get player
+    v  <- get vel
+
+    let oldKeys  = pl ^. pLastInput
+        arrs     = arrsOf keys
+        oldArrs  = arrsOf oldKeys
+        isIdle   = idling arrs
+        wasIdle  = idling oldArrs
+        timeIdle = pl ^. pIdleTime
+        lastDir  = pl ^. pLastDir
+        -- TODO(sandy): do something clever here so stopping walking
+        -- doesnt have slide
+        newVel   = v & _x .~ view _x arrs * walkSpeed
+
+        shouldBoost =
+          and [ not isIdle
+              , wasIdle
+              , arrs == lastDir
+              , timeIdle <= doubleTapTime
+              ]
+
+    pure $ defEntity' -- Safe @(Vel, Player, WantsBoost)
+      { vel = bool Keep (Set newVel) $ not isIdle
+      , player = Set
+               . Player keys
+                        (bool lastDir
+                              oldArrs
+                              $ isIdle && not wasIdle)
+               $ bool 0 (timeIdle + dt) isIdle
+      , wantsBoost =
+          bool Unset
+              (Set $ normalize arrs
+                   & _y %~ \y ->
+                        y * bool 1
+                                 boostUpPenalty
+                                 (y < 0)
+              )
+              shouldBoost
+      }
 
