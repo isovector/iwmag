@@ -132,68 +132,95 @@ dropHandler dt ps = do
     }
 
 
--- jumpHandler :: Sys ()
--- jumpHandler = do
---   -- set wantsjump for the player
---   wj <- snd . input <$> getKeys
---   rmap' $ \Player{} -> Safe @WantsJump wj
+jumpHandler :: Sys ()
+jumpHandler = do
+  -- set wantsjump for the player
+  wj <- snd . input <$> getKeys
+  emap $ do
+    with player
+    pure $ defEntity'
+      { wantsJump = bool Unset (Set ()) wj
+      }
 
---   rmap doJumpHandler
+  emap $ do
+    v <- get vel
+    j <- get jump
+    with wantsJump
+    guard $ _jCurJumps j /= 0
+    guard $ _jJumping  j /= True
 
---   -- clear standing context if jumping
---   rmap' $
---     let f (_jJumping -> True, _) = Safe @StandContext Nothing
---         f (_, c)                 = Safe (Just c)
---      in f
+    pure $ defEntity'
+      { vel = Set $ v & _y .~ -jumpStrength
+      , jump = Set $ j & jCurJumps -~ 1
+                       & jJumping .~ True
+      }
 
---   -- cancel jJumping if WantsJump isn't set
---   mmap (without @WantsJump) $ \j ->
---     pure $ j & jJumping .~ False
-
---   -- reset jumpdata if on ground
---   rmap $ \(StandingOn _, j@Jump{}) ->
---     j & jJumping .~ False
---       & jCurJumps .~ view jMaxJumps j
-
---  where
---   doJumpHandler (v, j@(_jCurJumps -> 0), _)    = (v, j)
---   doJumpHandler (v, j@(_jJumping  -> True), _) = (v, j)
---   doJumpHandler (Vel v, j, WantsJump) =
---     ( Vel $ v & _y  .~ -jumpStrength
---     , j & jCurJumps -~ 1
---         & jJumping  .~ True
---     )
+  -- clear standing context if jumping
+  emap $ do
+    j <- get jump
+    guard $ _jJumping j
+    pure $ defEntity'
+      { standContext = Unset
+      }
 
 
--- boostHandler :: Time -> Sys ()
--- boostHandler dt = do
---   rmap' $ \b@Boosting{} ->
---     Safe @(Vel, Boosting)
---          ( Just . Vel $ b ^. bBoostVel
---          , bool Nothing
---                 (Just $ b & bBoostTime -~ dt)
---                 $ b ^. bBoostTime > 0
---          )
+  -- cancel jJumping if WantsJump isn't set
+  emap $ do
+    without wantsJump
+    j <- get jump
+    pure $ defEntity'
+      { jump = Set $ j & jJumping .~ False
+      }
 
---   mwmap (without @Boosting) $ pure . doBoostHandler
+  -- reset jumpdata if on ground
+  emap $ do
+    j <- get jump
+    StandingOn _ <- get standContext
+    pure $ defEntity'
+      { jump = Set $ j & jJumping .~ False
+                       & jCurJumps .~ view jMaxJumps j
+      }
 
---   -- clear standing context if boosting
---   rmap' $ \(Boosting{}) ->
---     Safe @StandContext Nothing
 
---   -- reset boostdata if on ground
---   rmap $ \(StandingOn _, b@CanBoost{}) ->
---     b & cbCurBoosts .~ view cbMaxBoosts b
+boostHandler :: Time -> Sys ()
+boostHandler dt = do
+  emap $ do
+    b <- get boosting
+    pure $ defEntity'
+      { vel = Set $ b ^. bBoostVel
+      , boosting =
+          bool Unset
+               (Set $ b & bBoostTime -~ dt)
+             $ b ^. bBoostTime > 0
 
---  where
---   doBoostHandler (cb@(_cbCurBoosts -> 0), _) =
---     Safe (Just cb, Nothing, Nothing)
---   doBoostHandler (cb, WantsBoost dir) =
---     Safe @(CanBoost, WantsBoost, Boosting)
---          ( Just $ cb & cbCurBoosts -~ 1
---          , Nothing
---          , Just $ Boosting (dir ^* boostStrength) boostTime
---          )
+      }
+
+  emap $ do
+    without boosting
+    cb  <- get canBoost
+    dir <- get wantsBoost
+    guard $ _cbCurBoosts cb /= 0
+
+    pure $ defEntity'
+      { canBoost   = Set $ cb & cbCurBoosts -~ 1
+      , wantsBoost = Unset
+      , boosting = Set $ Boosting (dir ^* boostStrength) boostTime
+      }
+
+  -- clear standing context if boosting
+  emap $ do
+    with boosting
+    pure $ defEntity'
+      { standContext = Unset
+      }
+
+  -- reset boostdata if on ground
+  emap $ do
+    StandingOn _ <- get standContext
+    b <- get canBoost
+    pure $ defEntity'
+      { canBoost = Set $ b & cbCurBoosts .~ view cbMaxBoosts b
+      }
 
 
 gravityHandler :: Time -> Sys ()
@@ -302,8 +329,8 @@ step dt = do
   ps <- efor . const $ get geometry
   emap $ fallHandler ps
   gravityHandler dt
-  -- boostHandler dt
-  -- jumpHandler
+  boostHandler dt
+  jumpHandler
 
   -- no collision, so do stupid velocity transfer
   emap $ do
