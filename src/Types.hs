@@ -109,10 +109,24 @@ data StandContext
   = StandingOn Piece
   deriving Show
 
+data SwoopPhase = SwoopHover | SwoopSwing
+  deriving Show
+data Swoop = Swoop
+  { _swOffset       :: V2
+  , _swPhase        :: SwoopPhase
+  , _swHoverTime    :: Time
+  , _swMaxHoverTime :: Time
+  }
+
+
+type Field f t = Component f 'Field t
+
 
 data EntWorld f = Entity
-  { pos          :: Component f 'Field V2
-  , vel          :: Component f 'Field V2
+  { pos          :: Field f V2
+  , vel          :: Field f V2
+  , termVel      :: Field f Double
+  , acc          :: Field f V2
   , gfx          :: Component f 'Field Form
   , player       :: Component f 'Unique Player
   , jump         :: Component f 'Field Jump
@@ -124,6 +138,7 @@ data EntWorld f = Entity
   , standContext :: Component f 'Field StandContext
   , canBoost     :: Component f 'Field CanBoost
   , boosting     :: Component f 'Field Boosting
+  , swoop        :: Field f Swoop
   } deriving Generic
 
 data Globals = Globals
@@ -140,4 +155,5 @@ makeLenses ''CanBoost
 makeLenses ''Boosting
 makeLenses ''Player
 makeLenses ''Globals
+makeLenses ''Swoop
 

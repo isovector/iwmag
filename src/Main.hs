@@ -81,6 +81,24 @@ step dt = do
   boostHandler dt
   jumpHandler
 
+  (ppos, pgeom) <- fmap head . efor . const $ do
+    with player
+    ppos  <- get pos
+    pgeom <- get collision
+    pure (ppos, pgeom)
+  emap $ swoopHandler dt pgeom ppos
+
+  emap $ do
+    a <- get acc
+    v <- get vel
+    pure $ defEntity' { vel = Set $ v + a ^* dt }
+
+  emap $ do
+    v    <- get vel
+    term <- get termVel
+    let v' = normalize v ^* term
+    pure $ defEntity' { vel = Set $ bool v' v $ norm v <= term }
+
   -- no collision, so do stupid velocity transfer
   emap $ do
     without collision

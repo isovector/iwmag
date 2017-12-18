@@ -11,18 +11,19 @@ import Prologue
 
 
 
-buildObject :: HasWorld EntWorld => Object -> Sys Entity
-buildObject obj = do
-  let pos  = getObjectPos obj
-      geom = getObjectGeom obj
-      gfx  = getObjectGfx obj
-      grav = getObjectGravity obj
-      vel  = getObjectVel obj
-      cs   = pos <> geom <> gfx <> grav <> vel
-  newSomeEntity cs
+buildObject :: Object -> Sys Entity
+buildObject obj =
+  newSomeEntity $ mconcat
+    [ getObjectPos     obj
+    , getObjectGeom    obj
+    , getObjectGfx     obj
+    , getObjectGravity obj
+    , getObjectVel     obj
+    , getObjectSwoop   obj
+    ]
 
 
-newSomeEntity :: HasWorld EntWorld => Endo Entity -> Sys Entity
+newSomeEntity :: Endo Entity -> Sys Entity
 newSomeEntity f = do
   e <- newEntity $ appEndo f defEntity
   getEntity e
@@ -77,6 +78,16 @@ getObjectGravity Object{..} = maybeToEndo $ do
   pure $ \ent -> ent
     { gravity = Just ()
     , vel = Just $ V2 0 0
+    }
+
+
+getObjectSwoop :: Object -> Endo Entity
+getObjectSwoop Object{..} = maybeToEndo $ do
+  offset <- parseV2 <$> lookup "offset" objectProperties
+  pure $ \ent -> ent
+    { swoop = Just $ Swoop offset SwoopHover 5 5
+    , vel   = Just $ V2 0 0
+    , termVel = Just 250
     }
 
 

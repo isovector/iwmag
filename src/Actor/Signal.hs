@@ -247,3 +247,47 @@ playerHandler dt = do
               shouldBoost
       }
 
+
+swoopHandler :: Time -> BoxGeom -> V2 -> ECSF
+swoopHandler dt (topY -> h) v2 = do
+  p  <- get pos
+  sw <- get swoop
+
+  case _swPhase sw of
+    SwoopHover -> do
+      let p' = v2 + _swOffset sw
+          dp = p' - p
+          speed = 400
+          target = 20
+          a' = normalize dp ^* speed
+          hoverOver = _swHoverTime sw <= 0
+
+      pure $ defEntity'
+        { acc = bool Keep
+                    (Set a')
+                    $ norm dp >= target
+        , swoop = Set $ sw
+                      & swHoverTime -~ dt
+                      & swPhase .~ bool SwoopHover
+                                        SwoopSwing
+                                        hoverOver
+        , termVel = Set 250
+        }
+
+    SwoopSwing -> do
+      let p' = v2 + V2 0 (negate $ h / 2)
+          dp = p' - p
+          speed = 2000
+          target = 80
+          a' = normalize dp ^* speed
+
+      pure $ defEntity'
+        { acc = Set a'
+        , swoop = Set $ sw
+                      & swHoverTime .~ _swMaxHoverTime sw
+                      & swPhase .~ bool SwoopHover
+                                        SwoopSwing
+                                        (norm dp >= target)
+        , termVel = Set 400
+        }
+
