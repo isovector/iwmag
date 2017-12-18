@@ -13,11 +13,10 @@ import Linear.Metric (normalize)
 
 
 owners
-    :: ( World EntWorld
-       , Monad m
+    :: ( Monad m
        )
     => (Entity -> Maybe a)
-    -> SystemT EntWorld m [(Ent, Entity)]
+    -> SystemT g EntWorld m [(Ent, Entity)]
 owners f = do
   ents <- efor $ \e -> do
     with f
@@ -26,10 +25,9 @@ owners f = do
 
 
 destroy
-    :: ( World EntWorld
-       , Monad m
+    :: ( Monad m
        )
     => Ent
-    -> SystemT EntWorld m ()
+    -> SystemT g EntWorld m ()
 destroy = flip setEntity (convertSetter defEntity)
 

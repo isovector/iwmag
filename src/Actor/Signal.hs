@@ -34,14 +34,14 @@ sweep' b v = sweep b v pieceLine
 
 
 
-collision
-    :: World EntWorld
+doCollision
+    :: HasWorld EntWorld
     => Axis
     -> BoxGeom
     -> V2
     -> Double
     -> Sys (Maybe Piece, V2)
-collision ax geom pos dx = do
+doCollision ax geom pos dx = do
   pes <- owners geometry
   let ps = mapMaybe (geometry . snd) pes
 

@@ -199,11 +199,13 @@ parseCollision c layers =
             friction = maybe groundFriction read $ lookup "friction" props
 
 
-loadLevel :: World EntWorld => Level -> Sys ()
+loadLevel
+    :: Level
+    -> Sys ()
 loadLevel l@Level {..} = do
   owners geometry >>= traverse_ (destroy . fst)
 
---   setGlobal $ CurLevel l
+  modifyGlobals $ currentLevel .~ l
 
   for_ levelGeometry $ \p ->
     newEntity $ defEntity

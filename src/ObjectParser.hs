@@ -11,7 +11,7 @@ import Prologue
 
 
 
-buildObject :: World EntWorld => Object -> Sys Entity
+buildObject :: HasWorld EntWorld => Object -> Sys Entity
 buildObject obj = do
   let pos  = getObjectPos obj
       geom = getObjectGeom obj
@@ -22,7 +22,7 @@ buildObject obj = do
   newSomeEntity cs
 
 
-newSomeEntity :: World EntWorld => Endo Entity -> Sys Entity
+newSomeEntity :: HasWorld EntWorld => Endo Entity -> Sys Entity
 newSomeEntity f = do
   e <- newEntity $ appEndo f defEntity
   getEntity e

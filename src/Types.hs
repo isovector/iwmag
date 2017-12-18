@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes    #-}
+{-# LANGUAGE DeriveGeneric          #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE NoImplicitPrelude      #-}
 {-# LANGUAGE RankNTypes             #-}
@@ -135,19 +136,13 @@ data StandContext
   = StandingOn Piece
   deriving Show
 
--- data CurLevel = CurLevel Level
--- instance Component CurLevel where
---   type Storage CurLevel = Global CurLevel
--- instance Monoid CurLevel where
---   mempty = error "you gotta set the level dingus"
---   mappend = error "this is a dumb interface"
-
 
 data EntWorld f = Entity
   { pos          :: Component f 'Field V2
   , vel          :: Component f 'Field V2
   , gfx          :: Component f 'Field Form
   , player       :: Component f 'Unique Player
+  , jump         :: Component f 'Field Jump
   , gravity      :: Component f 'Field ()
   , geometry     :: Component f 'Field Piece
   , collision    :: Component f 'Field BoxGeom
@@ -156,14 +151,19 @@ data EntWorld f = Entity
   , standContext :: Component f 'Field StandContext
   , canBoost     :: Component f 'Field CanBoost
   , boosting     :: Component f 'Field Boosting
+  } deriving Generic
+
+data Globals = Globals
+  { _currentLevel :: Level
   }
 
 type Entity = EntWorld 'FieldOf
-type Sys = SystemT EntWorld IO
+type Sys = SystemT Globals EntWorld IO
 
 makeLenses ''Level
 makeLenses ''Jump
 makeLenses ''CanBoost
 makeLenses ''Boosting
 makeLenses ''Player
+makeLenses ''Globals
 
