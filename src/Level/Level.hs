@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts            #-}
 {-# LANGUAGE NamedFieldPuns              #-}
 {-# LANGUAGE NoImplicitPrelude           #-}
 {-# LANGUAGE RankNTypes                  #-}
@@ -9,7 +10,6 @@ module Level.Level where
 
 -- import           Actor.Signal
 import           Actor.Constants
-import qualified Apecs.Slice   as S
 import qualified Data.Map as M
 import           Data.Tiled
 import           Game.Sequoia
@@ -17,7 +17,7 @@ import           Game.Sequoia.Color
 import           Linear.Vector
 import           Math
 import           ObjectParser
-import           Types
+import           Prologue
 
 
 isDeath :: Zone -> Bool
@@ -199,18 +199,26 @@ parseCollision c layers =
             friction = maybe groundFriction read $ lookup "friction" props
 
 
-loadLevel :: Level -> Sys ()
+loadLevel
+    :: Level
+    -> Sys ()
 loadLevel l@Level {..} = do
-  owners @_ @Geometry >>= S.mapM_ destroy
+  owners geometry >>= traverse_ (destroy . fst)
 
-  setGlobal $ CurLevel l
+  modifyGlobals $ currentLevel .~ l
 
   for_ levelGeometry $ \p ->
-    newEntity (Geometry p, Gfx $ drawLine p)
+    newEntity $ defEntity
+      { geometry = Just p
+      , gfx  = Just $ drawLine p
+      }
 
   for_ (M.toList _destructableGeometry) $ \ps ->
     for_ (snd ps) $ \p ->
-      newEntity (Geometry p, Gfx $ drawLine p)
+      newEntity $ defEntity
+        { geometry = Just p
+        , gfx = Just $ drawLine p
+        }
 
   for_ levelDudes buildObject
 

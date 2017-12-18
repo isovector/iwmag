@@ -12,7 +12,7 @@ module Main where
 -- import           Game.Sequoia.Keyboard
 import           Actor
 import           Actor.Constants
-import           Actor.Signal (collision)
+import           Actor.Signal (sweep')
 import           Collision (Axis (..))
 import           Data.Time.Clock.POSIX (getPOSIXTime)
 import           Game.Sequoia (startup, render, EngineConfig (..))
@@ -31,29 +31,37 @@ getNow = liftIO $ realToFrac <$> getPOSIXTime
 initialize :: Sys ()
 initialize = do
   loadLevel . fromJust $ lookup "test1" theLevels
-  void $ newEntity
-       ( Pos $ V2 200 100
-       , Gfx . group
+  void $ newEntity $ defEntity
+       { pos = Just $ V2 200 100
+       , gfx = Just
+             . group
              $ drawPlayer (rgb 1 1 1) playerGeom
-       , Vel $ V2 0 0
-       , Gravity
-       , Collision playerGeom
-       , Jump     jumpCount  0 True
-       , CanBoost boostCount 0
-       , Player [] (V2 0 0) 10
-       )
+       , vel       = Just $ V2 0 0
+       , gravity   = Just ()
+       , collision = Just $ playerGeom
+       , jump      = Just $ Jump jumpCount 0 True
+       , canBoost  = Just $ CanBoost boostCount 0
+       , player    = Just $ Player [] (V2 0 0) 10
+       }
 
 
 draw :: Sys Element
 draw = do
-  ppos <- fmap head . cmapM $ \(Player{}, Pos p) -> pure p
-  CurLevel l <- getGlobal
+  ppos <- fmap head . efor . const $ do
+    with player
+    get pos
+  l <- getGlobal _currentLevel
 
   let cam    = clampCamera (levelSize l) ppos
       center = V2 (fromIntegral gameWidth) (fromIntegral gameHeight) ^* 0.5
 
-  geom <- cmapM $ \(Geometry _, Gfx g) -> pure g
-  gfx  <- cmapM $ \(Pos p, Gfx g) -> pure $ move p g
+  geom <- efor . const $ do
+    with geometry
+    get gfx
+  gfx  <- efor . const $ do
+    p <- get pos
+    g <- get gfx
+    pure $ move p g
   pure . collage gameWidth gameHeight
        . pure
        . move (center - cam)
@@ -62,128 +70,179 @@ draw = do
 
 
 fallHandler
-    :: (Gravity, Pos, Vel, Collision, StandContext)
-    -> Sys (Safe (StandContext, Vel))
-fallHandler (Gravity, Pos p, Vel v, Collision c, StandingOn _) = do
-  (mp, _) <- collision AxisY c p 1
+    :: [Piece] -> ECSF
+fallHandler ps = do
+  with gravity
+  p <- get pos
+  v <- get vel
+  c <- get collision
+  StandingOn _ <- get standContext
 
-  pure . Safe $ case mp of
-    Just l ->
-      ( Just $ StandingOn l
-      , Just $ Vel v
-      )
-    Nothing ->
-      ( Nothing
-      , Just . Vel $ v & _y .~ 0
-      )
+  let (mp, _) = sweep' c p ps AxisY 1
+
+  pure $ case mp of
+    Just l -> defEntity'
+      { standContext = Set $ StandingOn l
+      }
+    Nothing -> defEntity'
+      { standContext = Unset
+      , vel = Set $ v & _y .~ 0
+      }
 
 
 moveHandler
     :: Time
-    -> (Pos, Vel, Collision)
-    -> System World (Pos, Vel)
-moveHandler dt (Pos p, Vel v@(V2 x _), Collision c) = do
-  (hit, p') <- collision AxisX c p $ x * dt
-  pure . (Pos p', ) $ case hit of
-    Just _  -> Vel $ v & _x .~ 0
-    Nothing -> Vel v
+    -> [Piece]
+    -> ECSF
+moveHandler dt ps = do
+  p <- get pos
+  v <- get vel
+  c <- get collision
+
+  let x         = view _x v
+      (hit, p') = sweep' c p ps AxisX $ x * dt
+  pure $ defEntity'
+    { pos = Set p'
+    , vel = case hit of
+              Just _ -> Set $ v & _x .~ 0
+              Nothing -> Keep
+    }
 
 
 dropHandler
     :: Time
-    -> (Pos, Vel, Collision)
-    -> System World (Safe (Pos, Vel, StandContext))
-dropHandler dt (Pos p, Vel v@(V2 _ y), Collision c) = do
-  (hit, p') <- collision AxisY c p $ y * dt
-  pure . Safe $ case hit of
-    Just l  ->
-      ( Just $ Pos p'
-      , Just . Vel $ v & _y .~ 0
-      , if y >= 0
-          then Just $ StandingOn l
-          else Nothing
-      )
-    Nothing ->
-      ( Just $ Pos p'
-      , Just $ Vel v
-      , Nothing
-      )
+    -> [Piece]
+    -> ECSF
+dropHandler dt ps = do
+  without standContext
+  p <- get pos
+  v <- get vel
+  c <- get collision
+
+  let y         = view _y v
+      (hit, p') = sweep' c p ps AxisY $ y * dt
+  pure $ defEntity'
+    { pos = Set p'
+    , vel = maybe Keep (const . Set $ v & _y .~ 0) hit
+    , standContext = maybe Unset
+                           (\l -> bool Unset
+                                       (Set $ StandingOn l)
+                                     $ y >= 0)
+                           hit
+    }
 
 
 jumpHandler :: Sys ()
 jumpHandler = do
   -- set wantsjump for the player
   wj <- snd . input <$> getKeys
-  rmap' $ \Player{} -> Safe @WantsJump wj
+  emap $ do
+    with player
+    pure $ defEntity'
+      { wantsJump = bool Unset (Set ()) wj
+      }
 
-  rmap doJumpHandler
+  emap $ do
+    v <- get vel
+    j <- get jump
+    with wantsJump
+    guard $ _jCurJumps j /= 0
+    guard $ _jJumping  j /= True
+
+    pure $ defEntity'
+      { vel = Set $ v & _y .~ -jumpStrength
+      , jump = Set $ j & jCurJumps -~ 1
+                       & jJumping .~ True
+      }
 
   -- clear standing context if jumping
-  rmap' $
-    let f (_jJumping -> True, _) = Safe @StandContext Nothing
-        f (_, c)                 = Safe (Just c)
-     in f
+  emap $ do
+    j <- get jump
+    guard $ _jJumping j
+    pure $ defEntity'
+      { standContext = Unset
+      }
+
 
   -- cancel jJumping if WantsJump isn't set
-  mmap (without @WantsJump) $ \j ->
-    pure $ j & jJumping .~ False
+  emap $ do
+    without wantsJump
+    j <- get jump
+    pure $ defEntity'
+      { jump = Set $ j & jJumping .~ False
+      }
 
   -- reset jumpdata if on ground
-  rmap $ \(StandingOn _, j@Jump{}) ->
-    j & jJumping .~ False
-      & jCurJumps .~ view jMaxJumps j
-
- where
-  doJumpHandler (v, j@(_jCurJumps -> 0), _)    = (v, j)
-  doJumpHandler (v, j@(_jJumping  -> True), _) = (v, j)
-  doJumpHandler (Vel v, j, WantsJump) =
-    ( Vel $ v & _y  .~ -jumpStrength
-    , j & jCurJumps -~ 1
-        & jJumping  .~ True
-    )
+  emap $ do
+    j <- get jump
+    StandingOn _ <- get standContext
+    pure $ defEntity'
+      { jump = Set $ j & jJumping .~ False
+                       & jCurJumps .~ view jMaxJumps j
+      }
 
 
 boostHandler :: Time -> Sys ()
 boostHandler dt = do
-  rmap' $ \b@Boosting{} ->
-    Safe @(Vel, Boosting)
-         ( Just . Vel $ b ^. bBoostVel
-         , bool Nothing
-                (Just $ b & bBoostTime -~ dt)
-                $ b ^. bBoostTime > 0
-         )
+  emap $ do
+    b <- get boosting
+    pure $ defEntity'
+      { vel = Set $ b ^. bBoostVel
+      , boosting =
+          bool Unset
+               (Set $ b & bBoostTime -~ dt)
+             $ b ^. bBoostTime > 0
 
-  mwmap (without @Boosting) $ pure . doBoostHandler
+      }
+
+  emap $ do
+    without boosting
+    cb  <- get canBoost
+    dir <- get wantsBoost
+    guard $ _cbCurBoosts cb /= 0
+
+    pure $ defEntity'
+      { canBoost   = Set $ cb & cbCurBoosts -~ 1
+      , wantsBoost = Unset
+      , boosting = Set $ Boosting (dir ^* boostStrength) boostTime
+      }
 
   -- clear standing context if boosting
-  rmap' $ \(Boosting{}) ->
-    Safe @StandContext Nothing
+  emap $ do
+    with boosting
+    pure $ defEntity'
+      { standContext = Unset
+      }
 
   -- reset boostdata if on ground
-  rmap $ \(StandingOn _, b@CanBoost{}) ->
-    b & cbCurBoosts .~ view cbMaxBoosts b
-
- where
-  doBoostHandler (cb@(_cbCurBoosts -> 0), _) =
-    Safe (Just cb, Nothing, Nothing)
-  doBoostHandler (cb, WantsBoost dir) =
-    Safe @(CanBoost, WantsBoost, Boosting)
-         ( Just $ cb & cbCurBoosts -~ 1
-         , Nothing
-         , Just $ Boosting (dir ^* boostStrength) boostTime
-         )
+  emap $ do
+    StandingOn _ <- get standContext
+    b <- get canBoost
+    pure $ defEntity'
+      { canBoost = Set $ b & cbCurBoosts .~ view cbMaxBoosts b
+      }
 
 
 gravityHandler :: Time -> Sys ()
 gravityHandler dt = do
-  let gravity' v f = Vel $ v + V2 0 1 ^* (gravity * dt * f)
+  let gravity' v f = v + V2 0 1 ^* (gravityStrength * dt * f)
 
-  mmap (without @WantsJump) $ \(Gravity, Vel v) ->
-    pure $ gravity' v 1
+  emap $ do
+    without wantsJump
+    with gravity
+    v <- get vel
+    pure $ defEntity' { vel = Set $ gravity' v 1 }
 
-  rmap $ \(Gravity, Vel v, WantsJump) ->
-    gravity' v . bool 1 jumpAttenuation
-               $ view _y v < 0
+  emap $ do
+    with gravity
+    with wantsJump
+    v <- get vel
+    pure $ defEntity'
+      { vel = Set
+            . gravity' v
+            . bool 1 jumpAttenuation
+            $ view _y v < 0
+      }
 
 
 getKeys :: Sys [Key]
@@ -213,65 +272,75 @@ playerHandler dt = do
   let arrsOf = fst . input
       idling = (== V2 0 0)
 
-  mwmap (without @Boosting) $
-    \(pl@Player{}, Vel v) -> do
-      let oldKeys  = pl ^. pLastInput
-          arrs     = arrsOf keys
-          oldArrs  = arrsOf oldKeys
-          isIdle   = idling arrs
-          wasIdle  = idling oldArrs
-          timeIdle = pl ^. pIdleTime
-          lastDir  = pl ^. pLastDir
-          -- TODO(sandy): do something clever here so stopping walking
-          -- doesnt have slide
-          newVel   = v & _x .~ view _x arrs * walkSpeed
+  emap $ do
+    without boosting
+    pl <- get player
+    v  <- get vel
 
-          shouldBoost =
-            and [ not isIdle
-                , wasIdle
-                , arrs == lastDir
-                , timeIdle <= doubleTapTime
-                ]
+    let oldKeys  = pl ^. pLastInput
+        arrs     = arrsOf keys
+        oldArrs  = arrsOf oldKeys
+        isIdle   = idling arrs
+        wasIdle  = idling oldArrs
+        timeIdle = pl ^. pIdleTime
+        lastDir  = pl ^. pLastDir
+        -- TODO(sandy): do something clever here so stopping walking
+        -- doesnt have slide
+        newVel   = v & _x .~ view _x arrs * walkSpeed
 
-      pure $ Safe @(Vel, Player, WantsBoost)
-           ( Just . Vel
-                  . bool v newVel
-                  $ not isIdle
-           , Just . Player keys
-                           (bool lastDir
-                                 oldArrs
-                                 $ isIdle && not wasIdle)
-                  $ bool 0 (timeIdle + dt) isIdle
-           , bool Nothing
-                  (Just . WantsBoost
-                        $ normalize arrs
-                        & _y %~ \y ->
-                            y * bool 1
-                                     boostUpPenalty
-                                     (y < 0)
-                  )
-                  shouldBoost
-           )
+        shouldBoost =
+          and [ not isIdle
+              , wasIdle
+              , arrs == lastDir
+              , timeIdle <= doubleTapTime
+              ]
+
+    pure $ defEntity' -- Safe @(Vel, Player, WantsBoost)
+      { vel = bool Keep (Set newVel) $ not isIdle
+      , player = Set
+               . Player keys
+                        (bool lastDir
+                              oldArrs
+                              $ isIdle && not wasIdle)
+               $ bool 0 (timeIdle + dt) isIdle
+      , wantsBoost =
+          bool Unset
+              (Set $ normalize arrs
+                   & _y %~ \y ->
+                        y * bool 1
+                                 boostUpPenalty
+                                 (y < 0)
+              )
+              shouldBoost
+      }
 
 
 step :: Time -> Sys ()
 step dt = do
-  rmap $ \(StandingOn l, Vel v) ->
-    Vel $ v ^* (1 - dt * pieceFriction l)
+  emap $ do
+    StandingOn l <- get standContext
+    v <- get vel
+    pure $ defEntity'
+      { vel = Set $ v ^* (1 - dt * pieceFriction l)
+      }
 
   playerHandler dt
 
-  mwmap all fallHandler
+  ps <- efor . const $ get geometry
+  emap $ fallHandler ps
   gravityHandler dt
   boostHandler dt
   jumpHandler
 
   -- no collision, so do stupid velocity transfer
-  mmap (without @Collision) $ \(Pos p, Vel v) ->
-    pure . Pos $ p + v ^* dt
+  emap $ do
+    without collision
+    p <- get pos
+    v <- get vel
+    pure $ defEntity' { pos = Set $ p + v ^* dt }
 
-  mmap all $ moveHandler dt
-  mwmap (without @StandContext) $ dropHandler dt
+  emap $ moveHandler dt ps
+  emap $ dropHandler dt ps
 
   pure ()
 
@@ -291,11 +360,10 @@ clampCamera (V2 rx ry)
 
 main :: IO ()
 main = do
-  w      <- initWorld
   engine <- startup config
   start  <- realToFrac <$> getPOSIXTime
 
-  flip runSystem w $ do
+  flip runSystemT defWorld (Globals $ error "no level loaded") $ do
     initialize
     flip fix start $ \loop last -> do
       now <- getNow

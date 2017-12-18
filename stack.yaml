@@ -2,6 +2,7 @@ flags: {}
 packages:
   - '.'
   - '../sequoia'
+  - '../ecstasy'
   - extra-dep: true
     location:
       git: https://github.com/isovector/th-dict-discovery.git
@@ -10,10 +11,6 @@ packages:
     location:
       git: https://github.com/isovector/htiled.git
       commit: bb18e7dd85b3f1fe8f9e339f8e6b8ea942bbe361
-  - extra-dep: true
-    location:
-      git: https://github.com/isovector/apecs.git
-      commit: d78f0600982e8e8f626ad32193f812783a12e1e6
 
 extra-deps:
   - sdl2-2.3.0

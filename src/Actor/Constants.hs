@@ -45,8 +45,8 @@ recoverTime = 0
 walkSpeed :: Double
 walkSpeed = 120
 
-gravity :: Double
-gravity = 800
+gravityStrength :: Double
+gravityStrength = 800
 
 terminalVelocity :: Double
 terminalVelocity = 2000

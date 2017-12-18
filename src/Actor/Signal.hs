@@ -1,4 +1,6 @@
+{-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE LambdaCase        #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE RankNTypes        #-}
 {-# LANGUAGE TupleSections     #-}
@@ -6,11 +8,8 @@
 
 module Actor.Signal where
 
-import qualified Apecs.Slice as S
+import           Prologue
 import           Collision
-import           Control.Lens hiding (Level)
-import           Game.Sequoia
-import           Types hiding (set)
 
 sweep' :: BoxGeom -> V2 -> [Piece] -> Axis -> Double -> (Maybe Piece, V2)
 sweep' b v = sweep b v pieceLine
@@ -33,19 +32,6 @@ sweep' b v = sweep b v pieceLine
 --                                 targetRadius)
 --       $ hookPos t
 
-
-
-collision
-    :: Axis
-    -> BoxGeom
-    -> V2
-    -> Double
-    -> Sys (Maybe Piece, V2)
-collision ax geom pos dx = do
-  pes <- owners @_ @Geometry
-  ps <- traverse getUnsafe $ S.toList pes
-
-  pure $ sweep' geom pos (fmap getPiece ps) ax dx
 
 
 -- defaultThrowHandler :: V2 -> Handler ()
