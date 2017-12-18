@@ -159,6 +159,7 @@ data Globals = Globals
 
 type Entity = EntWorld 'FieldOf
 type Sys = SystemT Globals EntWorld IO
+type ECSF = QueryT Globals EntWorld IO (EntWorld 'SetterOf)
 
 makeLenses ''Level
 makeLenses ''Jump

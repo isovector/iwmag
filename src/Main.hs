@@ -12,7 +12,7 @@ module Main where
 -- import           Game.Sequoia.Keyboard
 import           Actor
 import           Actor.Constants
-import           Actor.Signal (doCollision)
+import           Actor.Signal (sweep')
 import           Collision (Axis (..))
 import           Data.Time.Clock.POSIX (getPOSIXTime)
 import           Game.Sequoia (startup, render, EngineConfig (..))
@@ -70,57 +70,66 @@ draw = do
 
 
 fallHandler
-    :: QueryT g EntWorld IO ()
-fallHandler = do
+    :: [Piece] -> ECSF
+fallHandler ps = do
   with gravity
   p <- get pos
   v <- get vel
   c <- get collision
   StandingOn _ <- get standContext
 
-  (mp, _) <- doCollision AxisY c p 1
+  let (mp, _) = sweep' c p ps AxisY 1
 
-  pure . Safe $ case mp of
-    Just l ->
-      ( Just $ StandingOn l
-      , Just $ Vel v
-      )
-    Nothing ->
-      ( Nothing
-      , Just . Vel $ v & _y .~ 0
-      )
-
-
--- moveHandler
---     :: Time
---     -> (Pos, Vel, Collision)
---     -> Sys (Pos, Vel)
--- moveHandler dt (Pos p, Vel v@(V2 x _), Collision c) = do
---   (hit, p') <- doCollision AxisX c p $ x * dt
---   pure . (Pos p', ) $ case hit of
---     Just _  -> Vel $ v & _x .~ 0
---     Nothing -> Vel v
+  pure $ case mp of
+    Just l -> defEntity'
+      { standContext = Set $ StandingOn l
+      }
+    Nothing -> defEntity'
+      { standContext = Unset
+      , vel = Set $ v & _y .~ 0
+      }
 
 
--- dropHandler
---     :: Time
---     -> (Pos, Vel, Collision)
---     -> Sys (Safe (Pos, Vel, StandContext))
--- dropHandler dt (Pos p, Vel v@(V2 _ y), Collision c) = do
---   (hit, p') <- doCollision AxisY c p $ y * dt
---   pure . Safe $ case hit of
---     Just l  ->
---       ( Just $ Pos p'
---       , Just . Vel $ v & _y .~ 0
---       , if y >= 0
---           then Just $ StandingOn l
---           else Nothing
---       )
---     Nothing ->
---       ( Just $ Pos p'
---       , Just $ Vel v
---       , Nothing
---       )
+moveHandler
+    :: Time
+    -> [Piece]
+    -> ECSF
+moveHandler dt ps = do
+  p <- get pos
+  v <- get vel
+  c <- get collision
+
+  let x         = view _x v
+      (hit, p') = sweep' c p ps AxisX $ x * dt
+  pure $ defEntity'
+    { pos = Set p'
+    , vel = case hit of
+              Just _ -> Set $ v & _x .~ 0
+              Nothing -> Keep
+    }
+
+
+dropHandler
+    :: Time
+    -> [Piece]
+    -> ECSF
+dropHandler dt ps = do
+  without standContext
+  p <- get pos
+  v <- get vel
+  c <- get collision
+
+  let y         = view _y v
+      (hit, p') = sweep' c p ps AxisY $ y * dt
+  pure $ defEntity'
+    { pos = Set p'
+    , vel = maybe Keep (const . Set $ v & _y .~ 0) hit
+    , standContext = maybe Unset
+                           (\l -> bool Unset
+                                       (Set $ StandingOn l)
+                                     $ y >= 0)
+                           hit
+    }
 
 
 -- jumpHandler :: Sys ()
@@ -187,16 +196,28 @@ fallHandler = do
 --          )
 
 
--- gravityHandler :: Time -> Sys ()
--- gravityHandler dt = do
---   let gravity' v f = Vel $ v + V2 0 1 ^* (gravity * dt * f)
+gravityHandler :: Time -> Sys ()
+gravityHandler dt = do
+  let gravity' v f = v + V2 0 1 ^* (gravityStrength * dt * f)
 
---   mmap (without @WantsJump) $ \(Gravity, Vel v) ->
---     pure $ gravity' v 1
+  emap $ do
+    without standContext
+    without wantsJump
+    with gravity
+    v <- get vel
+    pure $ defEntity' { vel = Set $ gravity' v 1 }
 
---   rmap $ \(Gravity, Vel v, WantsJump) ->
---     gravity' v . bool 1 jumpAttenuation
---                $ view _y v < 0
+  emap $ do
+    without standContext
+    with gravity
+    with wantsJump
+    v <- get vel
+    pure $ defEntity'
+      { vel = Set
+            . gravity' v
+            . bool 1 jumpAttenuation
+            $ view _y v < 0
+      }
 
 
 getKeys :: Sys [Key]
@@ -220,73 +241,82 @@ input keys =
     )
 
 
--- playerHandler :: Time -> Sys ()
--- playerHandler dt = do
---   keys <- getKeys
---   let arrsOf = fst . input
---       idling = (== V2 0 0)
+playerHandler :: Time -> Sys ()
+playerHandler dt = do
+  keys <- getKeys
+  let arrsOf = fst . input
+      idling = (== V2 0 0)
 
---   mwmap (without @Boosting) $
---     \(pl@Player{}, Vel v) -> do
---       let oldKeys  = pl ^. pLastInput
---           arrs     = arrsOf keys
---           oldArrs  = arrsOf oldKeys
---           isIdle   = idling arrs
---           wasIdle  = idling oldArrs
---           timeIdle = pl ^. pIdleTime
---           lastDir  = pl ^. pLastDir
---           -- TODO(sandy): do something clever here so stopping walking
---           -- doesnt have slide
---           newVel   = v & _x .~ view _x arrs * walkSpeed
+  emap $ do
+    without boosting
+    pl <- get player
+    v  <- get vel
 
---           shouldBoost =
---             and [ not isIdle
---                 , wasIdle
---                 , arrs == lastDir
---                 , timeIdle <= doubleTapTime
---                 ]
+    let oldKeys  = pl ^. pLastInput
+        arrs     = arrsOf keys
+        oldArrs  = arrsOf oldKeys
+        isIdle   = idling arrs
+        wasIdle  = idling oldArrs
+        timeIdle = pl ^. pIdleTime
+        lastDir  = pl ^. pLastDir
+        -- TODO(sandy): do something clever here so stopping walking
+        -- doesnt have slide
+        newVel   = v & _x .~ view _x arrs * walkSpeed
 
---       pure $ Safe @(Vel, Player, WantsBoost)
---            ( Just . Vel
---                   . bool v newVel
---                   $ not isIdle
---            , Just . Player keys
---                            (bool lastDir
---                                  oldArrs
---                                  $ isIdle && not wasIdle)
---                   $ bool 0 (timeIdle + dt) isIdle
---            , bool Nothing
---                   (Just . WantsBoost
---                         $ normalize arrs
---                         & _y %~ \y ->
---                             y * bool 1
---                                      boostUpPenalty
---                                      (y < 0)
---                   )
---                   shouldBoost
---            )
+        shouldBoost =
+          and [ not isIdle
+              , wasIdle
+              , arrs == lastDir
+              , timeIdle <= doubleTapTime
+              ]
+
+    pure $ defEntity' -- Safe @(Vel, Player, WantsBoost)
+      { vel = bool Keep (Set newVel) $ not isIdle
+      , player = Set
+               . Player keys
+                        (bool lastDir
+                              oldArrs
+                              $ isIdle && not wasIdle)
+               $ bool 0 (timeIdle + dt) isIdle
+      , wantsBoost =
+          bool Unset
+              (Set $ normalize arrs
+                   & _y %~ \y ->
+                        y * bool 1
+                                 boostUpPenalty
+                                 (y < 0)
+              )
+              shouldBoost
+      }
 
 
--- step :: Time -> Sys ()
--- step dt = do
---   rmap $ \(StandingOn l, Vel v) ->
---     Vel $ v ^* (1 - dt * pieceFriction l)
+step :: Time -> Sys ()
+step dt = do
+  emap $ do
+    StandingOn l <- get standContext
+    v <- get vel
+    pure $ defEntity'
+      { vel = Set $ v ^* (1 - dt * pieceFriction l)
+      }
 
---   playerHandler dt
+  playerHandler dt
 
---   mwmap all fallHandler
---   gravityHandler dt
---   boostHandler dt
---   jumpHandler
+  ps <- efor . const $ get geometry
+  emap $ fallHandler ps
+  gravityHandler dt
+  -- boostHandler dt
+  -- jumpHandler
 
---   -- no collision, so do stupid velocity transfer
---   mmap (without @Collision) $ \(Pos p, Vel v) ->
---     pure . Pos $ p + v ^* dt
+  -- no collision, so do stupid velocity transfer
+  emap $ do
+    p <- get pos
+    v <- get vel
+    pure $ defEntity' { pos = Set $ p + v ^* dt }
 
---   mmap all $ moveHandler dt
---   mwmap (without @StandContext) $ dropHandler dt
+  emap $ moveHandler dt ps
+  emap $ dropHandler dt ps
 
---   pure ()
+  pure ()
 
 
 clampCamera :: V2  -- ^ Level size.
@@ -312,7 +342,7 @@ main = do
     initialize
     flip fix start $ \loop last -> do
       now <- getNow
-      -- step $ now - last
+      step $ showTrace $ now - last
 
       scene <- draw
       liftIO $ render engine scene (gameWidth, gameHeight)
