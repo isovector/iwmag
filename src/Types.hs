@@ -53,13 +53,6 @@ data Level = Level
   , levelDudes :: [Object]
   }
 
-allGeometry :: Level -> [Piece]
-allGeometry level = mappend (levelGeometry level)
-                  . mconcat
-                  . fmap snd
-                  . M.toList
-                  $ _destructableGeometry level
-
 
 data Zone = Death   Rect
           | NoBoost Rect
@@ -88,26 +81,6 @@ data BoxGeom = BoxGeom
 
 data Line = Line V2 V2 deriving (Show, Eq)
 data Rect = Rect V2 V2 deriving (Show, Eq)
-
-
-data RawController = RawController
-  { rctrlDir        :: !V2
-  , rctrlJump       :: !Bool
-  , rctrlWantsJump  :: !Bool
-  , rctrlWantsGrasp :: !Bool
-  , rctrlWantsDig   :: !Bool
-  }
-
--- data Controller = Controller
---   { ctrlDir     :: !V2
---   , ctrlLastDir :: !V2
---   , timeIdle    :: !Time
---   , ctrlJump    :: !Bool
---   , wantsJump   :: !Bool
---   , wantsBoost  :: !(Maybe V2)
---   , wantsGrasp  :: !Bool
---   , wantsDig    :: !Bool
---   } deriving (Show)
 
 
 data Player = Player

@@ -34,20 +34,6 @@ sweep' b v = sweep b v pieceLine
 
 
 
-doCollision
-    :: HasWorld EntWorld
-    => Axis
-    -> BoxGeom
-    -> V2
-    -> Double
-    -> Sys (Maybe Piece, V2)
-doCollision ax geom pos dx = do
-  pes <- owners geometry
-  let ps = mapMaybe (geometry . snd) pes
-
-  pure $ sweep' geom pos ps ax dx
-
-
 -- defaultThrowHandler :: V2 -> Handler ()
 -- defaultThrowHandler dir = do
 --   (cloneLens -> ctxSelf) <- getSelfRef
