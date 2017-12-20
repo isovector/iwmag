@@ -272,13 +272,15 @@ swoopHandler dt (topY -> h) v2 = do
                                         SwoopSwing
                                         hoverOver
         , termVel = Set 250
+        , dangerous = no
+        , hitbox = Unset
         }
 
     SwoopSwing -> do
       let p' = v2 + V2 0 (negate $ h / 2)
           dp = p' - p
           speed = 2000
-          target = 80
+          target = 20
           a' = normalize dp ^* speed
 
       pure $ defEntity'
@@ -289,5 +291,33 @@ swoopHandler dt (topY -> h) v2 = do
                                         SwoopSwing
                                         (norm dp >= target)
         , termVel = Set 400
+        , dangerous = yes
+        , hitbox = Set
+                 . Hitbox 48
+                 $ ActionImpartVelocity a'
         }
+
+
+hitboxHandler :: Sys ()
+hitboxHandler = do
+  boxes  <- efor . const $
+    (,) <$> get pos <*> get hitbox
+  hittees <- efor $ \ent ->  do
+    with hitboxable
+    (ent,,) <$> get pos <*> get collision
+
+  for_ boxes $ \(boxpos, box) ->
+    for_ hittees $ \(ent, pos, geom) ->
+      when (withinRadius geom pos (_hbRadius box) boxpos) $
+        actionHandler ent (_hbAction box)
+
+
+actionHandler :: Ent -> Action -> Sys ()
+actionHandler _ ActionDoNothing = pure ()
+actionHandler ent (ActionCombine a b) = actionHandler ent a
+                                     >> actionHandler ent b
+-- TODO(sandy): fixme
+actionHandler _ (ActionImpartDamage _) = pure ()
+actionHandler ent (ActionImpartVelocity v2) =
+  setEntity ent defEntity' { vel = Set v2 }
 

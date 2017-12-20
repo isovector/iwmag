@@ -25,23 +25,24 @@ getNow = liftIO $ realToFrac <$> getPOSIXTime
 
 initialize :: Sys ()
 initialize = do
-  loadLevel . fromJust $ lookup "test1" theLevels
+  loadLevel . fromJust $ lookup "test4" theLevels
   void $ newEntity $ defEntity
        { pos = Just $ V2 200 100
        , gfx = Just
              . group
              $ drawPlayer (rgb 1 1 1) playerGeom
-       , vel       = Just $ V2 0 0
-       , gravity   = Just ()
-       , collision = Just $ playerGeom
-       , jump      = Just $ Jump jumpCount 0 True
-       , canBoost  = Just $ CanBoost boostCount 0
-       , player    = Just $ Player [] (V2 0 0) 10
+       , vel        = Just $ V2 0 0
+       , gravity    = Just ()
+       , collision  = Just $ playerGeom
+       , jump       = Just $ Jump jumpCount 0 True
+       , canBoost   = Just $ CanBoost boostCount 0
+       , player     = Just $ Player [] (V2 0 0) 10
+       , hitboxable = Just ()
        }
 
 
-draw :: Sys Element
-draw = do
+draw :: Time -> Sys Element
+draw elapsed = do
   ppos <- fmap head . efor . const $ do
     with player
     get pos
@@ -49,6 +50,7 @@ draw = do
 
   let cam    = clampCamera (levelSize l) ppos
       center = V2 (fromIntegral gameWidth) (fromIntegral gameHeight) ^* 0.5
+      danger = drawDanger elapsed
 
   geom <- efor . const $ do
     with geometry
@@ -57,11 +59,15 @@ draw = do
     p <- get pos
     g <- get gfx
     pure $ move p g
+  dangers <- efor . const $ do
+    p <- get pos
+    with dangerous
+    pure $ move p danger
   pure . collage gameWidth gameHeight
        . pure
        . move (center - cam)
        . group
-       $ geom ++ gfx
+       $ geom ++ gfx ++ dangers
 
 
 step :: Time -> Sys ()
@@ -87,6 +93,7 @@ step dt = do
     pgeom <- get collision
     pure (ppos, pgeom)
   emap $ swoopHandler dt pgeom ppos
+  hitboxHandler
 
   emap $ do
     a <- get acc
@@ -136,7 +143,8 @@ main = do
       now <- getNow
       step $ now - last
 
-      scene <- draw
+      let elapsed = now - start
+      scene <- draw elapsed
       liftIO $ render engine scene (gameWidth, gameHeight)
 
       shouldQuit <- liftIO $ SDL.quitRequested

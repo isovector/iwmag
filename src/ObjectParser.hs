@@ -37,9 +37,9 @@ getObjectPos Object{..} = Endo $ \ent -> ent
 
 getObjectGeomImpl :: Object -> Maybe BoxGeom
 getObjectGeomImpl Object{..} = do
-  w <- objectWidth
-  h <- objectHeight
-  pure $ BoxGeom 0 (w * importScale) 0 (h * importScale)
+  w <- (*importScale) <$> objectWidth
+  h <- (*importScale) <$> objectHeight
+  pure $ BoxGeom (w / 2) (w / 2) (h / 2) (h / 2)
 
 
 maybeToEndo :: Maybe (a -> a) -> Endo a
@@ -84,8 +84,10 @@ getObjectGravity Object{..} = maybeToEndo $ do
 getObjectSwoop :: Object -> Endo Entity
 getObjectSwoop Object{..} = maybeToEndo $ do
   offset <- parseV2 <$> lookup "offset" objectProperties
+  let duration = 8
+      phase  = maybe duration read $ lookup "phase" objectProperties
   pure $ \ent -> ent
-    { swoop = Just $ Swoop offset SwoopHover 5 5
+    { swoop = Just $ Swoop offset SwoopHover phase duration
     , vel   = Just $ V2 0 0
     , termVel = Just 250
     }

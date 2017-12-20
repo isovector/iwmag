@@ -121,6 +121,22 @@ data Swoop = Swoop
 
 type Field f t = Component f 'Field t
 
+data Hitbox = Hitbox
+  { _hbRadius :: Double
+  , _hbAction :: Action
+  }
+  deriving (Show, Eq)
+
+data Action
+  = ActionDoNothing
+  | ActionCombine Action Action
+  | ActionImpartDamage Float
+  | ActionImpartVelocity V2
+  deriving (Show, Eq)
+
+instance Monoid Action where
+  mempty  = ActionDoNothing
+  mappend = ActionCombine
 
 data EntWorld f = Entity
   { pos          :: Field f V2
@@ -139,6 +155,9 @@ data EntWorld f = Entity
   , canBoost     :: Component f 'Field CanBoost
   , boosting     :: Component f 'Field Boosting
   , swoop        :: Field f Swoop
+  , dangerous    :: Field f ()
+  , hitbox       :: Field f Hitbox
+  , hitboxable   :: Field f ()
   } deriving Generic
 
 data Globals = Globals
@@ -156,4 +175,5 @@ makeLenses ''Boosting
 makeLenses ''Player
 makeLenses ''Globals
 makeLenses ''Swoop
+makeLenses ''Hitbox
 

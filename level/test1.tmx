@@ -104,23 +104,5 @@
    </properties>
    <ellipse/>
   </object>
-  <object id="42" name="swoop" x="29.5" y="130" width="6" height="6">
-   <properties>
-    <property name="color" value="0 0.8 1 0.5"/>
-    <property name="geom" value="false"/>
-    <property name="offset" value="100 -200"/>
-    <property name="vel" value="0 0"/>
-   </properties>
-   <ellipse/>
-  </object>
-  <object id="43" name="swoop" x="44.3333" y="117.667" width="6" height="6">
-   <properties>
-    <property name="color" value="0.8 0.3 1 0.5"/>
-    <property name="geom" value="false"/>
-    <property name="offset" value="-100 -200"/>
-    <property name="vel" value="0 0"/>
-   </properties>
-   <ellipse/>
-  </object>
  </objectgroup>
 </map>

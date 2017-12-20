@@ -8,7 +8,7 @@ module Prologue
   , normalize
   ) where
 
-import Types hiding (all)
+import Types hiding (all, phase)
 import Linear.Metric (normalize)
 
 
@@ -30,4 +30,11 @@ destroy
     => Ent
     -> SystemT g EntWorld m ()
 destroy = flip setEntity (convertSetter defEntity)
+
+
+yes :: Update ()
+yes = Set ()
+
+no :: Update a
+no = Unset
 

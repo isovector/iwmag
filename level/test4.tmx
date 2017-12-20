@@ -1,21 +1,36 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.0" orientation="orthogonal" renderorder="right-down" width="20" height="16" tilewidth="16" tileheight="16" nextobjectid="37">
- <tileset firstgid="1" name="floating" tilewidth="16" tileheight="16" tilecount="1160" columns="58">
+<map version="1.0" orientation="orthogonal" renderorder="right-down" width="20" height="16" tilewidth="16" tileheight="16" nextobjectid="45">
+ <tileset firstgid="1" name="floating" tilewidth="16" tileheight="16" tilecount="1160">
   <image source="assets/floating.png" trans="5e81a2" width="928" height="320"/>
  </tileset>
  <objectgroup name="meta">
-  <object id="34" name="spawn" type="spawn" x="144" y="224" width="16" height="16">
+  <object id="34" name="spawn" type="spawn" x="144" y="144" width="16" height="16">
    <ellipse/>
   </object>
  </objectgroup>
- <layer name="tiles" width="20" height="16">
-  <data encoding="base64" compression="zlib">
-   eJzF0lkOgjAQgOEGeHLjDq7HcAko3sH1POir66Vc7+B6B/9GCEKgSmLCw5dCmSmddixDCMvjoK8Yo3FWChctPGbJ/ONaqrOQtV5xwx0PPL36d3q6/8j4MiqoooY6Gt46uZR1yvgBuUOMMMYEUz3Is3+s0/HGBblLrLDGBlv9nRe31rd7kDXvccARJ5z1oIdU+4tbW9acRwFFlH7sBVXtcg9d9L7EZSGpx/x5VQ9Gz8U0knvMn4/7Hnd+n+9Jd2gnfHe5+6YQooU2Ophr7/mZFn6OxrlawI99AYV1Zx4=
-  </data>
- </layer>
  <objectgroup name="collision">
   <object id="35" x="0" y="256">
    <polyline points="0,0 320,0 320,-256 0,-256 0,0"/>
+  </object>
+  <object id="44" x="96" y="208" width="128" height="32"/>
+ </objectgroup>
+ <objectgroup name="objects">
+  <object id="37" name="swoop" x="272" y="176" width="12" height="12">
+   <properties>
+    <property name="color" value="0 0.8 1 0.5"/>
+    <property name="geom" value="false"/>
+    <property name="offset" value="300 -200"/>
+    <property name="phase" value="12"/>
+   </properties>
+   <ellipse/>
+  </object>
+  <object id="38" name="swoop" x="48" y="176" width="12" height="12">
+   <properties>
+    <property name="color" value="0.8 0.3 1 0.5"/>
+    <property name="geom" value="false"/>
+    <property name="offset" value="-300 -200"/>
+   </properties>
+   <ellipse/>
   </object>
  </objectgroup>
 </map>

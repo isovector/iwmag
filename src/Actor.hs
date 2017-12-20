@@ -14,6 +14,18 @@ drawPlayer c p = drawActor c p
                $ image "assets/hat.png"
                ]
 
+
+drawDanger :: Time -> Form
+drawDanger elapsed = rotate elapsed
+                   . outlined
+                       defaultLine
+                         { lineColor = rgb 1 0 0
+                         , lineWidth = 6
+                         , lineDashing = [32, 8]
+                         }
+                   $ circle 32
+
+
 drawActor :: Color -> BoxGeom -> [Form]
 drawActor c p =
   [ move (V2 ((r - l) / 2) $ (b - t) / 2)
