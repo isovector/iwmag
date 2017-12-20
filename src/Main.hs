@@ -95,7 +95,9 @@ step dt = do
     pgeom <- get collision
     pure (ppos, pgeom)
   emap $ swoopHandler dt pgeom ppos
+
   hitboxHandler
+  parryHandler dt
 
   emap $ do
     a <- get acc

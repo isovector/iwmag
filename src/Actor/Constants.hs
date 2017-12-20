@@ -63,3 +63,6 @@ centerOnSquare n pos = pos + V2 1 1 ^* (importScale * n)
 groundFriction :: Double
 groundFriction = 10
 
+parryTime :: Double
+parryTime = 0.1
+

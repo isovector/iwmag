@@ -9,6 +9,7 @@ module Actor.Signal where
 
 import Actor.Constants
 import Collision
+import Game.Sequoia.Keyboard (Key (..))
 import Input (input, getKeys)
 import Prologue
 
@@ -89,7 +90,7 @@ dropHandler dt ps = do
 jumpHandler :: Sys ()
 jumpHandler = do
   -- set wantsjump for the player
-  wj <- snd . input <$> getKeys
+  wj <- _riWantsJump . input <$> getKeys
   emap $ do
     with player
     pure $ defEntity'
@@ -202,7 +203,7 @@ gravityHandler dt = do
 playerHandler :: Time -> Sys ()
 playerHandler dt = do
   keys <- getKeys
-  let arrsOf = fst . input
+  let arrsOf = _riArrows . input
       idling = (== V2 0 0)
 
   emap $ do
@@ -211,6 +212,8 @@ playerHandler dt = do
     v  <- get vel
 
     let oldKeys  = pl ^. pLastInput
+        pressed x = elem x keys
+                 && elem x oldKeys
         arrs     = arrsOf keys
         oldArrs  = arrsOf oldKeys
         isIdle   = idling arrs
@@ -228,7 +231,7 @@ playerHandler dt = do
               , timeIdle <= doubleTapTime
               ]
 
-    pure $ defEntity' -- Safe @(Vel, Player, WantsBoost)
+    pure $ defEntity'
       { vel = bool Keep (Set newVel) $ not isIdle
       , player = Set
                . Player keys
@@ -236,6 +239,8 @@ playerHandler dt = do
                               oldArrs
                               $ isIdle && not wasIdle)
                $ bool 0 (timeIdle + dt) isIdle
+      , wantsGrasp =
+          bool Unset (Set ()) $ pressed LeftControlKey
       , wantsBoost =
           bool Unset
               (Set $ normalize arrs
@@ -288,8 +293,10 @@ swoopHandler dt (topY -> h) v2 = do
         , dangerous = yes
         , hitbox = Set
                  . Hitbox 24
-                 $ ActionImpartVelocity a'
-                <> ActionImpartDamage 18
+                 $ ActionParryable
+                   ( ActionImpartVelocity a'
+                  <> ActionImpartDamage 18
+                   )
                 <> ActionCallback
                  ( do
                      sw' <- get swoop
@@ -317,6 +324,31 @@ hitboxHandler = do
         actionHandler boxent ent (_hbAction box)
 
 
+parryHandler :: Time -> Sys ()
+parryHandler dt = do
+  parried <- fmap (not . null) . efor . const $ do
+    with player
+    get wantsGrasp
+
+  when parried $ do
+    owners parryTimer >>= traverse_ (destroy . fst)
+
+  emap $ do
+    pt <- get parryTimer
+    pure $ defEntity'
+      { parryTimer = Set $ pt & ptTime -~ dt
+      }
+
+  elapsed <- efor $ \ent -> do
+    pt <- get parryTimer
+    guard $ pt ^. ptTime <= 0
+    pure (ent, pt)
+
+  for_ elapsed $ \(ent, ParryTimer{..}) -> do
+    actionHandler _ptBoxEnt _ptEnt _ptAction
+    destroy ent
+
+
 actionHandler :: Ent -> Ent -> Action -> Sys ()
 actionHandler _ _ ActionDoNothing = pure ()
 actionHandler box ent (ActionCombine a b) =
@@ -334,4 +366,8 @@ actionHandler _ ent (ActionImpartVelocity v2) =
 actionHandler ent _ (ActionCallback cb) = do
   setter <- runQueryT ent cb
   for_ setter $ setEntity ent
+actionHandler bent ent (ActionParryable action) = do
+  void $ newEntity defEntity
+    { parryTimer = Just $ ParryTimer parryTime bent ent action
+    }
 

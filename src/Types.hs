@@ -66,11 +66,10 @@ data GrabType
   | DoAction
   deriving (Eq, Show, Ord, Enum, Bounded)
 
--- data ActorAttachment
---   = Unattached
---   | StandingOn Piece
---   | Grasping Hook V2
---   deriving (Eq, Show)
+data RawInput = RawInput
+  { _riArrows     :: V2
+  , _riWantsJump  :: Bool
+  }
 
 data BoxGeom = BoxGeom
   { leftX   :: Double
@@ -123,6 +122,13 @@ data Hitpoints = Hitpoints
   , _hpMax     :: Int
   }
 
+data ParryTimer = ParryTimer
+  { _ptTime   :: Time
+  , _ptBoxEnt :: Ent
+  , _ptEnt    :: Ent
+  , _ptAction :: Action
+  }
+
 
 type Field f t = Component f 'Field t
 
@@ -137,6 +143,7 @@ data Action
   | ActionImpartDamage Int
   | ActionImpartVelocity V2
   | ActionCallback ECSF
+  | ActionParryable Action
 
 instance Monoid Action where
   mempty  = ActionDoNothing
@@ -154,6 +161,7 @@ data EntWorld f = Entity
   , geometry     :: Field f Piece
   , collision    :: Field f BoxGeom
   , wantsJump    :: Field f ()
+  , wantsGrasp   :: Field f ()
   , wantsBoost   :: Field f V2
   , standContext :: Field f StandContext
   , canBoost     :: Field f CanBoost
@@ -163,6 +171,7 @@ data EntWorld f = Entity
   , hitbox       :: Field f Hitbox
   , hitboxable   :: Field f ()
   , hitpoints    :: Field f Hitpoints
+  , parryTimer   :: Field f ParryTimer
   } deriving Generic
 
 data Globals = Globals
@@ -182,4 +191,6 @@ makeLenses ''Globals
 makeLenses ''Swoop
 makeLenses ''Hitbox
 makeLenses ''Hitpoints
+makeLenses ''RawInput
+makeLenses ''ParryTimer
 

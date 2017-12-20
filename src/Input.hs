@@ -10,7 +10,7 @@ getKeys :: Sys [Key]
 getKeys = liftIO $ fmap toEnum <$> getKeyState
 
 
-input :: [Key] -> (V2, Bool)
+input :: [Key] -> RawInput
 input keys =
   let isDown = flip elem keys
       l = isDown LeftKey
@@ -19,10 +19,11 @@ input keys =
       d = isDown DownKey
       j = isDown LeftShiftKey
    in
-    ( uncurry V2
-      ( fromIntegral $ -1 * fromEnum l + 1 * fromEnum r
-      , fromIntegral $ -1 * fromEnum u + 1 * fromEnum d
-      )
-    , j
-    )
+    RawInput
+      { _riArrows = uncurry V2
+        ( fromIntegral $ -1 * fromEnum l + 1 * fromEnum r
+        , fromIntegral $ -1 * fromEnum u + 1 * fromEnum d
+        )
+      , _riWantsJump  = j
+      }
 
