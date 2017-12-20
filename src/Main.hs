@@ -63,11 +63,12 @@ draw elapsed = do
     p <- get pos
     with dangerous
     pure $ move p danger
-  pure . collage gameWidth gameHeight
-       . pure
-       . move (center - cam)
-       . group
-       $ geom ++ gfx ++ dangers
+  pure $ collage gameWidth gameHeight
+       [ move (center - cam)
+         . group
+         $ geom ++ gfx ++ dangers
+       , move (V2 20 20) $ drawHealthBar $ 100 - (round $ elapsed * 2)
+       ]
 
 
 step :: Time -> Sys ()

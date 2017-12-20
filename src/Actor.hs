@@ -5,6 +5,30 @@ module Actor where
 import Game.Sequoia
 import Types
 
+
+drawHealthBar :: Int -> Form
+drawHealthBar hp =
+  move (V2 0 (healthHeight / 2))
+  $ group
+  [ move (V2 (effHpWidth / 2) 0)
+    . filled (rgb 0 1 0)
+    $ rect effHpWidth healthHeight
+  , move (V2 (healthWidth / 2) 0)
+    . outlined
+      defaultLine
+        { lineWidth = 4
+        }
+      $ rect healthWidth healthHeight
+  ]
+  where
+    effHp = hp -- (hp `mod` healthMod)
+    effHpWidth = (fromIntegral effHp / healthMod) * healthWidth
+
+    healthWidth = 160
+    healthHeight = 25
+    healthMod = 100
+
+
 drawPlayer :: Color -> BoxGeom -> [Form]
 drawPlayer c p = drawActor c p
             ++ [ move (V2 (-18) (-25))
