@@ -280,44 +280,51 @@ swoopHandler dt (topY -> h) v2 = do
       let p' = v2 + V2 0 (negate $ h / 2)
           dp = p' - p
           speed = 2000
-          target = 20
           a' = normalize dp ^* speed
 
       pure $ defEntity'
         { acc = Set a'
-        , swoop = Set $ sw
-                      & swHoverTime .~ _swMaxHoverTime sw
-                      & swPhase .~ bool SwoopHover
-                                        SwoopSwing
-                                        (norm dp >= target)
         , termVel = Set 400
         , dangerous = yes
         , hitbox = Set
-                 . Hitbox 48
+                 . Hitbox 24
                  $ ActionImpartVelocity a'
+                <> ActionCallback
+                 ( do
+                     sw' <- get swoop
+                     pure defEntity'
+                       { swoop = Set $ sw'
+                               & swPhase     .~ SwoopHover
+                               & swHoverTime .~ _swMaxHoverTime sw
+                       }
+
+                 )
         }
 
 
 hitboxHandler :: Sys ()
 hitboxHandler = do
-  boxes  <- efor . const $
-    (,) <$> get pos <*> get hitbox
+  boxes  <- efor $ \ent ->
+    (ent,,) <$> get pos <*> get hitbox
   hittees <- efor $ \ent ->  do
     with hitboxable
     (ent,,) <$> get pos <*> get collision
 
-  for_ boxes $ \(boxpos, box) ->
+  for_ boxes $ \(boxent, boxpos, box) ->
     for_ hittees $ \(ent, pos, geom) ->
       when (withinRadius geom pos (_hbRadius box) boxpos) $
-        actionHandler ent (_hbAction box)
+        actionHandler boxent ent (_hbAction box)
 
 
-actionHandler :: Ent -> Action -> Sys ()
-actionHandler _ ActionDoNothing = pure ()
-actionHandler ent (ActionCombine a b) = actionHandler ent a
-                                     >> actionHandler ent b
+actionHandler :: Ent -> Ent -> Action -> Sys ()
+actionHandler _ _ ActionDoNothing = pure ()
+actionHandler box ent (ActionCombine a b) = actionHandler box ent a
+                                         >> actionHandler box ent b
 -- TODO(sandy): fixme
-actionHandler _ (ActionImpartDamage _) = pure ()
-actionHandler ent (ActionImpartVelocity v2) =
+actionHandler _ _ (ActionImpartDamage _) = pure ()
+actionHandler _ ent (ActionImpartVelocity v2) =
   setEntity ent defEntity' { vel = Set v2 }
+actionHandler ent _ (ActionCallback cb) = do
+  setter <- runQueryT ent cb
+  for_ setter $ setEntity ent
 

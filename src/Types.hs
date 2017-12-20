@@ -125,14 +125,13 @@ data Hitbox = Hitbox
   { _hbRadius :: Double
   , _hbAction :: Action
   }
-  deriving (Show, Eq)
 
 data Action
   = ActionDoNothing
   | ActionCombine Action Action
   | ActionImpartDamage Float
   | ActionImpartVelocity V2
-  deriving (Show, Eq)
+  | ActionCallback ECSF
 
 instance Monoid Action where
   mempty  = ActionDoNothing
