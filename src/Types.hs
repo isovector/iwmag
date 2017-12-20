@@ -118,6 +118,11 @@ data Swoop = Swoop
   , _swMaxHoverTime :: Time
   }
 
+data Hitpoints = Hitpoints
+  { _hpCurrent :: Int
+  , _hpMax     :: Int
+  }
+
 
 type Field f t = Component f 'Field t
 
@@ -129,7 +134,7 @@ data Hitbox = Hitbox
 data Action
   = ActionDoNothing
   | ActionCombine Action Action
-  | ActionImpartDamage Float
+  | ActionImpartDamage Int
   | ActionImpartVelocity V2
   | ActionCallback ECSF
 
@@ -142,21 +147,22 @@ data EntWorld f = Entity
   , vel          :: Field f V2
   , termVel      :: Field f Double
   , acc          :: Field f V2
-  , gfx          :: Component f 'Field Form
+  , gfx          :: Field f Form
   , player       :: Component f 'Unique Player
-  , jump         :: Component f 'Field Jump
-  , gravity      :: Component f 'Field ()
-  , geometry     :: Component f 'Field Piece
-  , collision    :: Component f 'Field BoxGeom
-  , wantsJump    :: Component f 'Field ()
-  , wantsBoost   :: Component f 'Field V2
-  , standContext :: Component f 'Field StandContext
-  , canBoost     :: Component f 'Field CanBoost
-  , boosting     :: Component f 'Field Boosting
+  , jump         :: Field f Jump
+  , gravity      :: Field f ()
+  , geometry     :: Field f Piece
+  , collision    :: Field f BoxGeom
+  , wantsJump    :: Field f ()
+  , wantsBoost   :: Field f V2
+  , standContext :: Field f StandContext
+  , canBoost     :: Field f CanBoost
+  , boosting     :: Field f Boosting
   , swoop        :: Field f Swoop
   , dangerous    :: Field f ()
   , hitbox       :: Field f Hitbox
   , hitboxable   :: Field f ()
+  , hitpoints    :: Field f Hitpoints
   } deriving Generic
 
 data Globals = Globals
@@ -175,4 +181,5 @@ makeLenses ''Player
 makeLenses ''Globals
 makeLenses ''Swoop
 makeLenses ''Hitbox
+makeLenses ''Hitpoints
 

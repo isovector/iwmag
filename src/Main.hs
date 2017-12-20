@@ -38,14 +38,15 @@ initialize = do
        , canBoost   = Just $ CanBoost boostCount 0
        , player     = Just $ Player [] (V2 0 0) 10
        , hitboxable = Just ()
+       , hitpoints  = Just $ Hitpoints 100 100
        }
 
 
 draw :: Time -> Sys Element
 draw elapsed = do
-  ppos <- fmap head . efor . const $ do
+  (ppos, php) <- fmap head . efor . const $ do
     with player
-    get pos
+    (,) <$> get pos <*> get hitpoints
   l <- getGlobal _currentLevel
 
   let cam    = clampCamera (levelSize l) ppos
@@ -67,7 +68,7 @@ draw elapsed = do
        [ move (center - cam)
          . group
          $ geom ++ gfx ++ dangers
-       , move (V2 20 20) $ drawHealthBar $ 100 - (round $ elapsed * 2)
+       , move (V2 20 20) . drawHealthBar $ _hpCurrent php
        ]
 
 

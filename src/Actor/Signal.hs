@@ -289,6 +289,7 @@ swoopHandler dt (topY -> h) v2 = do
         , hitbox = Set
                  . Hitbox 24
                  $ ActionImpartVelocity a'
+                <> ActionImpartDamage 18
                 <> ActionCallback
                  ( do
                      sw' <- get swoop
@@ -318,10 +319,16 @@ hitboxHandler = do
 
 actionHandler :: Ent -> Ent -> Action -> Sys ()
 actionHandler _ _ ActionDoNothing = pure ()
-actionHandler box ent (ActionCombine a b) = actionHandler box ent a
-                                         >> actionHandler box ent b
--- TODO(sandy): fixme
-actionHandler _ _ (ActionImpartDamage _) = pure ()
+actionHandler box ent (ActionCombine a b) =
+  actionHandler box ent a >> actionHandler box ent b
+actionHandler _ ent (ActionImpartDamage dmg) =  do
+  setter <- runQueryT ent $ do
+    hp <- get hitpoints
+    pure $ defEntity'
+      { hitpoints = Set $ hp
+                        & hpCurrent %~ max 0 . subtract dmg
+      }
+  for_ setter $ setEntity ent
 actionHandler _ ent (ActionImpartVelocity v2) =
   setEntity ent defEntity' { vel = Set v2 }
 actionHandler ent _ (ActionCallback cb) = do

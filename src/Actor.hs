@@ -16,7 +16,7 @@ drawHealthBar hp =
   , move (V2 (healthWidth / 2) 0)
     . outlined
       defaultLine
-        { lineWidth = 4
+        { lineWidth = 6
         }
       $ rect healthWidth healthHeight
   ]
