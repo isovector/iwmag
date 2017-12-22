@@ -51,7 +51,7 @@ moveHandler
     -> ECSF
 moveHandler dt ps = do
   p <- get pos
-  v <- get vel
+  v <- get evel
   c <- get collision
 
   let x         = view _x v
@@ -209,7 +209,7 @@ playerHandler dt = do
   emap $ do
     without boosting
     pl <- get player
-    v  <- get vel
+    v  <- maybe (V2 0 0) id <$> getMaybe xvel
 
     let oldKeys  = pl ^. pLastInput
         pressed x = elem x keys
@@ -220,8 +220,6 @@ playerHandler dt = do
         wasIdle  = idling oldArrs
         timeIdle = pl ^. pIdleTime
         lastDir  = pl ^. pLastDir
-        -- TODO(sandy): do something clever here so stopping walking
-        -- doesnt have slide
         newVel   = v & _x .~ view _x arrs * walkSpeed
 
         shouldBoost =
@@ -232,7 +230,7 @@ playerHandler dt = do
               ]
 
     pure $ defEntity'
-      { vel = bool Keep (Set newVel) $ not isIdle
+      { xvel = bool Unset (Set newVel) $ not isIdle
       , player = Set
                . Player keys
                         (bool lastDir

@@ -35,6 +35,18 @@ destroy = flip setEntity (convertSetter defEntity)
 yes :: Update ()
 yes = Set ()
 
+
 no :: Update a
 no = Unset
+
+
+------------------------------------------------------------------------------
+-- | Effective velocity
+evel :: Entity -> Maybe V2
+evel Entity {..} = asum
+  [ (+) <$> vel
+        <*> xvel
+  , vel
+  , xvel
+  ]
 

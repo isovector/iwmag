@@ -152,6 +152,7 @@ instance Monoid Action where
 data EntWorld f = Entity
   { pos          :: Field f V2
   , vel          :: Field f V2
+  , xvel         :: Field f V2  -- exertable velocity
   , termVel      :: Field f Double
   , acc          :: Field f V2
   , gfx          :: Field f Form

@@ -32,6 +32,7 @@ initialize = do
              . group
              $ drawPlayer (rgb 1 1 1) playerGeom
        , vel        = Just $ V2 0 0
+       , xvel       = Just $ V2 0 0
        , gravity    = Just ()
        , collision  = Just $ playerGeom
        , jump       = Just $ Jump jumpCount 0 True
@@ -114,7 +115,7 @@ step dt = do
   emap $ do
     without collision
     p <- get pos
-    v <- get vel
+    v <- get evel
     pure $ defEntity' { pos = Set $ p + v ^* dt }
 
   emap $ moveHandler dt ps
