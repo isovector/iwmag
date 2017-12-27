@@ -20,6 +20,7 @@ module Types
 import           BasePrelude hiding (rotate, group, (&), uncons, index, lazy, throw, Handler, runHandlers, Unique, cast, loop)
 import           Control.Lens hiding (Level, levels, Context, rmap, set, set', without)
 import           Control.Monad.IO.Class (MonadIO (..))
+import           Control.Monad.Trans.State (StateT)
 import           Data.Ecstasy
 import qualified Data.Map as M
 import           Data.Tiled.Types (Object ())
@@ -139,11 +140,11 @@ data Hitbox = Hitbox
 
 data Action
   = ActionDoNothing
-  | ActionCombine Action Action
-  | ActionImpartDamage Int
+  | ActionCombine        Action Action
+  | ActionImpartDamage   Int
   | ActionImpartVelocity V2
-  | ActionCallback ECSF
-  | ActionParryable Action
+  | ActionCallback       ECSF
+  | ActionParryable      Action
 
 instance Monoid Action where
   mempty  = ActionDoNothing
@@ -180,8 +181,8 @@ data Globals = Globals
   }
 
 type Entity = EntWorld 'FieldOf
-type Sys = SystemT Globals EntWorld IO
-type ECSF = QueryT Globals EntWorld IO (EntWorld 'SetterOf)
+type Sys = SystemT EntWorld (StateT Globals IO)
+type ECSF = QueryT EntWorld (StateT Globals IO) (EntWorld 'SetterOf)
 
 makeLenses ''Level
 makeLenses ''Jump

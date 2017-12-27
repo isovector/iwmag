@@ -8,15 +8,17 @@ module Prologue
   , normalize
   ) where
 
-import Types hiding (all, phase)
-import Linear.Metric (normalize)
+import           Control.Monad.Trans (lift)
+import qualified Control.Monad.Trans.State as S
+import           Linear.Metric (normalize)
+import           Types hiding (all, phase)
 
 
 owners
     :: ( Monad m
        )
     => (Entity -> Maybe a)
-    -> SystemT g EntWorld m [(Ent, Entity)]
+    -> SystemT EntWorld m [(Ent, Entity)]
 owners f = do
   ents <- efor $ \e -> do
     with f
@@ -28,7 +30,7 @@ destroy
     :: ( Monad m
        )
     => Ent
-    -> SystemT g EntWorld m ()
+    -> SystemT EntWorld m ()
 destroy = flip setEntity (convertSetter defEntity)
 
 
@@ -49,4 +51,10 @@ evel Entity {..} = asum
   , vel
   , xvel
   ]
+
+modifyGlobals :: (Globals -> Globals) -> Sys ()
+modifyGlobals = lift . S.modify
+
+getGlobal :: (Globals -> a) -> Sys a
+getGlobal = lift . S.gets
 

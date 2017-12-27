@@ -10,6 +10,7 @@ module Main where
 import           Actor
 import           Actor.Constants
 import           Actor.Signal
+import           Control.Monad.Trans.State (evalStateT)
 import           Data.Time.Clock.POSIX (getPOSIXTime)
 import           Game.Sequoia (startup, render, EngineConfig (..))
 import           KnotTying (theLevels)
@@ -142,7 +143,7 @@ main = do
   engine <- startup config
   start  <- realToFrac <$> getPOSIXTime
 
-  flip runSystemT defWorld (Globals $ error "no level loaded") $ do
+  flip evalStateT (Globals $ error "no level loaded") . runSystemT defWorld $ do
     initialize
     flip fix start $ \loop last -> do
       now <- getNow
