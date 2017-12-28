@@ -1,0 +1,21 @@
+Constants
+  { boostCount       = 1
+  , boostStrength    = 300
+  , boostTime        = 0.10
+  , boostUpPenalty   = 0.4
+  , doubleTapTime    = 0.1
+  , firstLevel       = "test3"
+  , gameHeight       = 600
+  , gameWidth        = 800
+  , gravityStrength  = 800
+  , groundFriction   = 10
+  , importScale      = 2.5
+  , jumpAttenuation  = 0.3
+  , jumpCount        = 2
+  , jumpStrength     = 200
+  , parryTime        = 0.1
+  , recoverTime      = 0
+  , targetRadius     = 16
+  , terminalVelocity = 2000
+  , walkSpeed        = 120
+  }

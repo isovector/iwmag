@@ -26,7 +26,7 @@ getNow = liftIO $ realToFrac <$> getPOSIXTime
 
 initialize :: Sys ()
 initialize = do
-  loadLevel . fromJust $ lookup "test4" theLevels
+  loadLevel . fromJust $ lookup firstLevel theLevels
   void $ newEntity $ defEntity
        { pos = Just $ V2 200 100
        , gfx = Just
