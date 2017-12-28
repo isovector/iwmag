@@ -26,8 +26,7 @@ getNow = liftIO $ realToFrac <$> getPOSIXTime
 
 initialize :: Sys ()
 initialize = do
-  loadLevel . fromJust $ lookup firstLevel theLevels
-  void $ newEntity $ defEntity
+  void . newEntity $ defEntity
        { pos = Just $ V2 200 100
        , gfx = Just
              . group
@@ -42,6 +41,7 @@ initialize = do
        , hitboxable = Just ()
        , hitpoints  = Just $ Hitpoints 100 100
        }
+  loadLevel . fromJust $ lookup firstLevel theLevels
 
 
 draw :: Time -> Sys Element
@@ -75,7 +75,7 @@ draw elapsed = do
 
 
 step :: Time -> Sys ()
-step dt = do
+step dt = void $ do
   emap $ do
     StandingOn l <- get standContext
     v <- get vel
@@ -122,7 +122,7 @@ step dt = do
   emap $ moveHandler dt ps
   emap $ dropHandler dt ps
 
-  pure ()
+  heldByHandler
 
 
 clampCamera :: V2  -- ^ Level size.

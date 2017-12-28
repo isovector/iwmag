@@ -4,7 +4,7 @@ Constants
   , boostTime        = 0.10
   , boostUpPenalty   = 0.4
   , doubleTapTime    = 0.1
-  , firstLevel       = "test3"
+  , firstLevel       = "test2"
   , gameHeight       = 600
   , gameWidth        = 800
   , gravityStrength  = 800

@@ -20,6 +20,7 @@ buildObject obj =
     , getObjectGravity obj
     , getObjectVel     obj
     , getObjectSwoop   obj
+    , getHeldBy        obj
     ]
 
 
@@ -78,6 +79,14 @@ getObjectGravity Object{..} = maybeToEndo $ do
   pure $ \ent -> ent
     { gravity = Just ()
     , vel = Just $ V2 0 0
+    }
+
+getHeldBy :: Object -> Endo Entity
+getHeldBy Object{..} = maybeToEndo $ do
+  g <- lookup "held" objectProperties
+  guard $ g == "true"
+  pure $ \ent -> ent
+    { heldBy = Just $ Ent 0
     }
 
 

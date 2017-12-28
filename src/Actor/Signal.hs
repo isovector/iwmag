@@ -50,6 +50,7 @@ moveHandler
     -> [Piece]
     -> ECSF
 moveHandler dt ps = do
+  without heldBy
   p <- get pos
   v <- get evel
   c <- get collision
@@ -69,6 +70,7 @@ dropHandler
     -> [Piece]
     -> ECSF
 dropHandler dt ps = do
+  without heldBy
   without standContext
   p <- get pos
   v <- get vel
@@ -183,12 +185,14 @@ gravityHandler dt = do
   let gravity' v f = v + V2 0 1 ^* (gravityStrength * dt * f)
 
   emap $ do
+    without heldBy
     without wantsJump
     with gravity
     v <- get vel
     pure $ defEntity' { vel = Set $ gravity' v 1 }
 
   emap $ do
+    without heldBy
     with gravity
     with wantsJump
     v <- get vel
@@ -368,4 +372,22 @@ actionHandler bent ent (ActionParryable action) = do
   void $ newEntity defEntity
     { parryTimer = Just $ ParryTimer parryTime bent ent action
     }
+
+
+heldByHandler :: Sys ()
+heldByHandler = do
+  let getCol = fromMaybe (BoxGeom 0 0 0 0) <$> getMaybe collision
+
+  holding <- efor $ \eheld -> (,eheld) <$> get heldBy
+  for_ holding $ \(eholder, eholdee) -> do
+    Just p <- runQueryT eholder $ do
+      p <- get pos
+      c <- getCol
+      pure $ p - V2 0 (topY c)
+    Just p' <- runQueryT eholdee $ do
+      c <- getCol
+      pure . negate . V2 0 $ bottomY c
+
+    setEntity eholdee defEntity'
+      { pos = Set $ p + p' }
 

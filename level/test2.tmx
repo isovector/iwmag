@@ -40,6 +40,12 @@
  </objectgroup>
  <objectgroup name="objects">
   <object id="55" name="bomb" type="bomb" x="88" y="216" width="12" height="12">
+   <properties>
+    <property name="color" value="0 0 0"/>
+    <property name="geom" value="true"/>
+    <property name="gravity" value="true"/>
+    <property name="held" value="true"/>
+   </properties>
    <ellipse/>
   </object>
   <object id="57" name="win" type="winstar" x="204" y="204" width="16" height="16">

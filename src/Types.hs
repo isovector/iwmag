@@ -174,6 +174,7 @@ data EntWorld f = Entity
   , hitboxable   :: Field f ()
   , hitpoints    :: Field f Hitpoints
   , parryTimer   :: Field f ParryTimer
+  , heldBy       :: Field f Ent
   } deriving Generic
 
 data Globals = Globals
