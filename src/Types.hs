@@ -175,6 +175,7 @@ data EntWorld f = Entity
   , hitpoints    :: Field f Hitpoints
   , parryTimer   :: Field f ParryTimer
   , heldBy       :: Field f Ent
+  , wantsThrow   :: Field f V2
   } deriving Generic
 
 data Globals = Globals

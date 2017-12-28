@@ -40,6 +40,7 @@ initialize = do
        , player     = Just $ Player [] (V2 0 0) 10
        , hitboxable = Just ()
        , hitpoints  = Just $ Hitpoints 100 100
+       , wantsThrow = Just $ V2 1 (-1)
        }
   loadLevel . fromJust $ lookup firstLevel theLevels
 
@@ -123,6 +124,7 @@ step dt = void $ do
   emap $ dropHandler dt ps
 
   heldByHandler
+  throwHandler
 
 
 clampCamera :: V2  -- ^ Level size.

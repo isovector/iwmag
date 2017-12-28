@@ -378,8 +378,8 @@ heldByHandler :: Sys ()
 heldByHandler = do
   let getCol = fromMaybe (BoxGeom 0 0 0 0) <$> getMaybe collision
 
-  holding <- efor $ \eheld -> (,eheld) <$> get heldBy
-  for_ holding $ \(eholder, eholdee) -> do
+  holding <- getEntsWith heldBy
+  for_ holding $ \(eholdee, eholder) -> do
     Just p <- runQueryT eholder $ do
       p <- get pos
       c <- getCol
@@ -391,3 +391,21 @@ heldByHandler = do
     setEntity eholdee defEntity'
       { pos = Set $ p + p' }
 
+
+throwHandler :: Sys ()
+throwHandler = do
+  throwing <- sortBy (comparing fst)             <$> getEntsWith wantsThrow
+  held     <- sortBy (comparing fst) . fmap swap <$> getEntsWith heldBy
+  for_ (fmap fst throwing) $
+    flip setEntity defEntity'
+      { wantsThrow = Unset }
+
+  for_ (zipAssocWith (,) throwing held) $ \(_, (throwDir, eholdee)) -> do
+    setEntity eholdee defEntity'
+      { heldBy = Unset
+      , vel = Set $ throwDir ^* 100
+      }
+
+
+getEntsWith :: (Entity -> Maybe a) -> Sys [(Ent, a)]
+getEntsWith f = efor $ \e -> (e,) <$> get f

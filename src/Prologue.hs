@@ -58,3 +58,16 @@ modifyGlobals = lift . S.modify
 getGlobal :: (Globals -> a) -> Sys a
 getGlobal = lift . S.gets
 
+zipAssocWith
+    :: Ord k
+    => (a -> b -> c)
+    -> [(k, a)]
+    -> [(k, b)]
+    -> [(k, c)]
+zipAssocWith _ [] _ = []
+zipAssocWith _ _ [] = []
+zipAssocWith f l@((i,a):l') m@((j,b):m')
+    | i < j = zipAssocWith f l' m
+    | i > j = zipAssocWith f l m'
+    | otherwise = (i, f a b) : zipAssocWith f l' m'
+
