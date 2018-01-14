@@ -16,7 +16,6 @@ data Constants = Constants
   , jumpCount        :: Int
   , jumpStrength     :: Double
   , parryTime        :: Double
-  , recoverTime      :: Double
   , targetRadius     :: Double
   , terminalVelocity :: Double
   , walkSpeed        :: Double

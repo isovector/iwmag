@@ -4,7 +4,7 @@ Constants
   , boostTime        = 0.10
   , boostUpPenalty   = 0.4
   , doubleTapTime    = 0.1
-  , firstLevel       = "test2"
+  , firstLevel       = "test4"
   , gameHeight       = 600
   , gameWidth        = 800
   , gravityStrength  = 800
@@ -13,8 +13,7 @@ Constants
   , jumpAttenuation  = 0.3
   , jumpCount        = 2
   , jumpStrength     = 200
-  , parryTime        = 0.1
-  , recoverTime      = 0
+  , parryTime        = 0.02
   , targetRadius     = 16
   , terminalVelocity = 2000
   , walkSpeed        = 120
