@@ -134,7 +134,7 @@ data ParryTimer = ParryTimer
 type Field f t = Component f 'Field t
 
 data Hitbox = Hitbox
-  { _hbRadius :: Double
+  { _hbRadius :: Maybe Double
   , _hbAction :: Action
   }
 
@@ -145,6 +145,7 @@ data Action
   | ActionImpartVelocity V2
   | ActionCallback       ECSF
   | ActionParryable      Action
+  | ActionResetJumps
 
 instance Monoid Action where
   mempty  = ActionDoNothing

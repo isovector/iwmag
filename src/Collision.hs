@@ -52,9 +52,12 @@ withinRadius b p r t =
 withinBox :: BoxGeom -> V2 -> V2 -> Bool
 withinBox b p t = inRect (boxGeomToRect b p) t
 
-
 boxesIntersect :: BoxGeom -> V2 -> BoxGeom -> V2 -> Bool
-boxesIntersect b1 v1 b2 v2 =
+boxesIntersect a b c d = boxesIntersect' a b c d
+                      || boxesIntersect' c d a b
+
+boxesIntersect' :: BoxGeom -> V2 -> BoxGeom -> V2 -> Bool
+boxesIntersect' b1 v1 b2 v2 =
   or . fmap (withinBox b2 v2) $ corners b1 v1 ^.. each
 
 

@@ -14,7 +14,8 @@ import Prologue
 buildObject :: Object -> Sys Entity
 buildObject obj =
   newSomeEntity $ mconcat
-    [ getObjectPos     obj
+    [ buildObjectType  obj
+    , getObjectPos     obj
     , getObjectGeom    obj
     , getObjectGfx     obj
     , getObjectGravity obj
@@ -36,16 +37,27 @@ getObjectPos Object{..} = Endo $ \ent -> ent
   }
 
 
+buildObjectType :: Object -> Endo Entity
+buildObjectType Object{..}
+  | objectType == Just "spring" = Endo $ \ent -> ent
+      { hitbox = Just
+               . Hitbox Nothing
+               $ ActionImpartVelocity (V2 0 (-400))
+              <> ActionResetJumps
+      }
+  | otherwise = mempty
+
+
 getObjectGeomImpl :: Object -> Maybe BoxGeom
 getObjectGeomImpl Object{..} = do
   w <- (*importScale) <$> objectWidth
   h <- (*importScale) <$> objectHeight
-  pure $ BoxGeom (w / 2) (w / 2) (h / 2) (h / 2)
+  pure $ BoxGeom 0 w 0 h
 
 
 maybeToEndo :: Maybe (a -> a) -> Endo a
-maybeToEndo (Just a) = Endo a
-maybeToEndo Nothing = Endo id
+maybeToEndo = Endo . maybe id id
+
 
 getObjectGeom :: Object -> Endo Entity
 getObjectGeom obj@Object{objectProperties} = maybeToEndo $ do

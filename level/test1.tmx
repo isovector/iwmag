@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.0" orientation="orthogonal" renderorder="right-down" width="30" height="23" tilewidth="16" tileheight="16" nextobjectid="44">
- <tileset firstgid="1" name="better" tilewidth="16" tileheight="16" tilecount="256">
+<map version="1.0" tiledversion="1.1.0" orientation="orthogonal" renderorder="right-down" width="30" height="23" tilewidth="16" tileheight="16" infinite="0" nextobjectid="49">
+ <tileset firstgid="1" name="better" tilewidth="16" tileheight="16" tilecount="256" columns="16">
   <image source="assets/better.png" trans="000000" width="256" height="256"/>
  </tileset>
  <objectgroup name="collision">
@@ -34,6 +34,12 @@
     <property name="friction" value="1"/>
    </properties>
    <polyline points="0,0 160,0"/>
+  </object>
+  <object id="47" x="336" y="352">
+   <polyline points="0,0 0,-16"/>
+  </object>
+  <object id="48" x="368" y="352">
+   <polyline points="0,0 0,-16"/>
   </object>
  </objectgroup>
  <objectgroup name="meta" visible="0">
@@ -104,5 +110,6 @@
    </properties>
    <ellipse/>
   </object>
+  <object id="45" type="spring" x="336" y="336" width="32" height="16"/>
  </objectgroup>
 </map>

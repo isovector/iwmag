@@ -294,7 +294,7 @@ swoopHandler dt (topY -> h) v2 = do
         , termVel = Set 400
         , dangerous = yes
         , hitbox = Set
-                 . Hitbox 24
+                 . Hitbox (Just 24)
                  $ ActionParryable
                    ( ActionImpartVelocity a'
                   <> ActionImpartDamage 18
@@ -315,15 +315,23 @@ swoopHandler dt (topY -> h) v2 = do
 hitboxHandler :: Sys ()
 hitboxHandler = do
   boxes  <- efor $ \ent ->
-    (ent,,) <$> get pos <*> get hitbox
+    (ent,,,) <$> get pos <*> get hitbox <*> getMaybe collision
   hittees <- efor $ \ent ->  do
     with hitboxable
     (ent,,) <$> get pos <*> get collision
 
-  for_ boxes $ \(boxent, boxpos, box) ->
+  for_ boxes $ \(boxent, boxpos, box, boxgeom) ->
     for_ hittees $ \(ent, pos, geom) ->
-      when (withinRadius geom pos (_hbRadius box) boxpos) $
-        actionHandler boxent ent (_hbAction box)
+      case (_hbRadius box, boxgeom) of
+        (Just radius, _) ->
+          when (withinRadius geom pos radius boxpos) $
+            actionHandler boxent ent (_hbAction box)
+        (Nothing, Just bgeom) ->
+          when (boxesIntersect bgeom boxpos geom pos) $
+            actionHandler boxent ent (_hbAction box)
+        (Nothing, Nothing) ->
+          error "attempted to do a hitbox handler with no collision or radius"
+
 
 
 parryHandler :: Time -> Sys ()
@@ -355,20 +363,24 @@ actionHandler :: Ent -> Ent -> Action -> Sys ()
 actionHandler _ _ ActionDoNothing = pure ()
 actionHandler box ent (ActionCombine a b) =
   actionHandler box ent a >> actionHandler box ent b
-actionHandler _ ent (ActionImpartDamage dmg) =  do
-  setter <- runQueryT ent $ do
+actionHandler _ ent ActionResetJumps =
+  runAndSet ent $ do
+    j <- get jump
+    pure $ defEntity'
+      { jump = Set $ j
+                   & jCurJumps .~ (view jMaxJumps j - 1)
+      }
+actionHandler _ ent (ActionImpartDamage dmg) =
+  runAndSet ent $ do
     hp <- get hitpoints
     pure $ defEntity'
       { hitpoints = Set $ hp
                         & hpCurrent %~ max 0 . subtract dmg
       }
-  for_ setter $ setEntity ent
 actionHandler _ ent (ActionImpartVelocity v2) =
   setEntity ent defEntity' { vel = Set v2 }
-actionHandler ent _ (ActionCallback cb) = do
-  setter <- runQueryT ent cb
-  for_ setter $ setEntity ent
-actionHandler bent ent (ActionParryable action) = do
+actionHandler ent _ (ActionCallback cb) = runAndSet ent cb
+actionHandler bent ent (ActionParryable action) =
   void $ newEntity defEntity
     { parryTimer = Just $ ParryTimer parryTime bent ent action
     }
@@ -409,3 +421,10 @@ throwHandler = do
 
 getEntsWith :: (Entity -> Maybe a) -> Sys [(Ent, a)]
 getEntsWith f = efor $ \e -> (e,) <$> get f
+
+
+runAndSet :: Ent -> ECSF -> Sys ()
+runAndSet ent m = do
+  setter <- runQueryT ent m
+  for_ setter $ setEntity ent
+
